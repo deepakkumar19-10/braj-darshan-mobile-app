@@ -62,22 +62,25 @@ export default function StitchTempleCard({ temple, onPress }) {
 
         <View style={styles.scrim} />
 
-        {/* Status Pill */}
-        <View style={styles.statusPill}>
+        {/* Status Pill with Real-Time Darshan Hours */}
+        <View
+          style={[
+            styles.statusPill,
+            {
+              backgroundColor: status.isOpen
+                ? 'rgba(6, 78, 59, 0.92)'
+                : 'rgba(127, 29, 29, 0.92)',
+            },
+          ]}
+        >
           <View
             style={[
               styles.statusDot,
-              { backgroundColor: status.isOpen ? '#22C55E' : '#DC2626' },
+              { backgroundColor: status.isOpen ? '#34D399' : '#F87171' },
             ]}
           />
           <AppText variant="small" weight="700" color="#FFFFFF">
-            {status.isOpen
-              ? isHindi
-                ? 'पट खुला है (Open Now)'
-                : 'Open Now (Closes 12:30 PM)'
-              : isHindi
-                ? 'पट विश्राम (Closed)'
-                : 'Closed (Reopens 04:30 PM)'}
+            {isHindi ? status.badgeHi : status.badgeEn}
           </AppText>
         </View>
 

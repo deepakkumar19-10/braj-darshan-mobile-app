@@ -67,7 +67,14 @@ export function DrawerProvider({ children }) {
 export function useDrawer() {
   const context = useContext(DrawerContext);
   if (!context) {
-    throw new Error('useDrawer must be used within a DrawerProvider');
+    return {
+      isOpen: false,
+      openDrawer: () => {},
+      closeDrawer: () => {},
+      drawerWidth: DRAWER_WIDTH,
+      currentRoute: 'Home',
+      setCurrentRoute: () => {},
+    };
   }
   return context;
 }

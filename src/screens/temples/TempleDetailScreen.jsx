@@ -40,6 +40,15 @@ export default function TempleDetailScreen({ navigation, route }) {
   const [expandedHistory, setExpandedHistory] = useState(false);
   const [stamped, setStamped] = useState(false);
 
+  // Nearby temples in the same city or defined nearby IDs
+  const nearbyTemples = (temple.nearbyTempleIds || [])
+    .map((nearbyId) => templesData.find((t) => t.id === nearbyId))
+    .filter(Boolean);
+  const displayNearby =
+    nearbyTemples.length > 0
+      ? nearbyTemples
+      : templesData.filter((t) => t.id !== temple.id && t.city === temple.city).slice(0, 3);
+
   const handleShare = async () => {
     try {
       await Share.share({
@@ -50,7 +59,15 @@ export default function TempleDetailScreen({ navigation, route }) {
 
   const handleOpenMaps = () => {
     if (temple.latitude && temple.longitude) {
-      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${temple.latitude},${temple.longitude}`);
+      Linking.openURL(
+        `https://www.google.com/maps/dir/?api=1&destination=${temple.latitude},${temple.longitude}`
+      );
+    }
+  };
+
+  const handlePlayAarti = () => {
+    if (navigation && temple.audioTrackId) {
+      navigation.navigate('AudioPlayer', { trackId: temple.audioTrackId });
     }
   };
 
@@ -134,10 +151,10 @@ export default function TempleDetailScreen({ navigation, route }) {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.smallIconBtn, { backgroundColor: isDark ? colors.surface : '#FFFFFF' }]}
-            onPress={() => {}}
+            onPress={handleShare}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <AppText variant="caption">🔔</AppText>
+            <AppText variant="caption">📤</AppText>
           </TouchableOpacity>
         </View>
 
@@ -151,23 +168,26 @@ export default function TempleDetailScreen({ navigation, route }) {
 
           <View style={styles.heroScrim} />
 
-          {/* Top Badges */}
+          {/* Top Badges with Real-time IST Status */}
           <View style={styles.heroTopBadges}>
-            <View style={styles.patBadge}>
+            <View
+              style={[
+                styles.patBadge,
+                {
+                  backgroundColor: status.isOpen
+                    ? 'rgba(6, 78, 59, 0.92)'
+                    : 'rgba(127, 29, 29, 0.92)',
+                },
+              ]}
+            >
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: status.isOpen ? '#22C55E' : '#DC2626' },
+                  { backgroundColor: status.isOpen ? '#34D399' : '#F87171' },
                 ]}
               />
               <AppText variant="small" weight="700" color="#FFFFFF">
-                {status.isOpen
-                  ? isHindi
-                    ? 'पट खुला है • 12:30 PM तक'
-                    : 'PAT OPEN • CLOSING 12:30 PM'
-                  : isHindi
-                    ? 'पट बंद • 04:30 PM पर खुलेंगे'
-                    : 'PAT CLOSED • OPENS 04:30 PM'}
+                {isHindi ? status.badgeHi : status.badgeEn}
               </AppText>
             </View>
 
@@ -182,7 +202,7 @@ export default function TempleDetailScreen({ navigation, route }) {
           <View style={styles.heroBottomText}>
             <View style={styles.locationPill}>
               <AppText variant="small" weight="600" color="#FFFFFF">
-                📍 {temple.location || `${temple.city} • 1.4 km from Station`}
+                📍 {temple.location || `${temple.city} धाम`}
               </AppText>
             </View>
 
@@ -190,12 +210,12 @@ export default function TempleDetailScreen({ navigation, route }) {
               {isHindi ? temple.nameHindi : temple.name}
             </AppText>
             <AppText variant="caption" color="#FDE68A" style={styles.heroSub}>
-              {temple.shortDescriptionEn || temple.shortDescription}
+              {temple.taglineHindi || temple.tagline || temple.shortDescription}
             </AppText>
           </View>
         </View>
 
-        {/* 3. Current Awastha Alert Ribbon */}
+        {/* 3. Real-Time Awastha Alert Ribbon */}
         <View
           style={[
             styles.awasthaRibbon,
@@ -207,24 +227,78 @@ export default function TempleDetailScreen({ navigation, route }) {
         >
           <View style={styles.awasthaLeft}>
             <AppText variant="caption">🔔</AppText>
-            <View>
+            <View style={{ flex: 1 }}>
               <AppText variant="small" weight="700" color={colors.primary}>
-                {isHindi ? 'वर्तमान अवस्था: राजभोग दर्शन / भोग' : 'CURRENT AWASTHA: Rajbhog Darshan / Bhog'}
+                {isHindi ? status.subtextHi : status.subtextEn}
               </AppText>
               <AppText variant="small" color={colors.textSecondary}>
-                {isHindi ? 'पट बंद होने में १ घंटा २० मिनट शेष' : 'Next Pat closure in 1h 20m'}
+                {isHindi ? 'दैनिक सेवायत एवं ट्रस्ट परंपरा अनुसार' : 'Official Temple Tradition'}
               </AppText>
             </View>
           </View>
 
           <View style={[styles.timePill, { backgroundColor: colors.primary }]}>
             <AppText variant="small" weight="700" color="#FFFFFF">
-              {isHindi ? '१ घं. २० मि.' : 'IN 1h 20m'}
+              {status.isOpen ? (isHindi ? 'दर्शन खुले' : 'OPEN') : (isHindi ? 'पट बंद' : 'CLOSED')}
             </AppText>
           </View>
         </View>
 
-        {/* 4. Sacred Highlights 2x2 Grid */}
+        {/* 4. Contextual Devotional Audio Card (OSADHO Inspired) */}
+        {Boolean(temple.audioTrackId) && (
+          <View
+            style={[
+              styles.audioCard,
+              {
+                backgroundColor: isDark ? colors.cardAlt : '#FFF9ED',
+                borderColor: isDark ? colors.border : '#FDE68A',
+              },
+            ]}
+          >
+            <View style={styles.audioCardHeader}>
+              <AppText variant="small" weight="700" color={colors.primary}>
+                🪔 {isHindi ? 'मंदिर पावन आरती श्रवण' : 'Sacred Aarti Audio'}
+              </AppText>
+              <AppText variant="small" color={colors.muted}>
+                {isHindi ? 'पूज्य रसिक संतों के पावन स्वर में' : 'Traditional Braj Audio'}
+              </AppText>
+            </View>
+            <View style={styles.audioRow}>
+              <View style={[styles.audioPlayIconWrap, { backgroundColor: colors.primary }]}>
+                <AppText variant="h3" color="#FFFFFF">▶️</AppText>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <AppText variant="caption" weight="700" color={colors.navy}>
+                  {temple.audioTrackId === 'banke_bihari_aarti'
+                    ? isHindi
+                      ? 'श्री बांके बिहारी जी की आरती'
+                      : 'Shri Banke Bihari Aarti'
+                    : temple.audioTrackId === 'radhe_radhe_rasbarsane'
+                    ? isHindi
+                      ? 'राधे राधे बरसाने वाली राधे'
+                      : 'Radhe Radhe Barsane Wali'
+                    : isHindi
+                    ? 'श्री यमुनाष्टकम् स्तोत्रम्'
+                    : 'Shri Yamunashtakam Stotram'}
+                </AppText>
+                <AppText variant="small" color={colors.textSecondary}>
+                  {isHindi ? 'पूज्य संतों के सानिध्य में दैनिक मंगल गान' : 'Daily Devotional Chants'}
+                </AppText>
+              </View>
+              <TouchableOpacity
+                style={[styles.listenBtn, { backgroundColor: colors.primary }]}
+                onPress={handlePlayAarti}
+                activeOpacity={0.8}
+              >
+                <AppText variant="small" weight="700" color="#FFFFFF">
+                  {isHindi ? 'सुनें 🔊' : 'Listen'}
+                </AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* 5. Sacred Highlights 2x2 Grid */}
         <View style={styles.sectionWrap}>
           <AppText variant="h3" weight="700" color={colors.navy} style={styles.sectionHeading}>
             {isHindi ? 'पावन देवालय वैशिष्ट्य' : 'Sacred Highlights'}
@@ -232,39 +306,47 @@ export default function TempleDetailScreen({ navigation, route }) {
           <SacredHighlightsGrid temple={temple} />
         </View>
 
-        {/* 5. Daily Aarti Schedule Table */}
+        {/* 6. Daily Aarti Schedule Table (with Summer/Winter toggle & Trust seal) */}
         <AartiScheduleTable temple={temple} />
 
-        {/* 6. Pilgrim Security & Electronics Advisory */}
-        <View
-          style={[
-            styles.advisoryCard,
-            {
-              backgroundColor: isDark ? colors.cardAlt : colors.peach,
-              borderColor: isDark ? colors.border : 'rgba(164, 55, 0, 0.18)',
-            },
-          ]}
-        >
-          <View style={styles.advisoryHeader}>
-            <AppText variant="caption">🛡️</AppText>
-            <AppText variant="caption" weight="700" color={colors.primary}>
-              {isHindi ? 'तीर्थयात्री सुरक्षा व सुविधा निर्देश' : 'Pilgrim Security Advisory'}
+        {/* 7. Devotee Pilgrimage Guidelines (2x2 Structured Grid) */}
+        {temple.guidelines && temple.guidelines.length > 0 && (
+          <View style={styles.sectionWrap}>
+            <AppText variant="h3" weight="700" color={colors.navy} style={styles.sectionHeading}>
+              {isHindi ? 'श्रद्धालु मर्यादा एवं सावधानियां' : 'Devotee Guidelines & Tips'}
             </AppText>
+            <View style={styles.guidelinesGrid}>
+              {temple.guidelines.map((guide, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.guidelineTile,
+                    {
+                      backgroundColor: isDark ? colors.cardAlt : colors.surface,
+                      borderColor: isDark ? colors.border : '#F3E8D0',
+                    },
+                  ]}
+                >
+                  <AppText variant="h3">{guide.icon}</AppText>
+                  <AppText variant="caption" weight="700" color={colors.primary}>
+                    {isHindi ? guide.labelHi : guide.labelEn || guide.labelHi}
+                  </AppText>
+                  <AppText variant="small" color={colors.textSecondary} numberOfLines={2}>
+                    {guide.descHi}
+                  </AppText>
+                </View>
+              ))}
+            </View>
           </View>
-          <AppText variant="caption" color={colors.textSecondary} style={styles.advisoryBody}>
-            {isHindi
-              ? 'मुख्य प्रवेश द्वार पर सघन सुरक्षा जांच की जाती है। मंदिर परिसर में स्मार्टफ़ोन, इलेक्ट्रॉनिक घड़ियां, चमड़े के बेल्ट व पर्स ले जाना पूर्णतः प्रतिबंधित है। प्रवेश से पूर्व काउंटर संख्या ३ पर निःशुल्क क्लॉक रूम में सामग्री जमा कराएं। वृद्धजनों व दिव्यांगों हेतु व्हीलचेयर उपलब्ध है।'
-              : 'Rigorous security screening operates at Gate No. 1. Devotees must deposit all smartphones, electronic smartwatches, and leather accessories at Counter #3 prior to entry. A dedicated ramp corridor is provided for senior citizens and differently-abled yatris.'}
-          </AppText>
-        </View>
+        )}
 
-        {/* 7. Sacred Mahatmya & History */}
+        {/* 8. Sacred Mahatmya & History */}
         <View
           style={[
             styles.historyCard,
             {
               backgroundColor: isDark ? colors.cardAlt : colors.surface,
-              borderColor: isDark ? colors.border : colors.border,
+              borderColor: isDark ? colors.border : '#F3E8D0',
             },
           ]}
         >
@@ -283,8 +365,8 @@ export default function TempleDetailScreen({ navigation, route }) {
           >
             {temple.history ||
               (isHindi
-                ? 'द्वापर युग में भाद्रपद कृष्ण अष्टमी की मध्यरात्रि को कंस के कारागार में भगवान श्री कृष्ण का चतुर्भुज रूप में प्राकट्य हुआ था। यह पवित्र स्थल समस्त विश्व के भक्तों का परम श्रद्धा केंद्र है।'
-                : 'Deep beneath the main sanctum sanctorum lies the venerable subterranean chamber revered as the original prison cell (Kara-griha) of King Kamsa. It was within these stone walls on the eighth day of the dark fortnight in Bhadrapada month that Supreme Lord manifested in divine four-armed Vishnu form.')}
+                ? 'यह पवित्र देवालय ब्रज की प्राचीन धार्मिक एवं रसिक परंपरा का पावन केंद्र है।'
+                : 'This sacred temple stands as a venerable sanctuary of divine devotion in the holy Braj Dham.')}
           </AppText>
 
           <TouchableOpacity
@@ -300,65 +382,46 @@ export default function TempleDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        {/* 8. Temple Location & Access Card */}
-        <View
-          style={[
-            styles.accessCard,
-            {
-              backgroundColor: isDark ? colors.cardAlt : colors.surface,
-              borderColor: isDark ? colors.border : colors.border,
-            },
-          ]}
-        >
-          <View style={styles.accessHeader}>
-            <View>
-              <AppText variant="h3" weight="700" color={colors.navy}>
-                {isHindi ? 'स्थान एवं सुगम आवागमन' : 'Temple Location & Access'}
-              </AppText>
-              <AppText variant="small" color={colors.muted}>
-                {temple.latitude && temple.longitude
-                  ? `Coordinates: ${temple.latitude}° N, ${temple.longitude}° E`
-                  : 'Mathura-Vrindavan Central Circuit'}
-              </AppText>
-            </View>
-            <AppText variant="caption">🧭</AppText>
+        {/* 9. Nearby Sacred Temples */}
+        {displayNearby.length > 0 && (
+          <View style={styles.sectionWrap}>
+            <AppText variant="h3" weight="700" color={colors.navy} style={styles.sectionHeading}>
+              {isHindi ? `${temple.city} के अन्य पावन मंदिर` : `Nearby Temples in ${temple.city}`}
+            </AppText>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.nearbyScroll}
+            >
+              {displayNearby.map((near) => (
+                <TouchableOpacity
+                  key={near.id}
+                  style={[
+                    styles.nearbyCard,
+                    {
+                      backgroundColor: isDark ? colors.cardAlt : colors.surface,
+                      borderColor: isDark ? colors.border : '#F3E8D0',
+                    },
+                  ]}
+                  onPress={() => navigation.push('TempleDetail', { id: near.id, temple: near })}
+                  activeOpacity={0.85}
+                >
+                  <Image source={getTempleImage(near)} style={styles.nearbyImg} resizeMode="cover" />
+                  <View style={styles.nearbyMeta}>
+                    <AppText variant="caption" weight="700" color={colors.navy} numberOfLines={1}>
+                      {isHindi ? near.nameHindi : near.name}
+                    </AppText>
+                    <AppText variant="small" color={colors.primary}>
+                      📍 {near.city} ➔
+                    </AppText>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
+        )}
 
-          {/* Travel Mode Estimates */}
-          <View style={styles.commuteRow}>
-            <View style={styles.commuteItem}>
-              <AppText variant="caption">🛺</AppText>
-              <AppText variant="small" weight="700" color={colors.navy}>
-                {isHindi ? 'ई-रिक्शा' : 'E-Rickshaw'}
-              </AppText>
-              <AppText variant="small" color={colors.primary}>
-                ₹20-30
-              </AppText>
-            </View>
-
-            <View style={styles.commuteItem}>
-              <AppText variant="caption">🚶</AppText>
-              <AppText variant="small" weight="700" color={colors.navy}>
-                {isHindi ? 'पैदल मार्ग' : 'On Foot'}
-              </AppText>
-              <AppText variant="small" color={colors.textSecondary}>
-                {isHindi ? '१५ मिनट' : '15 min'}
-              </AppText>
-            </View>
-
-            <View style={styles.commuteItem}>
-              <AppText variant="caption">🅿</AppText>
-              <AppText variant="small" weight="700" color={colors.navy}>
-                {isHindi ? 'पार्किंग' : 'Parking'}
-              </AppText>
-              <AppText variant="small" color={colors.textSecondary}>
-                Gate 3
-              </AppText>
-            </View>
-          </View>
-        </View>
-
-        {/* 9. Braj Parikrama Stamp Card */}
+        {/* 10. Braj Parikrama Stamp Card */}
         <View
           style={[
             styles.stampCard,
@@ -386,8 +449,12 @@ export default function TempleDetailScreen({ navigation, route }) {
               </AppText>
               <AppText variant="small" color={colors.muted}>
                 {stamped
-                  ? (isHindi ? 'आपकी दर्शन हाजिरी दर्ज हो चुकी है!' : 'Darshan verified in your pilgrim passport!')
-                  : (isHindi ? 'अपनी जन्मस्थान दर्शन हाजिरी दर्ज करें' : 'Record your holy darshan passport')}
+                  ? isHindi
+                    ? 'आपकी दर्शन हाजिरी दर्ज हो चुकी है!'
+                    : 'Darshan verified in your pilgrim passport!'
+                  : isHindi
+                  ? 'अपनी मंदिर दर्शन हाजिरी दर्ज करें'
+                  : 'Record your holy darshan passport'}
               </AppText>
             </View>
           </View>
@@ -407,7 +474,7 @@ export default function TempleDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        {/* 10. Sticky Bottom CTA */}
+        {/* 11. Sticky Bottom CTA */}
         <StitchButton
           title={isHindi ? '🗺️ संपूर्ण गूगल मैप्स मार्ग देखें' : '🗺️ Get Step-by-Step Directions'}
           variant="primary"
@@ -515,7 +582,6 @@ const styles = StyleSheet.create({
   patBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.68)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 9999,
@@ -576,28 +642,53 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 9999,
   },
-  sectionWrap: {
-    marginVertical: 6,
-  },
-  sectionHeading: {
-    fontSize: 18,
-    lineHeight: 24,
-    marginBottom: 4,
-  },
-  advisoryCard: {
-    borderRadius: 18,
+  audioCard: {
+    borderRadius: 16,
     borderWidth: 1,
     padding: 14,
     marginVertical: 8,
   },
-  advisoryHeader: {
+  audioCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  audioRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
   },
-  advisoryBody: {
-    lineHeight: 18,
+  audioPlayIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listenBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
+  },
+  sectionWrap: {
+    marginVertical: 8,
+  },
+  sectionHeading: {
+    fontSize: 18,
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  guidelinesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  guidelineTile: {
+    width: '48%',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
   },
   historyCard: {
     borderRadius: 18,
@@ -618,29 +709,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignSelf: 'flex-start',
   },
-  accessCard: {
-    borderRadius: 18,
+  nearbyScroll: {
+    gap: 12,
+    paddingVertical: 4,
+  },
+  nearbyCard: {
+    width: 140,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 14,
-    marginVertical: 8,
+    overflow: 'hidden',
   },
-  accessHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+  nearbyImg: {
+    width: '100%',
+    height: 90,
   },
-  commuteRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.08)',
-  },
-  commuteItem: {
-    alignItems: 'center',
-    flex: 1,
-    gap: 2,
+  nearbyMeta: {
+    padding: 8,
   },
   stampCard: {
     flexDirection: 'row',

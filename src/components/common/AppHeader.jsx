@@ -8,7 +8,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useDrawer } from '../../context/DrawerContext';
-import { spacing, touchTargets } from '../../theme';
+import { spacing } from '../../theme';
 import AppText from './AppText';
 
 export function AppHeader({
@@ -22,12 +22,7 @@ export function AppHeader({
   style,
 }) {
   const { colors } = useTheme();
-  let drawer;
-  try {
-    drawer = useDrawer();
-  } catch (e) {
-    drawer = null;
-  }
+  const drawer = useDrawer();
 
   const shouldShowMenu = showMenu || (!showBack && !leftAction);
 
