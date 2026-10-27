@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AUTH_STORAGE_KEY = '@braj_auth_session_v1';
+export const ACCOUNTS_UNAVAILABLE = 'accounts-unavailable';
 
 const DEFAULT_GUEST_USER = {
   id: 'guest_user',
@@ -28,13 +29,12 @@ export function AuthProvider({ children }) {
         const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
         if (isMounted && stored) {
           const parsed = JSON.parse(stored);
-          if (parsed && parsed.email && !parsed.isGuest) {
-            setUser(parsed);
-            setIsAuthenticated(true);
-          } else {
-            setUser(DEFAULT_GUEST_USER);
-            setIsAuthenticated(false);
+          if (parsed && !parsed.isGuest) {
+            // Any stored non-guest session was created by the old simulated login; drop it.
+            await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
           }
+          setUser(DEFAULT_GUEST_USER);
+          setIsAuthenticated(false);
         }
       } catch (err) {
         console.warn('Failed to load auth session:', err);
@@ -48,54 +48,14 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    // Validate and simulate authentication
-    const trimmedEmail = email ? email.trim() : '';
-    const namePart = trimmedEmail.split('@')[0] || 'श्री कृष्ण भक्त';
-    const capitalized = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-
-    const loggedInUser = {
-      id: `devotee_${Date.now()}`,
-      name: capitalized,
-      nameEn: capitalized,
-      email: trimmedEmail,
-      isGuest: false,
-      memberSince: new Date().getFullYear().toString(),
-      avatar: '🦚',
-    };
-
-    setUser(loggedInUser);
-    setIsAuthenticated(true);
-    try {
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedInUser));
-    } catch (e) {
-      console.warn('Error persisting session:', e);
-    }
-    return { success: true, user: loggedInUser };
+  // Real accounts are not available yet. Earlier builds accepted any email/password
+  // and created a local fake account; that is no longer done.
+  const login = useCallback(async () => {
+    throw new Error(ACCOUNTS_UNAVAILABLE);
   }, []);
 
-  const register = useCallback(async (name, email, password) => {
-    const trimmedEmail = email ? email.trim() : '';
-    const trimmedName = name ? name.trim() : 'श्री कृष्ण भक्त';
-
-    const newUser = {
-      id: `devotee_${Date.now()}`,
-      name: trimmedName,
-      nameEn: trimmedName,
-      email: trimmedEmail,
-      isGuest: false,
-      memberSince: new Date().getFullYear().toString(),
-      avatar: '🦚',
-    };
-
-    setUser(newUser);
-    setIsAuthenticated(true);
-    try {
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
-    } catch (e) {
-      console.warn('Error persisting session:', e);
-    }
-    return { success: true, user: newUser };
+  const register = useCallback(async () => {
+    throw new Error(ACCOUNTS_UNAVAILABLE);
   }, []);
 
   const loginAsGuest = useCallback(async () => {

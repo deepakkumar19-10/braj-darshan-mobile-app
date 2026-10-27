@@ -59,7 +59,7 @@ export default function RegisterScreen({ navigation }) {
         navigation.navigate(ROUTES.DRAWER_HOME);
       }
     } catch (e) {
-      Alert.alert(isHindi ? 'त्रुटि' : 'Error', isHindi ? 'खाता बनाने में विफल।' : 'Registration failed.');
+      Alert.alert(isHindi ? 'सूचना' : 'Notice', isHindi ? 'ऐप में खाता (लॉगिन) सुविधा अभी उपलब्ध नहीं है। आप अतिथि के रूप में ऐप पूरी तरह उपयोग कर सकते हैं।' : 'Accounts are not available in the app yet. You can use the full app as a guest.');
     } finally {
       setLoading(false);
     }

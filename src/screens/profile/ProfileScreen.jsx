@@ -60,11 +60,11 @@ export default function ProfileScreen({ navigation }) {
 
   const handleDownloadOfflinePack = () => {
     Alert.alert(
-      isHindi ? 'ऑफलाइन दर्शन पैक डाउनलोड' : 'Download Offline Darshan Pack',
+      isHindi ? 'ऑफलाइन उपयोग' : 'Offline use',
       isHindi
-        ? '58.4 MB का सम्पूर्ण ब्रज ऑफलाइन डेटा (84 कोस मैप्स, आरती समय सारणी व आपातकालीन हेल्पलाइन) डाउनलोड किया जा रहा है।'
-        : 'Downloading 58.4 MB complete Braj offline pack including 84-kos GPS maps, certified aarti schedules & emergency directory.',
-      [{ text: isHindi ? 'उत्तम' : 'Download', style: 'default' }]
+        ? 'मंदिर, यात्रा, पंचांग और त्योहारों की जानकारी पहले से ऐप में है और बिना इंटरनेट के भी चलती है। नक्शे (Google Maps) और ऑडियो के लिए इंटरनेट चाहिए। अलग से कुछ डाउनलोड करने की ज़रूरत नहीं है।'
+        : 'Temple, yatra, Panchang and festival information is already inside the app and works without internet. Maps (Google Maps) and audio need internet. Nothing extra needs to be downloaded.',
+      [{ text: 'OK', style: 'default' }]
     );
   };
 
@@ -455,13 +455,13 @@ export default function ProfileScreen({ navigation }) {
 
           <AppText variant="caption" color={colors.textSecondary} style={{ marginBottom: 10, lineHeight: 18 }}>
             {isHindi
-              ? '84 कोस ब्रज के ऑफलाइन जीपीएस नक्शे, सत्यापित आरती समय सारणी एवं आपातकालीन तीर्थ हेल्पलाइन डायरेक्टरी।'
-              : 'Offline GPS maps of 84-kos Braj, verified aarti timetables, and emergency pilgrim helpline directory.'}
+              ? 'मंदिर, यात्रा, पंचांग और त्योहारों की जानकारी पहले से ऐप में है और बिना इंटरनेट के चलती है।'
+              : 'Temple, yatra, Panchang and festival information is already in the app and works without internet.'}
           </AppText>
 
           <View style={styles.packSizeRow}>
             <AppText variant="micro" weight="700" color="#1D4ED8">
-              📦 58.4 MB • Updated Yesterday
+              📦 {isHindi ? 'ऐप में शामिल' : 'Included in the app'}
             </AppText>
           </View>
 

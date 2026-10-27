@@ -202,29 +202,6 @@ export default function StitchTempleCard({ temple, onPress }) {
           </View>
         </View>
 
-        {/* Live Crowd Meter (if featured or high crowd) */}
-        {temple.featured && (
-          <View
-            style={[
-              styles.crowdStrip,
-              {
-                backgroundColor: isDark ? '#451A1A' : '#FEE2E2',
-                borderColor: isDark ? colors.border : '#FECACA',
-              },
-            ]}
-          >
-            <AppText variant="caption">👥</AppText>
-            <View style={styles.crowdMeta}>
-              <AppText variant="small" weight="700" color="#DC2626">
-                {isHindi ? 'लाइव भीड़ मीटर: अधिक भीड़ (High Rush)' : 'Live Crowd Meter: High Rush'}
-              </AppText>
-              <AppText variant="small" color="#991B1B">
-                {isHindi ? 'गली में लगभग ४५ मिनट की दर्शन पंक्ति' : 'Approx 45m darshan line in gali'}
-              </AppText>
-            </View>
-          </View>
-        )}
-
         {/* Action Buttons Row */}
         <View style={styles.actionsRow}>
           <StitchButton
@@ -394,18 +371,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 9999,
     backgroundColor: 'rgba(245, 158, 11, 0.2)',
-  },
-  crowdStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  crowdMeta: {
-    flex: 1,
   },
   actionsRow: {
     flexDirection: 'row',

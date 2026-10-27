@@ -22,7 +22,7 @@ export default function ForgotPasswordScreen({ navigation }) {
   const { t, isHindi } = useLanguage();
 
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted] = useState(false);
 
   const handleReset = () => {
     if (!email.trim()) {
@@ -32,7 +32,10 @@ export default function ForgotPasswordScreen({ navigation }) {
       );
       return;
     }
-    setSubmitted(true);
+    Alert.alert(
+      isHindi ? 'सूचना' : 'Notice',
+      isHindi ? 'ऐप में खाता (लॉगिन) सुविधा अभी उपलब्ध नहीं है। आप अतिथि के रूप में ऐप पूरी तरह उपयोग कर सकते हैं।' : 'Accounts are not available in the app yet. You can use the full app as a guest.'
+    );
   };
 
   return (

@@ -60,9 +60,12 @@ export default function SettingsScreen({ navigation }) {
         {
           text: isHindi ? 'साफ़ करें' : 'Clear',
           onPress: async () => {
+            const result = await storageService.clearCache();
             Alert.alert(
-              isHindi ? 'सफल' : 'Success',
-              t('settings.cacheCleared', 'कैश डेटा सफलतापूर्वक साफ़ हुआ!')
+              result.success ? (isHindi ? 'सफल' : 'Success') : (isHindi ? 'त्रुटि' : 'Error'),
+              result.success
+                ? t('settings.cacheCleared', 'कैश डेटा सफलतापूर्वक साफ़ हुआ!')
+                : (isHindi ? 'कैश साफ़ नहीं हो सका। कृपया दोबारा कोशिश करें।' : 'Could not clear the cache. Please try again.')
             );
           },
         },

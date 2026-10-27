@@ -121,6 +121,21 @@ export const storageService = {
       return false;
     }
   },
+
+  // Removes cached/recent data only. Favourites, settings, language and theme are kept.
+  clearCache: async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const cacheKeys = keys.filter(
+        (key) => key.startsWith(STORAGE_KEYS.OFFLINE_CACHE) || key === STORAGE_KEYS.RECENT_TEMPLES
+      );
+      await AsyncStorage.removeMany(cacheKeys);
+      return { success: true, removed: cacheKeys.length };
+    } catch (error) {
+      console.warn('Error clearing cache:', error);
+      return { success: false, removed: 0 };
+    }
+  },
 };
 
 export default storageService;

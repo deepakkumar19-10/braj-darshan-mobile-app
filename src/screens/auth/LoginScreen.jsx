@@ -53,7 +53,7 @@ export default function LoginScreen({ navigation }) {
         navigation.navigate(ROUTES.DRAWER_HOME);
       }
     } catch (err) {
-      Alert.alert(isHindi ? 'त्रुटि' : 'Error', isHindi ? 'लॉग इन करने में विफल।' : 'Login failed.');
+      Alert.alert(isHindi ? 'सूचना' : 'Notice', isHindi ? 'ऐप में खाता (लॉगिन) सुविधा अभी उपलब्ध नहीं है। आप अतिथि के रूप में ऐप पूरी तरह उपयोग कर सकते हैं।' : 'Accounts are not available in the app yet. You can use the full app as a guest.');
     } finally {
       setLoading(false);
     }

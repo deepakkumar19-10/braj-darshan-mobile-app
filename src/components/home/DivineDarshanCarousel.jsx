@@ -33,7 +33,7 @@ export default function DivineDarshanCarousel() {
             {isHindi ? 'निकटवर्ती दिव्य दर्शन' : 'Divine Darshan Near You'}
           </AppText>
           <AppText variant="caption" color={colors.muted}>
-            {isHindi ? 'सटीक पट समय एवं लाइव भीड़ अलर्ट' : 'Live sanctum timings & crowd alerts'}
+            {isHindi ? 'दर्शन समय (त्योहारों पर बदल सकता है)' : 'Darshan timings (may change on festivals)'}
           </AppText>
         </View>
 

@@ -46,10 +46,6 @@ export default function HelpdeskScreen({ navigation }) {
     Linking.openURL(`tel:${phoneNumber}`);
   };
 
-  const handleOpenMaps = () => {
-    Linking.openURL('https://www.google.com/maps/search/?api=1&query=Krishna+Janmasthan+Gate+1+Mathura');
-  };
-
   const handleSubmitInquiry = () => {
     if (!pilgrimName.trim() || !mobileNumber.trim()) {
       Alert.alert(
@@ -60,11 +56,10 @@ export default function HelpdeskScreen({ navigation }) {
     }
 
     Alert.alert(
-      isHindi ? 'सहायता अनुरोध प्रेषित!' : 'Inquiry Submitted Successfully!',
+      isHindi ? 'अभी उपलब्ध नहीं' : 'Not available yet',
       isHindi
-        ? `श्री ${pilgrimName}, आपका सहायता अनुरोध मथुरा-वृन्दावन तीर्थ सेवा परिषद को प्रेषित कर दिया गया है। हमारे सेवादार 15 मिनट में आपसे संपर्क करेंगे।`
-        : `Devotee ${pilgrimName}, your seva request has been dispatched to Mathura-Vrindavan Tourist Seva Parishad. Average response time: 15 mins.`,
-      [{ text: isHindi ? 'स्वीकृत' : 'OK', onPress: () => setInquiryText('') }]
+        ? 'ऑनलाइन सहायता अनुरोध अभी शुरू नहीं हुआ है, इसलिए यह संदेश कहीं भेजा नहीं गया। आपात स्थिति में 112 या एंबुलेंस के लिए 108 पर कॉल करें।'
+        : 'Online help requests have not started yet, so this message was not sent anywhere. In an emergency call 112, or 108 for an ambulance.'
     );
   };
 
@@ -148,12 +143,12 @@ export default function HelpdeskScreen({ navigation }) {
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <AppText variant="body" weight="800" color={colors.navy}>
-                {isHindi ? '24x7 तीर्थ सेवा आपातकालीन हेल्पलाइन' : '24x7 Pilgrim Seva Emergency Helpline'}
+                {isHindi ? 'आपातकालीन हेल्पलाइन (राष्ट्रीय नंबर)' : 'Emergency helplines (national numbers)'}
               </AppText>
               <AppText variant="micro" color={colors.textSecondary} style={{ marginTop: 2 }}>
                 {isHindi
-                  ? 'बिछुड़े तीर्थयात्रियों, चिकित्सा सहायता, मंदिर पट समय एवं वरिष्ठ नागरिक सहयोग हेतु निःशुल्क मार्गदर्शन।'
-                  : 'Instant toll-free guidance for lost pilgrims, medical emergencies, sanctum timings, and senior citizen assistance.'}
+                  ? 'पुलिस, आग या किसी भी आपात स्थिति में 112, और एंबुलेंस के लिए 108 पर कॉल करें।'
+                  : 'Call 112 for police, fire or any emergency, and 108 for an ambulance.'}
               </AppText>
             </View>
           </View>
@@ -161,11 +156,11 @@ export default function HelpdeskScreen({ navigation }) {
           {/* Big Terracotta Call Button */}
           <TouchableOpacity
             style={[styles.callBtn, { backgroundColor: colors.primary }]}
-            onPress={() => handleCall('18001801947')}
+            onPress={() => handleCall('112')}
             activeOpacity={0.85}
           >
             <AppText variant="body" weight="800" color="#FFFFFF">
-              📞 {isHindi ? 'टोल-फ्री: 1800-180-1947 (कॉल करें)' : 'Toll-Free: 1800-180-1947 / 112 (Call Now)'}
+              📞 {isHindi ? 'आपातकाल: 112 (कॉल करें)' : 'Emergency: 112 (Call Now)'}
             </AppText>
           </TouchableOpacity>
 
@@ -185,96 +180,12 @@ export default function HelpdeskScreen({ navigation }) {
               onPress={() => handleCall('112')}
             >
               <AppText variant="micro" weight="700" color="#2563EB">
-                👮 {isHindi ? 'मथुरा पुलिस: 112' : 'Police: 112'}
-              </AppText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.contactPill, { backgroundColor: '#FEF3C7' }]}
-              onPress={() => handleCall('1363')}
-            >
-              <AppText variant="micro" weight="700" color="#B45309">
-                🛕 {isHindi ? 'पर्यटन: 1363' : 'Tourism: 1363'}
+                👮 {isHindi ? 'पुलिस: 112' : 'Police: 112'}
               </AppText>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Central Pilgrim Assistance Office Card */}
-        <View
-          style={[
-            styles.officeCard,
-            {
-              backgroundColor: isDark ? colors.card : '#FFFFFF',
-              borderColor: isDark ? colors.border : '#E5E7EB',
-            },
-          ]}
-        >
-          <View style={styles.officeHeader}>
-            <View>
-              <AppText variant="micro" weight="800" color={colors.primary}>
-                PHYSICAL SEVA KENDRA
-              </AppText>
-              <AppText variant="h2" color={colors.navy} style={{ marginTop: 2 }}>
-                {isHindi ? 'केंद्रीय तीर्थ यात्री सहायता केंद्र' : 'Central Pilgrim Assistance Office'}
-              </AppText>
-            </View>
-            <AppText variant="h2">🏛️</AppText>
-          </View>
-
-          <AppText variant="caption" color={colors.textSecondary} style={{ marginBottom: 12 }}>
-            📍 {isHindi
-              ? 'श्री कृष्ण जन्मस्थान मार्ग, निकट गेट नं. 1, मथुरा (उ.प्र.) 281001\n• गेट 1 से 200 मी. दूरी • 24 घंटे खुला रहता है'
-              : 'Shri Krishna Janmasthan Marg, Near Gate, Mathura (U.P.) 281001\n• 200m from Gate No. 1 • Open 24 Hours'}
-          </AppText>
-
-          {/* 4 Complementary On-ground Facilities */}
-          <View style={styles.facilitiesGrid}>
-            <View style={[styles.facilityTile, { backgroundColor: isDark ? colors.cardAlt : '#F8FAFC' }]}>
-              <AppText variant="caption" color={colors.navy}>
-                ♿ {isHindi ? 'निःशुल्क व्हीलचेयर सेवा' : 'Free Wheelchair Support'}
-              </AppText>
-            </View>
-            <View style={[styles.facilityTile, { backgroundColor: isDark ? colors.cardAlt : '#F8FAFC' }]}>
-              <AppText variant="caption" color={colors.navy}>
-                🧳 {isHindi ? 'सत्यापित सुरक्षित लॉकर' : 'Verified Safe Cloakroom'}
-              </AppText>
-            </View>
-            <View style={[styles.facilityTile, { backgroundColor: isDark ? colors.cardAlt : '#F8FAFC' }]}>
-              <AppText variant="caption" color={colors.navy}>
-                📜 {isHindi ? 'प्रमाणित तीर्थ पुरोहित' : 'Certified Purohit Guides'}
-              </AppText>
-            </View>
-            <View style={[styles.facilityTile, { backgroundColor: isDark ? colors.cardAlt : '#F8FAFC' }]}>
-              <AppText variant="caption" color={colors.navy}>
-                🏨 {isHindi ? 'मान्यता प्राप्त धर्मशालाएं' : 'Verified Dharmashalas'}
-              </AppText>
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.officeBtnsRow}>
-            <TouchableOpacity
-              style={[styles.officeWhiteBtn, { borderColor: colors.primary }]}
-              onPress={handleOpenMaps}
-              activeOpacity={0.85}
-            >
-              <AppText variant="caption" weight="800" color={colors.primary}>
-                🗺️ {isHindi ? 'गूगल मैप्स' : 'Google Maps'}
-              </AppText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.officePrimaryBtn, { backgroundColor: colors.primary }]}
-              onPress={handleOpenMaps}
-              activeOpacity={0.85}
-            >
-              <AppText variant="caption" weight="800" color="#FFFFFF">
-                🚗 {isHindi ? 'मार्ग देखें' : 'Directions'}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-        </View>
 
         {/* Direct Pilgrim Inquiry Form */}
         <View
@@ -416,14 +327,14 @@ export default function HelpdeskScreen({ navigation }) {
             activeOpacity={0.85}
           >
             <AppText variant="body" weight="800" color="#FFFFFF">
-              {isHindi ? 'अनुरोध भेजें (Submit Inquiry) →' : 'Submit Inquiry (तुरंत सहायता अनुरोध भेजें) →'}
+              {isHindi ? 'अनुरोध भेजें →' : 'Submit Inquiry →'}
             </AppText>
           </TouchableOpacity>
 
           <AppText variant="micro" color={colors.textSecondary} style={{ textAlign: 'center', marginTop: 10 }}>
             {isHindi
-              ? 'यह सेवा अनुरोध सीधे मथुरा-वृन्दावन तीर्थ सेवा परिषद द्वारा देखा जाता है। औसत प्रतीक्षा समय 15 मिनट।'
-              : 'This seva request is in direct coordination with Mathura-Vrindavan Tourist Seva Parishad. Average response time 15 mins.'}
+              ? 'ऑनलाइन सहायता अनुरोध अभी शुरू नहीं हुआ है। आपात स्थिति में ऊपर दिए नंबरों पर कॉल करें।'
+              : 'Online help requests have not started yet. In an emergency, call the numbers above.'}
           </AppText>
         </View>
 
