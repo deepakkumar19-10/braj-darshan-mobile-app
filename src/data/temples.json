@@ -94,7 +94,8 @@
         "timeWinter": "08:15 PM",
         "significanceHi": "रात्रि विश्राम से पूर्व ठाकुर जी की अंतिम दिव्य मंगल आरती।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   },
   {
     "id": 2,
@@ -192,7 +193,8 @@
         "timeWinter": "06:00 PM",
         "significanceHi": "भागवत भवन में दीप प्रज्वलन व सामूहिक संकीर्तन आरती।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   },
   {
     "id": 3,
@@ -385,7 +387,8 @@
         "timeWinter": "06:30 PM",
         "significanceHi": "संध्या दीपदान एवं लाड़ली जी का पावन गान।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   },
   {
     "id": 5,
@@ -395,7 +398,7 @@
     "cityHindi": "गोवर्धन",
     "deity": "Giriraj Maharaj (Govardhan Shila)",
     "deityHindi": "गिरिराज महाराज (गोवर्धन शिला)",
-    "image": "/images/temples/dwarkadhish.avif",
+    "image": "/images/temples/default-temple.svg",
     "latitude": 27.4998,
     "longitude": 77.4649,
     "featured": true,
@@ -484,7 +487,7 @@
     "cityHindi": "मथुरा",
     "deity": "Lord Krishna as Dwarkanath & Rukmini Devi",
     "deityHindi": "द्वारिकानाथ रूप में श्री कृष्ण एवं रुक्मिणी जी",
-    "image": "/images/temples/gokul.avif",
+    "image": "/images/temples/default-temple.svg",
     "latitude": 27.5029,
     "longitude": 77.6841,
     "featured": true,
@@ -589,7 +592,7 @@
     "cityHindi": "गोकुल",
     "deity": "Lord Krishna & Radha",
     "deityHindi": "बाल कृष्ण एवं श्री राधा",
-    "image": "/images/temples/raman-reti.png",
+    "image": "/images/temples/raman-reti.webp",
     "latitude": 27.4379,
     "longitude": 77.7214,
     "featured": false,
@@ -679,7 +682,7 @@
     "cityHindi": "बलदेव",
     "deity": "Lord Balarama (Dauji)",
     "deityHindi": "भगवान श्री बलराम (दाऊजी महाराज)",
-    "image": "/images/temples/dauji.png",
+    "image": "/images/temples/dauji.webp",
     "latitude": 27.4116,
     "longitude": 77.8188,
     "featured": false,
@@ -777,7 +780,7 @@
     "cityHindi": "मथुरा",
     "deity": "Chandrawal Maiya",
     "deityHindi": "सखी चंद्रावल मैया",
-    "image": "/images/temples/chandrawal-maiya.png",
+    "image": "/images/temples/chandrawal-maiya.webp",
     "latitude": 27.4912,
     "longitude": 77.6789,
     "featured": false,
