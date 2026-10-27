@@ -147,7 +147,7 @@ export default function PanchangScreen({ navigation }) {
       {/* 1. Universal Stitch Header */}
       <StitchHeader
         title={isHindi ? 'वैदिक पंचांग' : 'Vedic Panchang'}
-        subtitle={isHindi ? 'दैनिक तिथि व शुभ मुहूर्त' : 'Tithi & Auspicious Timings'}
+        subtitle={isHindi ? 'अनुमानित तिथि — व्रत/त्योहार स्थानीय पंचांग से पुष्टि करें' : 'Approximate — confirm vrat/festival dates locally'}
       />
 
       <ScrollView

@@ -491,10 +491,15 @@ export function calculateChoghadiya(date, sunriseIST, sunsetIST) {
 }
 
 /**
- * Calculates authentic Vedic Panchang details for any Date object
+ * Calculates APPROXIMATE Panchang details for a calendar date.
+ * Tithi and nakshatra use a mean lunar cycle, not true Sun/Moon positions,
+ * so results can be off by one; the UI must label them as approximate.
+ * Every date is evaluated at 06:00 local time (about sunrise) so the same
+ * date always gives the same answer, whatever time of day it is called.
  */
 export function calculatePanchang(date) {
   const d = new Date(date);
+  d.setHours(6, 0, 0, 0);
   const year = d.getFullYear();
   const month = d.getMonth() + 1; // 1-12
   const day = d.getDate();
