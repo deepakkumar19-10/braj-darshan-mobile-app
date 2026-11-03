@@ -20,7 +20,7 @@
     "timings": {
       "summer": "प्रातः 07:00 से दोपहर 12:30, सायं 04:15 से रात्रि 09:30",
       "winter": "प्रातः 08:00 से दोपहर 01:30, सायं 04:00 से रात्रि 09:00",
-      "aarti": "श्रृंगार आरती दर्शन खुलने पर (गर्मी में 07:00, सर्दी में 08:00)। राजभोग व शयन आरती का समय पर्व व ऋतु के अनुसार बदलता है — मंदिर से पुष्टि करें। मंगला आरती केवल जन्माष्टमी पर होती है।"
+      "aarti": "श्रृंगार आरती दर्शन खुलने पर (गर्मी में 07:00, सर्दी में 08:00)। राजभोग व शयन आरती का समय पर्व व ऋतु के अनुसार बदलता है। मंगला आरती केवल जन्माष्टमी पर होती है। ऊपर का समय हाई पावर्ड कमेटी के निर्णय (सितंबर 2025) पर आधारित है; मंदिर की वेबसाइट पर पुराना समय (07:45 से) दिखता है — जाने से पहले मंदिर से पुष्टि करें।"
     },
     "location": "गोदौलिया रोड, बांके बिहारी कॉलोनी, वृंदावन",
     "festivals": [
@@ -122,8 +122,7 @@
     "photographyAllowed": false,
     "audioTrackId": "gita_ch2_karmayoga",
     "nearbyTempleIds": [
-      6,
-      9
+      6
     ],
     "lastVerified": "अक्टूबर 2026",
     "sourceAttribution": "श्री कृष्ण जन्मस्थान सेवा संस्थान, मथुरा",
@@ -504,8 +503,7 @@
     "photographyAllowed": false,
     "audioTrackId": "yamunashtakam",
     "nearbyTempleIds": [
-      2,
-      9
+      2
     ],
     "lastVerified": "अक्टूबर 2026",
     "sourceAttribution": "पुष्टिमार्गीय वल्लभ कुल संप्रदाय ट्रस्ट",
@@ -757,97 +755,6 @@
         "timeSummer": "07:30 PM",
         "timeWinter": "07:00 PM",
         "significanceHi": "सायंकालीन महाआरती।"
-      }
-    ],
-    "imageIsRepresentative": true
-  },
-  {
-    "id": 9,
-    "name": "Chandrawal Maiya Temple",
-    "nameHindi": "चंद्रावल मैया मंदिर",
-    "city": "Mathura",
-    "cityHindi": "मथुरा",
-    "deity": "Chandrawal Maiya",
-    "deityHindi": "सखी चंद्रावल मैया",
-    "image": "/images/temples/chandrawal-maiya.webp",
-    "latitude": 27.4912,
-    "longitude": 77.6789,
-    "featured": false,
-    "tagline": "A Sacred Shrine of Braj's Folk Devotion",
-    "taglineHindi": "ब्रज की लोक आस्था एवं सखी भाव का श्रद्धा केंद्र",
-    "shortDescription": "चंद्रावल मैया मंदिर ब्रज क्षेत्र की लोक आस्था और धार्मिक परंपराओं से जुड़ा एक श्रद्धापूर्ण देवी स्थल है।",
-    "shortDescriptionEn": "A revered shrine commemorating the devotion of Sakhi Chandrawali in Braj folklore.",
-    "history": "चंद्रावल मैया की पूजा ब्रज की स्थानीय धार्मिक एवं लोक परंपराओं में विशेष महत्व रखती है। श्रद्धालु यहाँ देवी के दर्शन, पूजा और प्रार्थना के लिए आते हैं।",
-    "architecture": "मंदिर की पारंपरिक धार्मिक संरचना, देवी की प्रतिमा और स्थानीय ब्रज शैली का वातावरण इसे श्रद्धालुओं के लिए विशेष बनाता है।",
-    "timings": {
-      "summer": "प्रातः 06:00 से 12:00, सायं 04:00 से 08:00",
-      "winter": "प्रातः 06:30 से 12:00, सायं 03:30 से 07:30",
-      "aarti": "प्रातः आरती एवं सायंकालीन आरती"
-    },
-    "location": "मथुरा क्षेत्र, उत्तर प्रदेश",
-    "festivals": [
-      "नवरात्रि",
-      "चैत्र नवरात्रि",
-      "शारदीय नवरात्रि",
-      "स्थानीय धार्मिक उत्सव"
-    ],
-    "darshanTips": "नवरात्रि एवं विशेष धार्मिक अवसरों पर यहाँ श्रद्धालुओं की संख्या अधिक हो सकती है। शांत दर्शन के लिए सुबह का समय सुविधाजनक रहेगा।",
-    "nearestStation": "मथुरा जंक्शन (5 किमी)",
-    "nearestStationEn": "Mathura Junction (5 km)",
-    "recommendedDuration": "45 मिनट - 1 घंटा",
-    "recommendedDurationEn": "45 Mins - 1 Hour",
-    "dressCode": "शालीन वस्त्र",
-    "dressCodeEn": "Modest clothes",
-    "photographyAllowed": true,
-    "audioTrackId": "yamunashtakam",
-    "nearbyTempleIds": [
-      6,
-      2
-    ],
-    "lastVerified": "अक्टूबर 2026",
-    "sourceAttribution": "चंद्रावल मैया मंदिर ट्रस्ट, मथुरा",
-    "guidelines": [
-      {
-        "icon": "👗",
-        "labelHi": "शालीन परिधान",
-        "labelEn": "Modest Clothing",
-        "descHi": "पवित्र स्थल की मर्यादा अनुसार वस्त्र पहनें।"
-      },
-      {
-        "icon": "🌸",
-        "labelHi": "पुष्प अर्पण",
-        "labelEn": "Flower Offering",
-        "descHi": "सखी भाव से देवी को ताजे पुष्प अर्पित करें।"
-      },
-      {
-        "icon": "👟",
-        "labelHi": "जूता-घर",
-        "labelEn": "Shoe Rack",
-        "descHi": "प्रवेश द्वार पर जूते उतारें।"
-      },
-      {
-        "icon": "🕊️",
-        "labelHi": "शांत वातावरण",
-        "labelEn": "Peaceful Ambience",
-        "descHi": "शांति व एकाग्रता से ध्यान लगाएं।"
-      }
-    ],
-    "aartiSchedule": [
-      {
-        "id": "pratah",
-        "nameHi": "प्रातः आरती",
-        "nameEn": "Morning Aarti",
-        "timeSummer": "06:30 AM",
-        "timeWinter": "07:00 AM",
-        "significanceHi": "प्रातःकालीन देवी वंदना।"
-      },
-      {
-        "id": "sandhya",
-        "nameHi": "संध्या आरती",
-        "nameEn": "Evening Aarti",
-        "timeSummer": "07:00 PM",
-        "timeWinter": "06:30 PM",
-        "significanceHi": "दीप प्रज्वलन व सांध्य आरती।"
       }
     ],
     "imageIsRepresentative": true

@@ -176,28 +176,5 @@
     "visitDuration": "2–4 घंटे",
     "experience": "बलराम जी के दर्शन, पूजा और ब्रज संस्कृति",
     "imageIsRepresentative": true
-  },
-  {
-    "id": 9,
-    "name": "Chandrawal Maiya",
-    "nameHindi": "चंद्रावल मैया",
-    "city": "Mathura",
-    "category": "Devi Temple",
-    "image": "/images/places/chandrawal-maiya.webp",
-    "latitude": 27.4912,
-    "longitude": 77.6789,
-    "shortDescription": "चंद्रावल मैया ब्रज क्षेत्र की लोक आस्था और धार्मिक परंपराओं से जुड़ा एक श्रद्धापूर्ण स्थल है।",
-    "shortDescriptionEn": "Sacred place commemorating Devi Chandrawali, radiating serene village devotion.",
-    "description": "भक्त यहाँ देवी के दर्शन, पूजा और प्रार्थना के लिए आते हैं तथा आध्यात्मिक शांति का अनुभव करते हैं।",
-    "highlights": [
-      "चंद्रावल मैया के दर्शन",
-      "पूजा और प्रार्थना",
-      "ब्रज की लोक आस्था",
-      "शांत एवं आध्यात्मिक वातावरण"
-    ],
-    "bestTime": "नवरात्रि एवं धार्मिक पर्व",
-    "visitDuration": "1–3 घंटे",
-    "experience": "देवी दर्शन, पूजा और लोक संस्कृति",
-    "imageIsRepresentative": true
   }
 ]
