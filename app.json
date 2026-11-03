@@ -1,4 +1,8 @@
 {
   "name": "BrajDarshan",
-  "displayName": "BrajDarshan"
+  "displayName": "BrajDarshan",
+  "expo": {
+    "name": "BrajDarshan",
+    "slug": "brajdarshan"
+  }
 }

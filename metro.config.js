@@ -1,20 +1,13 @@
-const path = require('path');
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+// Metro configuration (Master Plan V3, 4.3): Expo's defaults, since the app now builds with the
+// Expo CLI (`npx expo start`, `npx expo run:android`, and `export:embed` for release builds).
+// Kept from the earlier React Native config: only this folder is watched, and .avif images
+// are bundled.
+// https://docs.expo.dev/guides/customizing-metro/
+const { getDefaultConfig } = require('expo/metro-config');
 
-/**
- * Metro configuration
- * https://reactnative.dev/docs/metro
- *
- * @type {import('@react-native/metro-config').MetroConfig}
- */
-const realRoot = 'C:\\Users\\sunit\\OneDrive\\Desktop\\Projects\\Braj\\Braj-darshan-app';
-const defaultConfig = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
 
-const config = {
-  watchFolders: [__dirname, realRoot],
-  resolver: {
-    assetExts: [...defaultConfig.resolver.assetExts, 'avif'],
-  },
-};
+config.watchFolders = [__dirname];
+config.resolver.assetExts = [...config.resolver.assetExts, 'avif'];
 
-module.exports = mergeConfig(defaultConfig, config);
+module.exports = config;

@@ -127,7 +127,7 @@ export const storageService = {
       const cacheKeys = keys.filter(
         (key) => key.startsWith(STORAGE_KEYS.OFFLINE_CACHE) || key === STORAGE_KEYS.RECENT_TEMPLES
       );
-      await AsyncStorage.removeMany(cacheKeys);
+      await AsyncStorage.multiRemove(cacheKeys);
       return { success: true, removed: cacheKeys.length };
     } catch (error) {
       console.warn('Error clearing cache:', error);

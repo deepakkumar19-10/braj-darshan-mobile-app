@@ -4,7 +4,7 @@ jest.mock('@react-native-community/netinfo', () =>
 );
 
 jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest'),
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
 // No real network in tests: the app's content refresh (src/services/contentService.js)

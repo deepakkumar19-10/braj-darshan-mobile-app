@@ -50,6 +50,12 @@ react {
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
 
+    /* Expo (Master Plan V3, 4.3) */
+    //   Release bundles are made by the Expo CLI, so the Expo Metro config in metro.config.js is used
+    //   the same way as by `npx expo start` (the React Native CLI `bundle` command cannot serialize it).
+    cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
+    bundleCommand = "export:embed"
+
     /* Autolinking */
     autolinkLibrariesWithApp()
 }
