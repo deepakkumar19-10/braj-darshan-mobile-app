@@ -22,6 +22,8 @@ export const ROUTES = {
   WISHLIST: 'Favorites', // Alias for favorites/wishlist
   PROFILE: 'Profile',
   SETTINGS: 'Settings',
+  MAP: 'Map',
+  MORE: 'More',
 
   // Detail & Utility Screens
   TEMPLE_DETAIL: 'TempleDetail',
@@ -29,6 +31,7 @@ export const ROUTES = {
   PARIKRAMA_DETAIL: 'ParikramaDetail',
   SMART_PLANNER: 'SmartPlanner',
   PLACES: 'Places',
+  PLACE_DETAIL: 'PlaceDetail',
   AUDIO_PLAYER: 'AudioPlayer',
   HELPDESK: 'Helpdesk',
 
@@ -37,7 +40,7 @@ export const ROUTES = {
   TAB_TEMPLES: 'Temples',
   TAB_PANCHANG: 'Panchang',
   TAB_YATRA: 'Yatra',
-  TAB_MORE: 'Settings',
+  TAB_MORE: 'More',
   MAIN_TABS: 'Home',
 };
 

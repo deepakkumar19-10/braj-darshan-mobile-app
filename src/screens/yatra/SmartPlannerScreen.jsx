@@ -1,838 +1,479 @@
-import React, { useState } from 'react';
+/**
+ * Braj Darshan - Make my own plan
+ * A short form (days, who is coming, pace, places, optional dates) that builds a
+ * suggested plan from the app's own day plans in src/data/yatra.json and links to
+ * each day. Nothing is booked or synced; the screen says the plan is a suggestion.
+ *
+ * Optional params (from the Yatra plans screen): { days, elders, children, experiences, autoCreate }.
+ */
+
+import React, { useMemo, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
   ScrollView,
-  TouchableOpacity,
-  Image,
-  Alert,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
   Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { AppText } from '../../components/common';
-import { placeAssets } from '../../utils/imageAssets';
+import { AppText } from '../../components/common/AppText';
+import { Icon } from '../../components/common/Icon';
+import {
+  Button,
+  Card,
+  Chip,
+  InfoNote,
+  LanguageToggle,
+  ListRow,
+  SectionHeader,
+  TopBar,
+  GUTTER,
+  useBottomInset,
+} from '../../components/ui';
 import { ROUTES } from '../../navigation/routes';
+import yatraData from '../../data/yatra.json';
 
-export default function SmartPlannerScreen({ navigation }) {
+const DAY_OPTIONS = [1, 2, 3, 4, 5, 6];
+
+const PACES = [
+  {
+    id: 'relaxed',
+    icon: 'flower',
+    hi: 'आरामदायक',
+    en: 'Relaxed',
+    descHi: 'दिन में 2–3 मुख्य स्थान, कम पैदल चलना, दोपहर में लंबा विश्राम।',
+    descEn: '2–3 main places a day, little walking, a long afternoon rest.',
+  },
+  {
+    id: 'balanced',
+    icon: 'sun',
+    hi: 'संतुलित',
+    en: 'Balanced',
+    descHi: 'मुख्य दर्शन और आरती; दोपहर में मंदिर बंद रहने पर विश्राम।',
+    descEn: 'Main darshans and aartis, with a rest while temples close in the afternoon.',
+  },
+  {
+    id: 'fast_track',
+    icon: 'parikrama',
+    hi: 'तेज़, परिक्रमा सहित',
+    en: 'Faster, with parikrama',
+    descHi: 'दिन में अधिक स्थान; गोवर्धन परिक्रमा पैदल (लगभग 21 किमी)।',
+    descEn: 'More places a day; the Govardhan parikrama on foot (about 21 km).',
+  },
+];
+
+// Each experience belongs to one day plan in yatra.json.
+const EXPERIENCES = [
+  { id: 'banke_bihari', icon: 'temple', day: 3, hi: 'श्री बांके बिहारी जी', en: 'Shri Banke Bihari Ji' },
+  { id: 'janmabhoomi', icon: 'temple', day: 1, hi: 'श्री कृष्ण जन्मभूमि', en: 'Krishna Janmabhoomi' },
+  { id: 'keshi_ghat', icon: 'ghat', day: 3, hi: 'केशी घाट, यमुना दर्शन', en: 'Keshi Ghat, Yamuna' },
+  { id: 'govardhan', icon: 'parikrama', day: 4, hi: 'गोवर्धन परिक्रमा', en: 'Govardhan parikrama' },
+  { id: 'radha_kund', icon: 'water', day: 4, hi: 'राधा कुंड', en: 'Radha Kund' },
+  { id: 'barsana', icon: 'flower', day: 5, hi: 'बरसाना, श्री लाड़ली जी', en: 'Barsana, Shri Radha Rani' },
+  { id: 'nandgaon', icon: 'temple', day: 5, hi: 'नंदगांव', en: 'Nandgaon' },
+  { id: 'gokul', icon: 'temple', day: 2, hi: 'गोकुल व रमण रेती', en: 'Gokul & Raman Reti' },
+  { id: 'dauji', icon: 'temple', day: 6, hi: 'दाऊजी (बलदेव)', en: 'Dauji (Baldev)' },
+  { id: 'food_tour', icon: 'food', day: 1, hi: 'ब्रज के पेड़े व प्रसाद', en: 'Braj peda & prasad' },
+];
+
+const DEFAULT_EXPERIENCES = ['banke_bihari', 'janmabhoomi', 'keshi_ghat', 'govardhan'];
+// Days used to fill a plan when fewer places are picked than days, most visited first.
+const FILL_ORDER = [3, 1, 4, 5, 2, 6];
+
+/**
+ * Picks `days` day plans that cover the most chosen experiences, fills any spare
+ * days in FILL_ORDER, and returns them in travel order (the order of yatra.json).
+ */
+function buildPlan(days, experienceIds) {
+  const counts = {};
+  experienceIds.forEach((id) => {
+    const exp = EXPERIENCES.find((e) => e.id === id);
+    if (exp) counts[exp.day] = (counts[exp.day] || 0) + 1;
+  });
+  const wanted = Object.keys(counts)
+    .map(Number)
+    .sort((a, b) => counts[b] - counts[a] || FILL_ORDER.indexOf(a) - FILL_ORDER.indexOf(b));
+  const chosen = wanted.slice(0, days);
+  const left = wanted.slice(days);
+  FILL_ORDER.forEach((d) => {
+    if (chosen.length < days && !chosen.includes(d)) chosen.push(d);
+  });
+  chosen.sort((a, b) => a - b);
+  const missed = EXPERIENCES.filter((e) => experienceIds.includes(e.id) && left.includes(e.day));
+  const planDays = chosen.map((id) => yatraData.find((d) => d.id === id)).filter(Boolean);
+  return { planDays, missed };
+}
+
+function PaceCard({ pace, selected, onPress, isHindi, colors }) {
+  return (
+    <Card
+      onPress={onPress}
+      accessibilityLabel={isHindi ? pace.hi : pace.en}
+      style={selected ? { backgroundColor: colors.primaryLight, borderColor: colors.primary } : null}
+    >
+      <View style={styles.paceRow}>
+        <View style={[styles.paceIcon, { backgroundColor: selected ? colors.surface : colors.primaryLight }]}>
+          <Icon name={pace.icon} size={22} color={colors.primary} />
+        </View>
+        <View style={styles.flex}>
+          <AppText variant="bodyBold" color={colors.navy}>
+            {isHindi ? pace.hi : pace.en}
+          </AppText>
+          <AppText variant="caption" color={colors.textSecondary}>
+            {isHindi ? pace.descHi : pace.descEn}
+          </AppText>
+        </View>
+        <Icon
+          name={selected ? 'open' : 'chevronRight'}
+          size={22}
+          color={selected ? colors.primary : colors.muted}
+        />
+      </View>
+    </Card>
+  );
+}
+
+export default function SmartPlannerScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const bottomInset = useBottomInset();
+  const { colors } = useTheme();
   const { isHindi } = useLanguage();
+  const params = (route && route.params) || {};
 
-  // Step 1: Days Selection
-  const [selectedDays, setSelectedDays] = useState(3);
-  const [darshanWindow, setDarshanWindow] = useState('September 2026 (Sharad Navratri Season)');
+  const scrollRef = useRef(null);
+  const resultY = useRef(0);
+  const pendingScroll = useRef(Boolean(params.autoCreate));
 
-  // Step 2: Pace Selection
-  const [selectedPace, setSelectedPace] = useState('balanced'); // 'relaxed' | 'balanced' | 'fast_track'
+  const [selectedDays, setSelectedDays] = useState(
+    DAY_OPTIONS.includes(params.days) ? params.days : 3
+  );
+  const [withElders, setWithElders] = useState(Boolean(params.elders));
+  const [withChildren, setWithChildren] = useState(Boolean(params.children));
+  const [selectedPace, setSelectedPace] = useState(params.elders ? 'relaxed' : 'balanced');
+  const [selectedExperiences, setSelectedExperiences] = useState(
+    Array.isArray(params.experiences) && params.experiences.length
+      ? params.experiences.filter((id) => EXPERIENCES.some((e) => e.id === id))
+      : DEFAULT_EXPERIENCES
+  );
+  const [travelDates, setTravelDates] = useState('');
+  const [showResult, setShowResult] = useState(Boolean(params.autoCreate));
 
-  // Step 3: Must-Visit Sacred Experiences
-  const [selectedExperiences, setSelectedExperiences] = useState([
-    'banke_bihari',
-    'janmabhoomi',
-    'keshi_ghat',
-    'govardhan',
-  ]);
+  const { planDays, missed } = useMemo(
+    () => buildPlan(selectedDays, selectedExperiences),
+    [selectedDays, selectedExperiences]
+  );
+  const dayIds = planDays.map((d) => d.id);
 
-  const daysOptions = [
-    { days: 1, label: isHindi ? '1 दिन' : '1 Day', sub: isHindi ? 'एक्सप्रेस' : 'Express' },
-    { days: 2, label: isHindi ? '2 दिन' : '2 Days', sub: isHindi ? 'सप्ताहांत' : 'Weekend' },
-    { days: 3, label: isHindi ? '3 दिन' : '3 Days', sub: isHindi ? 'संतुलित' : 'Balanced', popular: true },
-    { days: 4, label: isHindi ? '4 दिन' : '4 Days', sub: isHindi ? 'गहन दर्शन' : 'Deep Darshan' },
-    { days: 5, label: isHindi ? '5 दिन' : '5 Days', sub: isHindi ? 'घाट व कुंड' : 'Ghats & Kunds' },
-    { days: 6, label: isHindi ? '6+ दिन' : '6+ Days', sub: isHindi ? '84 कोस परिक्रमा' : '84 Kos Parikrama' },
-  ];
+  const toggleExperience = (id) =>
+    setSelectedExperiences((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const paceOptions = [
-    {
-      id: 'relaxed',
-      title: isHindi ? 'Relaxed (आरामदायक)' : 'Relaxed (आरामदायक)',
-      badge: isHindi ? 'वरिष्ठ एवं बच्चे' : 'Senior & Kids Friendly',
-      desc: isHindi
-        ? 'प्रतिदिन 2-3 प्रमुख मंदिर, न्यूनतम पैदल चलना, दोपहर में 3 घंटे का अनिवार्य विश्राम, प्रमाणित ई-रिक्शा सेवा।'
-        : '2-3 key sanctums daily, minimal walking, mandatory 3-hour afternoon rest, verified E-rickshaw point-to-point drop.',
-    },
-    {
-      id: 'balanced',
-      title: isHindi ? 'Balanced (संतुलित)' : 'Balanced (संतुलित)',
-      badge: isHindi ? 'सर्वाधिक लोकप्रिय' : 'Most Popular',
-      desc: isHindi
-        ? 'प्रमुख मंदिर आरती, पावन कुंड स्नान, ऐतिहासिक घाट, और दोपहर के सुगम विश्राम के साथ ब्रज के स्वादिष्ट व्यंजन।'
-        : 'Core temple aartis, holy kund snan, historic ghats, and iconic Braj delicacies with a comfortable mid-day break.',
-    },
-    {
-      id: 'fast_track',
-      title: isHindi ? 'Fast-Track & Parikrama (तीव्र)' : 'Fast-Track & Parikrama (तीव्र)',
-      badge: isHindi ? 'ऊर्जावान यात्री' : 'Energetic Yatri',
-      desc: isHindi
-        ? 'अधिकतम पवित्र स्थल, संपूर्ण 21 किमी गोवर्धन परिक्रमा, प्रातः मंगला से रात्रि शयन आरती तक का पूरा परिक्रमा चक्र।'
-        : 'Maximum sacred sthals, complete 21-km Govardhan Parikrama, every Mangala to night Shayan Aarti circuit.',
-    },
-  ];
-
-  const experienceOptions = [
-    { id: 'banke_bihari', title: isHindi ? '🛕 श्री बांके बिहारी जी (वृंदावन)' : '🛕 Shri Banke Bihari Ji (Vrindavan)' },
-    { id: 'janmabhoomi', title: isHindi ? '🛕 श्री कृष्ण जन्मभूमि (मथुरा)' : '🛕 Krishna Janmabhoomi (Mathura)' },
-    { id: 'keshi_ghat', title: isHindi ? '🪔 केशी घाट यमुना महारती' : '🪔 Keshi Ghat Yamuna Aarti' },
-    { id: 'govardhan', title: isHindi ? '🪨 गोवर्धन परिक्रमा (गिरिराज जी)' : '🪨 Govardhan Parikrama (Girirajji)' },
-    { id: 'radha_kund', title: isHindi ? '💧 राधा कुंड पावन स्नान' : '💧 Radha Kund Holy Snan' },
-    { id: 'barsana', title: isHindi ? '🌺 बरसाना श्री लाडली जी मंदिर' : '🌺 Barsana Shri Radha Rani Mandir' },
-    { id: 'food_tour', title: isHindi ? '🍲 ब्रज स्ट्रीट फूड टूर (पेड़ा व कचौड़ी)' : '🍲 Braj Street Food Tour (Peda & Kachori)' },
-    { id: 'nandgaon', title: isHindi ? '🐄 नंदगांव एवं नन्द बाबा गौशाला' : '🐄 Nandgaon & Gokul Gaushalas' },
-  ];
-
-  const toggleExperience = (id) => {
-    setSelectedExperiences((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleClearAll = () => {
+  const handleReset = () => {
     setSelectedDays(3);
+    setWithElders(false);
+    setWithChildren(false);
     setSelectedPace('balanced');
-    setSelectedExperiences(['banke_bihari', 'janmabhoomi', 'keshi_ghat', 'govardhan']);
+    setSelectedExperiences(DEFAULT_EXPERIENCES);
+    setTravelDates('');
+    setShowResult(false);
   };
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: `Plan my ${selectedDays}-Day Braj Darshan Yatra with Braj Darshan App! Pace: ${selectedPace.toUpperCase()}, Must-visits: ${selectedExperiences.length} holy sites.`,
-      });
-    } catch {
-      // ignore
+  const handleCreate = () => {
+    pendingScroll.current = true;
+    if (showResult && scrollRef.current) {
+      scrollRef.current.scrollTo({ y: resultY.current, animated: true });
+      pendingScroll.current = false;
+    }
+    setShowResult(true);
+  };
+
+  const onResultLayout = (e) => {
+    resultY.current = e.nativeEvent.layout.y;
+    if (pendingScroll.current && scrollRef.current) {
+      pendingScroll.current = false;
+      scrollRef.current.scrollTo({ y: resultY.current, animated: true });
     }
   };
 
-  // Real-time calculation helpers
-  const calculatedStops = Math.max(selectedExperiences.length * (selectedDays >= 3 ? 2 : 1), selectedDays * 3);
-  const commuteKm = selectedDays === 1 ? '10-15 km' : selectedDays === 2 ? '15-20 km' : selectedDays === 3 ? '18-25 km' : '30-45 km';
-  const budgetMin = selectedDays * 450 + 200;
-  const budgetMax = selectedDays * 750 + 400;
+  const openDay = (day) =>
+    navigation.navigate(ROUTES.YATRA_DETAIL, { id: day.id, yatra: day, planDayIds: dayIds });
 
-  const handleGenerateItinerary = () => {
-    Alert.alert(
-      isHindi ? 'यात्रा योजना तैयार है!' : 'Itinerary Generated!',
+  // Honest, situation-specific notes for the plan.
+  const notes = [];
+  if (selectedPace === 'relaxed') {
+    notes.push(
       isHindi
-        ? `आपकी ${selectedDays}-दिवसीय ब्रज यात्रा सफलतापूर्वक तैयार की गई है (${calculatedStops} पवित्र स्थल)। क्या आप इसे देखना चाहते हैं?`
-        : `Your ${selectedDays}-Day Braj Pilgrimage has been calibrated with ${calculatedStops} sacred sites. View the detailed guide now?`,
-      [
-        { text: isHindi ? 'संपादित करें' : 'Edit', style: 'cancel' },
-        {
-          text: isHindi ? 'यात्रा देखें' : 'View Itinerary',
-          onPress: () => navigation.navigate(ROUTES.YATRA),
-        },
-      ]
+        ? 'आरामदायक गति: हर दिन 2–3 स्थान चुनें, बाकी निश्चिंत होकर छोड़ दें।'
+        : 'Relaxed pace: pick 2–3 places each day and skip the rest without worry.'
     );
+  }
+  if (selectedPace === 'fast_track') {
+    notes.push(
+      isHindi
+        ? 'तेज़ गति: जल्दी शुरू करें। कई मंदिर दोपहर में कुछ घंटे बंद रहते हैं — समय स्थानीय रूप से पुष्टि करें।'
+        : 'Faster pace: start early. Many temples close for a few hours around midday — confirm timings locally.'
+    );
+  }
+  if (withElders) {
+    notes.push(
+      isHindi
+        ? 'बुज़ुर्गों के साथ: दोपहर विश्राम के लिए रखें और भीड़ वाले समय से बचें।'
+        : 'With elders: keep afternoons for rest and avoid the most crowded hours.'
+    );
+    if (dayIds.includes(4)) {
+      notes.push(
+        isHindi
+          ? 'गोवर्धन परिक्रमा लगभग 21 किमी है — छोटा भाग चुनें या वाहन के बारे में स्थानीय रूप से पूछें।'
+          : 'The Govardhan parikrama is about 21 km — choose a shorter part or ask locally about a vehicle.'
+      );
+    }
+    if (dayIds.includes(5)) {
+      notes.push(
+        isHindi
+          ? 'बरसाना का श्री राधा रानी मंदिर लंबी सीढ़ियों के ऊपर है — आसान रास्ते के बारे में स्थानीय रूप से पूछें।'
+          : 'Shri Radha Rani Mandir in Barsana is up a long flight of steps — ask locally about easier access.'
+      );
+    }
+  }
+  if (withChildren) {
+    notes.push(
+      isHindi
+        ? 'बच्चों के साथ: पानी व नाश्ता रखें और भीड़ भरी गलियों के लिए मिलने की जगह तय करें।'
+        : 'With children: carry water and snacks, and agree on a meeting point for crowded lanes.'
+    );
+  }
+
+  const handleShare = async () => {
+    const lines = planDays.map((d, i) =>
+      isHindi ? `दिन ${i + 1}: ${d.title}` : `Day ${i + 1}: ${d.titleEn}`
+    );
+    const header = isHindi
+      ? `मेरी ${selectedDays} दिन की ब्रज यात्रा (सुझाव)`
+      : `My ${selectedDays}-day Braj yatra (suggested)`;
+    const dates = travelDates.trim() ? `\n${isHindi ? 'तारीखें' : 'Dates'}: ${travelDates.trim()}` : '';
+    const note = isHindi
+      ? 'समय केवल सुझाव हैं — स्थानीय पुष्टि करें।'
+      : 'Times are suggestions — confirm locally.';
+    try {
+      await Share.share({ message: `${header}${dates}\n\n${lines.join('\n')}\n\n${note}\n— Braj Darshan` });
+    } catch {
+      // Share sheet dismissed or unavailable.
+    }
   };
+
+  const paceLabel = (PACES.find((p) => p.id === selectedPace) || PACES[1])[isHindi ? 'hi' : 'en'];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Top Header */}
-      <View style={[styles.topHeader, { borderBottomColor: isDark ? colors.border : '#F3F4F6' }]}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <AppText variant="h2" color={colors.text}>
-            ←
-          </AppText>
-        </TouchableOpacity>
+      <TopBar
+        title={isHindi ? 'अपनी योजना बनाएं' : 'Make my own plan'}
+        subtitle={isHindi ? 'आपके समूह के लिए सुझाव' : 'Suggestions for your group'}
+        onBack={() => navigation.goBack()}
+        right={<LanguageToggle />}
+      />
 
-        <View style={styles.headerTitleWrap}>
-          <AppText variant="body" weight="700" color={colors.navy}>
-            {isHindi ? 'स्मार्ट यात्रा प्लानर' : 'Smart Yatra Planner'}
-          </AppText>
-          <AppText variant="micro" color={colors.primary} weight="600">
-            {isHindi ? 'श्री ब्रज दर्शन' : 'Shri Braj Darshan'}
-          </AppText>
-        </View>
-
-        <View style={styles.headerRightActions}>
-          <TouchableOpacity
-            style={styles.headerIconBtn}
-            onPress={handleShare}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          >
-            <AppText variant="body" color={colors.textSecondary}>
-              🔗
-            </AppText>
-          </TouchableOpacity>
-          <View style={[styles.avatarBadge, { backgroundColor: colors.primary }]}>
-            <AppText variant="caption" weight="700" color="#FFFFFF">
-              ॐ
-            </AppText>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Top Tag & Reset row */}
-        <View style={styles.subHeaderRow}>
-          <View style={[styles.panchangTag, { backgroundColor: isDark ? colors.cardAlt : '#EFF6FF' }]}>
-            <AppText variant="micro" weight="700" color="#1D4ED8">
-              🧭 {isHindi ? 'पंचांग आधारित मार्गदर्शक' : 'AI Panchang-Calibrated Route Builder'}
-            </AppText>
-          </View>
-          <TouchableOpacity onPress={handleClearAll} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-            <AppText variant="caption" weight="700" color={colors.primary}>
-              {isHindi ? 'रीसेट करें' : 'Clear All'}
-            </AppText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Welcome Card Banner */}
-        <View
-          style={[
-            styles.welcomeBanner,
-            {
-              backgroundColor: isDark ? colors.card : '#FFF7ED',
-              borderColor: '#FED7AA',
-            },
-          ]}
+        <ScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.welcomeBadgesRow}>
-            <View style={[styles.welcomePill, { backgroundColor: '#FDBA74' }]}>
-              <AppText variant="micro" weight="700" color="#7C2D12">
-                {isHindi ? 'अपनी यात्रा बनाएं' : 'Build Custom Plan'}
-              </AppText>
-            </View>
-            <View style={styles.syncBadge}>
-              <AppText variant="micro" weight="700" color="#D97706">
-                ⚡ {isHindi ? 'वैदिक सिंक' : 'Vedic Sync'}
-              </AppText>
-            </View>
-          </View>
-
-          <AppText variant="h2" color={colors.navy} style={styles.welcomeTitle}>
-            {isHindi ? 'व्यक्तिगत ब्रज यात्रा प्लानर' : 'Personalized Pilgrimage Builder'}
-          </AppText>
-          <AppText variant="caption" color={colors.textSecondary} style={styles.welcomeSubtitle}>
+          <InfoNote>
             {isHindi
-              ? '3 आसान चरणों में अपनी आदर्श तीर्थ यात्रा बनाएं — मंदिर पट खुलने-बंद होने के समय, परिवार की गति व पवित्र परिक्रमा के अनुसार अनुकूलित।'
-              : 'Create your ideal pilgrimage itinerary in 3 simple steps — calibrated for sanctum timings, family needs, and sacred parikramas.'}
-          </AppText>
-        </View>
+              ? 'योजना ऐप की दिन-योजनाओं से बनती है। यह बुकिंग नहीं है; समय केवल सुझाव हैं।'
+              : 'Your plan is built from the app’s day plans. It is not a booking; times are suggestions.'}
+          </InfoNote>
 
-        {/* STEP 1: How many days in Braj Dham? */}
-        <View style={styles.sectionWrap}>
-          <View style={styles.stepTitleRow}>
-            <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
-              <AppText variant="micro" weight="800" color="#FFFFFF">
-                1
-              </AppText>
+          {/* Days */}
+          <View>
+            <SectionHeader
+              title={isHindi ? 'कितने दिन?' : 'How many days?'}
+              actionLabel={isHindi ? 'फिर से शुरू करें' : 'Reset'}
+              onAction={handleReset}
+            />
+            <View style={styles.chipRow}>
+              {DAY_OPTIONS.map((n) => (
+                <Chip
+                  key={n}
+                  label={isHindi ? `${n} दिन` : `${n} ${n === 1 ? 'day' : 'days'}`}
+                  selected={selectedDays === n}
+                  onPress={() => setSelectedDays(n)}
+                />
+              ))}
             </View>
-            <AppText variant="h3" color={colors.navy} style={styles.stepTitle}>
-              {isHindi ? 'ब्रज धाम में कितने दिन रुकेंगे?' : 'How many days in Braj Dham?'}
-            </AppText>
-            <AppText variant="micro" color={colors.textSecondary} style={styles.stepFraction}>
-              Step 1 of 3
+          </View>
+
+          {/* Group */}
+          <View>
+            <SectionHeader title={isHindi ? 'कौन साथ आ रहा है?' : 'Who’s coming?'} />
+            <View style={styles.chipRow}>
+              <Chip
+                label={isHindi ? 'बुज़ुर्ग' : 'Elders'}
+                icon="people"
+                selected={withElders}
+                onPress={() => setWithElders((v) => !v)}
+              />
+              <Chip
+                label={isHindi ? 'बच्चे' : 'Children'}
+                icon="people"
+                selected={withChildren}
+                onPress={() => setWithChildren((v) => !v)}
+              />
+            </View>
+          </View>
+
+          {/* Pace */}
+          <View style={styles.stack}>
+            <SectionHeader title={isHindi ? 'यात्रा की गति' : 'Pace'} />
+            {PACES.map((pace) => (
+              <PaceCard
+                key={pace.id}
+                pace={pace}
+                selected={selectedPace === pace.id}
+                onPress={() => setSelectedPace(pace.id)}
+                isHindi={isHindi}
+                colors={colors}
+              />
+            ))}
+          </View>
+
+          {/* Places */}
+          <View>
+            <SectionHeader title={isHindi ? 'क्या शामिल करना चाहेंगे?' : 'What would you like to include?'} />
+            <View style={styles.chipRow}>
+              {EXPERIENCES.map((exp) => (
+                <Chip
+                  key={exp.id}
+                  label={isHindi ? exp.hi : exp.en}
+                  icon={exp.icon}
+                  selected={selectedExperiences.includes(exp.id)}
+                  onPress={() => toggleExperience(exp.id)}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Dates */}
+          <View>
+            <SectionHeader title={isHindi ? 'यात्रा की तारीखें (वैकल्पिक)' : 'Travel dates (optional)'} />
+            <TextInput
+              value={travelDates}
+              onChangeText={setTravelDates}
+              placeholder={isHindi ? 'जैसे 12–14 नवंबर' : 'e.g. 12–14 November'}
+              placeholderTextColor={colors.muted}
+              style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+              accessibilityLabel={isHindi ? 'यात्रा की तारीखें' : 'Travel dates'}
+              returnKeyType="done"
+              maxFontSizeMultiplier={1.4}
+            />
+            <AppText variant="caption" color={colors.muted} style={styles.gapSmall}>
+              {isHindi
+                ? 'केवल आपके साझा संदेश के लिए। पर्व की तारीखें पंचांग में देखें।'
+                : 'Only used in the plan you share. Check festival dates in the Panchang.'}
             </AppText>
           </View>
 
-          {/* Days Grid */}
-          <View style={styles.daysGrid}>
-            {daysOptions.map((opt) => {
-              const isSelected = selectedDays === opt.days;
-              return (
-                <TouchableOpacity
-                  key={opt.days}
-                  style={[
-                    styles.dayCard,
-                    {
-                      backgroundColor: isSelected ? colors.primary : isDark ? colors.card : '#F3F4F6',
-                      borderColor: isSelected ? colors.primary : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setSelectedDays(opt.days)}
-                  activeOpacity={0.8}
-                >
-                  {opt.popular && !isSelected && (
-                    <View style={styles.popularMiniBadge}>
-                      <AppText variant="micro" weight="700" color="#FFFFFF">
-                        ★
+          <Button title={isHindi ? 'मेरी योजना बनाएं' : 'Create my plan'} icon="route" onPress={handleCreate} />
+
+          {/* Result */}
+          {showResult ? (
+            <View onLayout={onResultLayout} style={styles.stack}>
+              <SectionHeader title={isHindi ? 'आपकी सुझाई गई योजना' : 'Your suggested plan'} />
+              <AppText variant="body" color={colors.textSecondary}>
+                {isHindi
+                  ? `${selectedDays} दिन · गति: ${paceLabel}${withElders ? ' · बुज़ुर्गों के साथ' : ''}${withChildren ? ' · बच्चों के साथ' : ''}`
+                  : `${selectedDays} ${selectedDays === 1 ? 'day' : 'days'} · Pace: ${paceLabel}${withElders ? ' · with elders' : ''}${withChildren ? ' · with children' : ''}`}
+              </AppText>
+
+              <Card style={styles.listCard}>
+                {planDays.map((day, i) => (
+                  <View key={day.id}>
+                    {i > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
+                    <ListRow
+                      icon="calendar"
+                      title={isHindi ? `दिन ${i + 1} · ${day.title}` : `Day ${i + 1} · ${day.titleEn}`}
+                      subtitle={isHindi ? day.tagline : day.taglineEn}
+                      onPress={() => openDay(day)}
+                    />
+                  </View>
+                ))}
+              </Card>
+
+              {missed.length ? (
+                <InfoNote icon="alert">
+                  {isHindi
+                    ? `इतने दिनों में शामिल नहीं हो सका: ${missed.map((m) => m.hi).join(', ')}। दिन बढ़ाएं या चुनाव बदलें।`
+                    : `Did not fit in ${selectedDays} ${selectedDays === 1 ? 'day' : 'days'}: ${missed.map((m) => m.en).join(', ')}. Add days or change your choices.`}
+                </InfoNote>
+              ) : null}
+
+              {notes.length ? (
+                <Card>
+                  <AppText variant="h4" weight="700" color={colors.navy}>
+                    {isHindi ? 'आपके समूह के लिए' : 'For your group'}
+                  </AppText>
+                  {notes.map((note) => (
+                    <View key={note} style={styles.noteRow}>
+                      <Icon name="info" size={18} color={colors.primary} style={styles.noteIcon} />
+                      <AppText variant="body" color={colors.text} style={styles.flex}>
+                        {note}
                       </AppText>
                     </View>
-                  )}
-                  <AppText
-                    variant="body"
-                    weight="800"
-                    color={isSelected ? '#FFFFFF' : colors.text}
-                  >
-                    {opt.label}
-                  </AppText>
-                  <AppText
-                    variant="micro"
-                    color={isSelected ? '#FFEDD5' : colors.textSecondary}
-                    style={{ marginTop: 2 }}
-                  >
-                    {opt.sub}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                  ))}
+                </Card>
+              ) : null}
 
-          {/* Darshan Window Date Pill */}
-          <View
-            style={[
-              styles.dateWindowBox,
-              { backgroundColor: isDark ? colors.cardAlt : '#EFF6FF', borderColor: '#BFDBFE' },
-            ]}
-          >
-            <AppText variant="caption" color="#1E40AF">
-              📅
-            </AppText>
-            <View style={{ flex: 1, marginHorizontal: 8 }}>
-              <AppText variant="micro" weight="600" color="#6B7280">
-                {isHindi ? 'चयनित दर्शन अवधि' : 'Selected Darshan Window'}
-              </AppText>
-              <AppText variant="caption" weight="700" color={colors.navy} numberOfLines={1}>
-                {darshanWindow}
-              </AppText>
+              <InfoNote>
+                {isHindi
+                  ? 'समय केवल सुझाव हैं। त्योहारों पर मंदिरों का समय बदलता है — कृपया स्थानीय पुष्टि करें।'
+                  : 'Times are suggestions. Temple timings change on festivals — please confirm locally.'}
+              </InfoNote>
+
+              <Button
+                title={isHindi ? 'योजना साझा करें' : 'Share plan'}
+                variant="secondary"
+                icon="share"
+                onPress={handleShare}
+              />
+              <Button
+                title={isHindi ? 'पंचांग में पर्व देखें' : 'Check festivals in Panchang'}
+                variant="text"
+                icon="panchang"
+                onPress={() => navigation.navigate(ROUTES.PANCHANG)}
+              />
             </View>
-            <AppText variant="caption" color={colors.primary}>
-              🗓️
-            </AppText>
-          </View>
-        </View>
-
-        {/* STEP 2: Choose travel pace & comfort */}
-        <View style={styles.sectionWrap}>
-          <View style={styles.stepTitleRow}>
-            <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
-              <AppText variant="micro" weight="800" color="#FFFFFF">
-                2
-              </AppText>
-            </View>
-            <AppText variant="h3" color={colors.navy} style={styles.stepTitle}>
-              {isHindi ? 'यात्रा की गति व सुविधा चुनें' : 'Choose travel pace & comfort'}
-            </AppText>
-            <AppText variant="micro" color={colors.textSecondary} style={styles.stepFraction}>
-              Step 2 of 3
-            </AppText>
-          </View>
-
-          {paceOptions.map((pace) => {
-            const isSelected = selectedPace === pace.id;
-            return (
-              <TouchableOpacity
-                key={pace.id}
-                style={[
-                  styles.paceCard,
-                  {
-                    backgroundColor: isSelected
-                      ? isDark
-                        ? '#2A1810'
-                        : '#FFF7ED'
-                      : isDark
-                      ? colors.card
-                      : '#FFFFFF',
-                    borderColor: isSelected ? colors.primary : isDark ? colors.border : '#E5E7EB',
-                  },
-                ]}
-                onPress={() => setSelectedPace(pace.id)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.paceRadioRow}>
-                  <View
-                    style={[
-                      styles.radioCircle,
-                      {
-                        borderColor: isSelected ? colors.primary : '#9CA3AF',
-                        backgroundColor: isSelected ? colors.primary : 'transparent',
-                      },
-                    ]}
-                  >
-                    {isSelected && <View style={styles.radioDot} />}
-                  </View>
-
-                  <AppText
-                    variant="body"
-                    weight="700"
-                    color={isSelected ? colors.primary : colors.text}
-                    style={{ flex: 1, marginLeft: 8 }}
-                  >
-                    {pace.title}
-                  </AppText>
-
-                  <View
-                    style={[
-                      styles.paceBadge,
-                      {
-                        backgroundColor: isSelected
-                          ? '#F59E0B'
-                          : isDark
-                          ? colors.cardAlt
-                          : '#EFF6FF',
-                      },
-                    ]}
-                  >
-                    <AppText
-                      variant="micro"
-                      weight="700"
-                      color={isSelected ? '#FFFFFF' : '#2563EB'}
-                    >
-                      {pace.badge}
-                    </AppText>
-                  </View>
-                </View>
-
-                <AppText
-                  variant="caption"
-                  color={colors.textSecondary}
-                  style={styles.paceDesc}
-                >
-                  {pace.desc}
-                </AppText>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* STEP 3: Must-Visit Sacred Experiences */}
-        <View style={styles.sectionWrap}>
-          <View style={styles.stepTitleRow}>
-            <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
-              <AppText variant="micro" weight="800" color="#FFFFFF">
-                3
-              </AppText>
-            </View>
-            <AppText variant="h3" color={colors.navy} style={styles.stepTitle}>
-              {isHindi ? 'अवश्य दर्शन योग्य पावन स्थल' : 'Must-Visit Sacred Experiences'}
-            </AppText>
-            <AppText variant="micro" color={colors.textSecondary} style={styles.stepFraction}>
-              Step 3 of 3
-            </AppText>
-          </View>
-
-          <AppText variant="caption" color={colors.textSecondary} style={{ marginBottom: 12 }}>
-            {isHindi
-              ? 'अपनी यात्रा में शामिल करने या हटाने के लिए स्पर्श करें:'
-              : 'Tap to include or remove holy sanctums & cultural rituals:'}
-          </AppText>
-
-          <View style={styles.chipsContainer}>
-            {experienceOptions.map((exp) => {
-              const isIncluded = selectedExperiences.includes(exp.id);
-              return (
-                <TouchableOpacity
-                  key={exp.id}
-                  style={[
-                    styles.experienceChip,
-                    {
-                      backgroundColor: isIncluded ? colors.primary : isDark ? colors.card : '#F3F4F6',
-                      borderColor: isIncluded ? colors.primary : isDark ? colors.border : '#E5E7EB',
-                    },
-                  ]}
-                  onPress={() => toggleExperience(exp.id)}
-                  activeOpacity={0.8}
-                >
-                  <AppText
-                    variant="caption"
-                    weight={isIncluded ? '700' : '500'}
-                    color={isIncluded ? '#FFFFFF' : colors.text}
-                  >
-                    {exp.title}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Corridor Photo Preview Banner */}
-        <View style={styles.corridorBannerWrap}>
-          <Image
-            source={placeAssets[3]}
-            style={styles.corridorImage}
-            resizeMode="cover"
-          />
-          <View style={styles.corridorScrim}>
-            <AppText variant="body" weight="700" color="#FFFFFF">
-              🛕 {isHindi ? 'गोवर्धन - राधा कुंड परिक्रमा गलियारा' : 'Govardhan - Radha Kund Corridor'}
-            </AppText>
-            <AppText variant="micro" color="#FEF3C7" style={{ marginTop: 2 }}>
-              {isHindi
-                ? 'राजभोग एवं संध्या आरती के पट समय के अनुकूल संयोजित'
-                : 'Timings aligned with Rajbhog & Sandhya Aarti curtains'}
-            </AppText>
-          </View>
-        </View>
-
-        {/* Real-Time Plan Estimate Card */}
-        <View
-          style={[
-            styles.estimateCard,
-            {
-              backgroundColor: isDark ? colors.card : '#F8FAFC',
-              borderColor: isDark ? colors.border : '#E2E8F0',
-            },
-          ]}
-        >
-          <View style={styles.estimateHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <AppText variant="caption" color={colors.navy}>
-                📄
-              </AppText>
-              <AppText variant="body" weight="700" color={colors.navy} style={{ marginLeft: 6 }}>
-                {isHindi ? 'वास्तविक समय यात्रा अनुमान' : 'Real-Time Plan Estimate'}
-              </AppText>
-            </View>
-            <View style={styles.liveTag}>
-              <AppText variant="micro" weight="700" color="#B45309">
-                {isHindi ? 'लाइव पुनर्गणना' : 'LIVE RE-CALCULATED'}
-              </AppText>
-            </View>
-          </View>
-
-          <View style={styles.estimateGrid}>
-            <View style={[styles.estimateTile, { backgroundColor: isDark ? colors.cardAlt : '#FFFFFF' }]}>
-              <AppText variant="micro" color={colors.textSecondary}>
-                {isHindi ? 'अनुमानित दर्शन स्थल' : 'Projected Stops'}
-              </AppText>
-              <AppText variant="h3" weight="800" color={colors.primary} style={{ marginTop: 2 }}>
-                {calculatedStops} {isHindi ? 'तीर्थ स्थल' : 'Sacred Sites'}
-              </AppText>
-              <AppText variant="micro" color={colors.textSecondary} style={{ marginTop: 2 }}>
-                {selectedDays >= 3 ? (isHindi ? '3 नगर आच्छादित' : '3 towns covered') : (isHindi ? '2 नगर' : '2 towns')}
-              </AppText>
-            </View>
-
-            <View style={[styles.estimateTile, { backgroundColor: isDark ? colors.cardAlt : '#FFFFFF' }]}>
-              <AppText variant="micro" color={colors.textSecondary}>
-                {isHindi ? 'दैनिक यात्रा दूरी' : 'Daily Commute'}
-              </AppText>
-              <AppText variant="h3" weight="800" color={colors.navy} style={{ marginTop: 2 }}>
-                {commuteKm}
-              </AppText>
-              <AppText variant="micro" color={colors.textSecondary} style={{ marginTop: 2 }}>
-                {isHindi ? 'सत्यापित ई-रिक्शा द्वारा' : 'via Pre-booked E-Rickshaw'}
-              </AppText>
-            </View>
-
-            <View style={[styles.estimateTile, { backgroundColor: isDark ? colors.cardAlt : '#FFFFFF' }]}>
-              <AppText variant="micro" color={colors.textSecondary}>
-                {isHindi ? 'अनुमानित स्थानीय खर्च' : 'Est. Local Budget'}
-              </AppText>
-              <AppText variant="h3" weight="800" color={colors.navy} style={{ marginTop: 2 }}>
-                ₹{budgetMin} - ₹{budgetMax}
-              </AppText>
-              <AppText variant="micro" color={colors.textSecondary} style={{ marginTop: 2 }}>
-                {isHindi ? 'प्रति यात्री (भोजन व यात्रा)' : 'per yatri (meals & transit)'}
-              </AppText>
-            </View>
-
-            <View style={[styles.estimateTile, { backgroundColor: isDark ? colors.cardAlt : '#FFFFFF' }]}>
-              <AppText variant="micro" color={colors.textSecondary}>
-                {isHindi ? 'आरती सुसंगतता' : 'Aarti Compatibility'}
-              </AppText>
-              <AppText variant="h3" weight="800" color="#16A34A" style={{ marginTop: 2 }}>
-                100% 🛡️
-              </AppText>
-              <AppText variant="micro" color={colors.textSecondary} style={{ marginTop: 2 }}>
-                {isHindi ? 'पट-बंद होने का शून्य टकराव' : 'Zero pat-closure clashes'}
-              </AppText>
-            </View>
-          </View>
-
-          <View style={styles.closureProtectionNote}>
-            <AppText variant="micro" color="#9A3412" weight="600">
-              ℹ️ {isHindi
-                ? 'दोपहर 12:00 PM - 04:00 PM बांके बिहारी व जन्मस्थान मंदिर विश्राम सुरक्षा स्वतः शामिल है।'
-                : 'Includes 12:00 PM - 4:00 PM afternoon sanctuary closure protection for Banke Bihari & Janmasthan.'}
-            </AppText>
-          </View>
-        </View>
-
-        {/* Sticky Generate Button */}
-        <TouchableOpacity
-          style={[styles.generateCtaBtn, { backgroundColor: colors.primary }]}
-          onPress={handleGenerateItinerary}
-          activeOpacity={0.85}
-        >
-          <AppText variant="body" weight="800" color="#FFFFFF">
-            {isHindi ? 'मेरी व्यक्तिगत यात्रा बनाएं और सहेजें →' : 'Generate & Save My Personalized Itinerary →'}
-          </AppText>
-        </TouchableOpacity>
-
-        <View style={styles.syncFooter}>
-          <AppText variant="micro" color={colors.textSecondary} style={{ textAlign: 'center' }}>
-            ☁️ {isHindi
-              ? 'निःशुल्क तत्काल ऑफलाइन सिंक + आरती समय की लाइव सूचनाएं'
-              : 'Free instant offline sync + live push notifications for aarti timings.'}
-          </AppText>
-        </View>
-      </ScrollView>
+          ) : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backBtn: {
-    paddingRight: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  headerTitleWrap: {
-    flex: 1,
-  },
-  headerRightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerIconBtn: {
-    padding: 6,
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  subHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  panchangTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 9999,
-  },
-  welcomeBanner: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 20,
-  },
-  welcomeBadgesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  welcomePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  syncBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  welcomeTitle: {
-    fontSize: 20,
-    lineHeight: 26,
-    marginBottom: 6,
-  },
-  welcomeSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  sectionWrap: {
-    marginBottom: 24,
-  },
-  stepTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  stepNumberBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  stepTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    flex: 1,
-  },
-  stepFraction: {
-    fontSize: 11,
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 12,
-  },
-  dayCard: {
-    width: '31%',
-    paddingVertical: 14,
-    paddingHorizontal: 6,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    position: 'relative',
-    minHeight: 70,
-  },
-  popularMiniBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#F59E0B',
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateWindowBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  paceCard: {
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    marginBottom: 10,
-  },
-  paceRadioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
-  },
-  paceBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 9999,
-  },
-  paceDesc: {
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 6,
-    marginLeft: 26,
-  },
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  experienceChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 9999,
-    borderWidth: 1,
-    minHeight: 40,
-    justifyContent: 'center',
-  },
-  corridorBannerWrap: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    position: 'relative',
-    height: 140,
-    marginBottom: 20,
-  },
-  corridorImage: {
-    width: '100%',
-    height: '100%',
-  },
-  corridorScrim: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  estimateCard: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 20,
-  },
-  estimateHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  liveTag: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  estimateGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  estimateTile: {
-    width: '48%',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  closureProtectionNote: {
-    marginTop: 12,
-    backgroundColor: '#FFF7ED',
-    padding: 8,
-    borderRadius: 8,
-  },
-  generateCtaBtn: {
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 24 },
+  stack: { gap: 12 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  paceRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  paceIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  input: {
     minHeight: 52,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 4,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
   },
-  syncFooter: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
+  gapSmall: { marginTop: 6 },
+  listCard: { paddingVertical: 4 },
+  divider: { height: 1 },
+  noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12 },
+  noteIcon: { marginTop: 3 },
 });

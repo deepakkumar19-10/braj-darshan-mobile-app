@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Website cream: launcher icon background behind the emblem. -->
+    <color name="ic_launcher_background">#FFF9ED</color>
+    <!-- Shown while the app starts, so there is no white flash before the first screen. -->
+    <color name="splash_background">#FFF9ED</color>
+</resources>

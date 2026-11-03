@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import templesData from '../data/temples.json';
 import { storageService } from '../services/storageService';
 
 const FavoritesContext = createContext();
 
 export function FavoritesProvider({ children }) {
-  // Pre-seed initial state
-  const [favorites, setFavorites] = useState([templesData[0], templesData[4]]);
+  // Starts empty: only what the user saves is shown in Saved.
+  const [favorites, setFavorites] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Hydrate favorites from persistent AsyncStorage on mount

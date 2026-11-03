@@ -1,687 +1,625 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Easing,
-  Alert,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { shadows } from '../../theme/shadows';
-import AppText from '../../components/common/AppText';
-import { useAudio } from '../../context/AudioContext';
+/**
+ * Braj Darshan - Bhakti audio
+ * Layout from the redesign (design-input/figma "Light · Bhakti audio" and
+ * "Light · Full audio player").
+ *
+ * Honesty rules:
+ * - Only tracks that isTrackPlayable() allows (an audio URL AND a recorded
+ *   licence) are listed or played. Tracks without one are hidden, never shown
+ *   as "coming soon" rows.
+ * - The player (artwork, transport, track list, lyrics) only appears when at
+ *   least one track is playable, and the progress bar and ±10 s skips only
+ *   while a track is actually loaded (playing or paused). No fake progress.
+ * - Previous / Next step through the playable tracks only (the context's
+ *   nextTrack/previousTrack walk the whole list, licensed or not).
+ * - Naam jap is spoken by the phone's own text-to-speech voice through the
+ *   native DevotionalAudio module (Android). If the voice cannot start, the
+ *   screen says so instead of pretending.
+ */
 
-const formatTime = (ms) => {
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useAudio, isTrackPlayable } from '../../context/AudioContext';
+import { AppText } from '../../components/common/AppText';
+import { Icon } from '../../components/common/Icon';
+import {
+  TopBar,
+  LanguageToggle,
+  Card,
+  Chip,
+  Button,
+  InfoNote,
+  SectionHeader,
+  GUTTER,
+  useBottomInset,
+} from '../../components/ui';
+import { usePressGuard } from '../../hooks/usePressGuard';
+
+const SKIP_MS = 10000;
+
+// `text` is exactly what the phone's voice speaks.
+const CHANTS = [
+  { id: 'jai', text: 'जय श्री राधे', hi: 'जय श्री राधे', en: 'Jai Shri Radhe' },
+  { id: 'radhe', text: 'राधे राधे, जय श्री राधे', hi: 'राधे राधे, जय श्री राधे', en: 'Radhe Radhe, Jai Shri Radhe' },
+  {
+    id: 'mahamantra',
+    text: 'हरे कृष्ण हरे कृष्ण, कृष्ण कृष्ण हरे हरे। हरे राम हरे राम, राम राम हरे हरे॥',
+    hi: 'हरे कृष्ण महामंत्र',
+    en: 'Hare Krishna mahamantra',
+  },
+];
+
+function formatTime(ms) {
   if (!ms || isNaN(ms)) return '0:00';
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-};
+}
 
-export default function AudioPlayerScreen({ navigation }) {
-  const insets = useSafeAreaInsets();
+/* ------------------------------------------------------------- Naam jap */
+
+function ChantRow({ chant, onSpeak, isHindi, colors }) {
+  const guarded = usePressGuard(onSpeak, 600);
+  const title = isHindi ? chant.hi : chant.en;
+  // Show the spoken words under the title unless the title already is them.
+  const words = chant.text !== title ? chant.text : null;
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="button"
+      accessibilityLabel={isHindi ? `${title} सुनें` : `Hear ${title}`}
+      style={({ pressed }) => [
+        styles.chantRow,
+        // Background set in both states (Android drops the radius of conditional backgrounds).
+        { backgroundColor: pressed ? colors.surfaceContainerLow : colors.card },
+      ]}
+    >
+      <View style={[styles.chantIcon, { backgroundColor: colors.primaryLight }]}>
+        <Icon name="music" size={20} color={colors.primary} />
+      </View>
+      <View style={styles.flex}>
+        <AppText variant="bodyBold" color={colors.navy}>
+          {title}
+        </AppText>
+        {words ? (
+          <AppText variant="caption" color={colors.textSecondary}>
+            {words}
+          </AppText>
+        ) : null}
+      </View>
+      <View style={[styles.chantPlay, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Icon name="play" size={20} color={colors.primary} />
+      </View>
+    </Pressable>
+  );
+}
+
+function ChantSection({ speakChant, isHindi, colors }) {
+  const [voiceFailed, setVoiceFailed] = useState(false);
+
+  // audioService.speakChant resolves to null when the native voice is missing
+  // or not ready, and to { success: true } when speech started.
+  const speak = async (text) => {
+    let started = false;
+    try {
+      started = Boolean(await speakChant(text));
+    } catch (e) {
+      started = false;
+    }
+    setVoiceFailed(!started);
+  };
+
+  return (
+    <View style={styles.section}>
+      <SectionHeader title={isHindi ? 'नाम जप सुनें' : 'Hear a chant'} style={styles.sectionHeader} />
+      <AppText variant="caption" color={colors.muted}>
+        {isHindi
+          ? 'दबाते ही फ़ोन की अपनी आवाज़ (टेक्स्ट-टू-स्पीच) में बोला जाता है।'
+          : "Tap to hear it in your phone's own text-to-speech voice."}
+      </AppText>
+      <Card padded={false}>
+        {CHANTS.map((c, index) => (
+          <View key={c.id}>
+            {index > 0 ? <View style={[styles.rowDivider, { backgroundColor: colors.border }]} /> : null}
+            <ChantRow chant={c} onSpeak={() => speak(c.text)} isHindi={isHindi} colors={colors} />
+          </View>
+        ))}
+      </Card>
+      {voiceFailed ? (
+        <InfoNote icon="info">
+          {isHindi
+            ? 'फ़ोन की आवाज़ शुरू नहीं हो सकी। फ़ोन की सेटिंग में टेक्स्ट-टू-स्पीच (हिंदी आवाज़ सहित) चालू करके फिर कोशिश करें।'
+            : "Your phone's voice could not start. Turn on text-to-speech (with a Hindi voice) in your phone's settings and try again."}
+        </InfoNote>
+      ) : (
+        <AppText variant="small" color={colors.muted}>
+          {isHindi
+            ? 'कुछ सुनाई न दे तो फ़ोन की आवाज़ (वॉल्यूम) और सेटिंग में हिंदी आवाज़ देख लें।'
+            : "Hear nothing? Check your media volume and that a Hindi voice is installed in your phone's settings."}
+        </AppText>
+      )}
+    </View>
+  );
+}
+
+/* --------------------------------------------------------------- Player */
+
+function TransportButton({ icon, label, onPress, colors }) {
+  const guarded = usePressGuard(onPress, 400);
+  return (
+    <View style={styles.transportItem}>
+      <Pressable
+        onPress={guarded}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={({ pressed }) => [
+          styles.transportBtn,
+          { backgroundColor: colors.surfaceContainer, opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Icon name={icon} size={26} color={colors.navy} />
+      </Pressable>
+      <AppText variant="small" color={colors.muted} align="center">
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
+function TrackRow({ track, index, isCurrent, isPlaying, onPress, isHindi, colors }) {
+  const title = isHindi ? track.titleHindi : track.titleEn;
+  const playingNow = isCurrent && isPlaying;
+  return (
+    <Card
+      onPress={onPress}
+      accessibilityLabel={isHindi ? `${title} चलाएँ` : `Play ${title}`}
+      style={isCurrent ? { borderColor: colors.primary, backgroundColor: colors.primaryLight } : null}
+    >
+      <View style={styles.trackRow}>
+        <View
+          style={[
+            styles.trackIcon,
+            { backgroundColor: isCurrent ? colors.surface : colors.surfaceContainer },
+          ]}
+        >
+          <Icon name={playingNow ? 'music' : 'play'} size={22} color={colors.primary} />
+        </View>
+        <View style={styles.flex}>
+          <AppText variant="bodyBold" color={colors.navy}>
+            {title}
+          </AppText>
+          <AppText variant="caption" color={colors.textSecondary}>
+            {track.deity}
+          </AppText>
+          <AppText variant="small" color={colors.muted}>
+            {isCurrent
+              ? playingNow
+                ? isHindi ? 'अभी बज रहा है' : 'Now playing'
+                : isHindi ? 'चुना हुआ' : 'Selected'
+              : `${isHindi ? 'ट्रैक' : 'Track'} ${index + 1}`}
+            {track.durationDisplay
+              ? ` · ${isHindi ? 'लगभग' : 'about'} ${track.durationDisplay}`
+              : ''}
+          </AppText>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+function Player({ playable, requestedId, isHindi, colors }) {
   const {
     tracks,
     currentTrack,
     isPlaying,
+    isPaused,
     position,
     duration,
     playTrack,
     pauseTrack,
     resumeTrack,
     seekTo,
-    nextTrack,
-    previousTrack,
-    speakChant,
+    playError,
   } = useAudio();
 
-  const [activeTab, setActiveTab] = useState('lyrics'); // 'lyrics' | 'playlist'
-  const spinValue = useRef(new Animated.Value(0)).current;
+  const [activeTab, setActiveTab] = useState('tracks'); // 'tracks' | 'lyrics'
+  const [barWidth, setBarWidth] = useState(0);
 
-  // Spin animation when playing
-  useEffect(() => {
-    let anim;
-    if (isPlaying) {
-      anim = Animated.loop(
-        Animated.timing(spinValue, {
-          toValue: 1,
-          duration: 10000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      );
-      anim.start();
+  const currentIsPlayable = isTrackPlayable(currentTrack);
+  // A track is "loaded" only while the native player really has it.
+  const loaded = currentIsPlayable && (isPlaying || isPaused) ? currentTrack : null;
+  const requested = playable.find((t) => t.id === requestedId) || null;
+  const shown = loaded || requested || (currentIsPlayable ? currentTrack : null) || playable[0];
+  const shownIsLoaded = Boolean(loaded && loaded.id === shown.id);
+  const showProgress = shownIsLoaded && duration > 0;
+
+  const progress = showProgress ? Math.min(1, Math.max(0, position / duration)) : 0;
+  const progressPct = `${progress * 100}%`;
+
+  // playTrack wants the index in the full list (audioService keeps that index).
+  const start = (track) => {
+    const idx = tracks.findIndex((t) => t.id === track.id);
+    playTrack(track, idx >= 0 ? idx : null);
+  };
+
+  const togglePlay = () => {
+    if (shownIsLoaded && isPlaying) {
+      pauseTrack();
+    } else if (shownIsLoaded && isPaused) {
+      resumeTrack();
     } else {
-      spinValue.stopAnimation();
+      start(shown);
     }
-    return () => {
-      if (anim) anim.stop();
-    };
-  }, [isPlaying, spinValue]);
+  };
+  const guardedToggle = usePressGuard(togglePlay, 400);
 
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const progressPercent = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
-
-  const handleProgressBarPress = (event) => {
-    const { locationX } = event.nativeEvent;
-    const targetRatio = Math.max(0, Math.min(1, locationX / 300));
-    seekTo(targetRatio * duration);
+  // Previous / Next only ever land on a playable track.
+  const step = (dir) => {
+    const n = playable.length;
+    if (n < 2) return;
+    const i = playable.findIndex((t) => t.id === shown.id);
+    const next = playable[(((i < 0 ? 0 : i + dir) % n) + n) % n];
+    start(next);
   };
 
-  const handleRewind10 = () => {
-    const newPos = Math.max(0, position - 10000);
-    seekTo(newPos);
+  const skipBy = (deltaMs) => {
+    if (!showProgress) return;
+    seekTo(Math.min(duration, Math.max(0, position + deltaMs)));
   };
 
-  const handleForward10 = () => {
-    const newPos = Math.min(duration, position + 10000);
-    seekTo(newPos);
+  const handleSeek = (event) => {
+    if (!barWidth || !showProgress) return;
+    const ratio = Math.max(0, Math.min(1, event.nativeEvent.locationX / barWidth));
+    seekTo(ratio * duration);
   };
+
+  const title = isHindi ? shown.titleHindi : shown.titleEn;
+  const altTitle = isHindi ? shown.titleEn : shown.titleHindi;
+  const status = shownIsLoaded && isPlaying
+    ? { icon: 'music', text: isHindi ? 'अभी बज रहा है' : 'Now playing' }
+    : shownIsLoaded && isPaused
+      ? { icon: 'pause', text: isHindi ? 'रुका हुआ' : 'Paused' }
+      : { icon: 'info', text: isHindi ? 'अभी नहीं बज रहा' : 'Not playing' };
+  const playingShown = shownIsLoaded && isPlaying;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <AppText style={styles.backArrow}>←</AppText>
-        </TouchableOpacity>
-        <View style={styles.headerTitleWrap}>
-          <AppText style={styles.headerTitle}>आरती व संकीर्तन सेवा</AppText>
-          <AppText style={styles.headerSubtitle}>ब्रज भक्ति रस धारा</AppText>
+    <>
+      {/* Artwork */}
+      <View
+        style={[styles.artwork, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}
+        accessible={false}
+      >
+        <View style={[styles.artworkInner, { backgroundColor: colors.surface }]}>
+          <Icon name="music" size={64} color={colors.primary} />
         </View>
-        <TouchableOpacity
-          style={styles.chantHeaderButton}
-          onPress={() => speakChant('जय श्री राधे')}
-        >
-          <AppText style={styles.chantHeaderText}>🔔 राधे</AppText>
-        </TouchableOpacity>
       </View>
 
+      {/* Now playing */}
+      <View style={styles.meta}>
+        <AppText variant="h2" weight="700" color={colors.navy} align="center">
+          {title}
+        </AppText>
+        <AppText variant="caption" color={colors.muted} align="center">
+          {altTitle}
+        </AppText>
+        <AppText variant="body" color={colors.textSecondary} align="center">
+          {shown.deity}
+        </AppText>
+        {shown.temple ? (
+          <View style={styles.inline}>
+            <Icon name="location" size={16} color={colors.primary} />
+            <AppText variant="caption" color={colors.textSecondary}>
+              {shown.temple}
+            </AppText>
+          </View>
+        ) : null}
+        <View style={styles.inline}>
+          <Icon name={status.icon} size={16} color={colors.muted} />
+          <AppText variant="caption" weight="600" color={colors.muted}>
+            {status.text}
+          </AppText>
+        </View>
+      </View>
+
+      {/* Progress: only while this track is really loaded in the player */}
+      {showProgress ? (
+        <View>
+          <Pressable
+            onPress={handleSeek}
+            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+            style={styles.progressHit}
+            accessibilityRole="adjustable"
+            accessibilityLabel={isHindi ? 'ट्रैक की प्रगति' : 'Track progress'}
+            accessibilityValue={{ text: `${formatTime(position)} / ${formatTime(duration)}` }}
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={(e) =>
+              skipBy(e.nativeEvent.actionName === 'increment' ? SKIP_MS : -SKIP_MS)
+            }
+          >
+            <View
+              pointerEvents="none"
+              style={[styles.progressTrack, { backgroundColor: colors.surfaceContainerHigh }]}
+            >
+              <View style={[styles.progressFill, { width: progressPct, backgroundColor: colors.primary }]} />
+            </View>
+            <View
+              pointerEvents="none"
+              style={[
+                styles.progressThumb,
+                { left: progressPct, backgroundColor: colors.primary, borderColor: colors.surface },
+              ]}
+            />
+          </Pressable>
+          <View style={styles.timeRow}>
+            <AppText variant="small" color={colors.muted}>
+              {formatTime(position)}
+            </AppText>
+            <AppText variant="small" color={colors.muted}>
+              {formatTime(duration)}
+            </AppText>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Transport */}
+      <View style={styles.transport}>
+        {playable.length > 1 ? (
+          <TransportButton
+            icon="previous"
+            label={isHindi ? 'पिछला' : 'Previous'}
+            onPress={() => step(-1)}
+            colors={colors}
+          />
+        ) : null}
+        <View style={styles.transportItem}>
+          <Pressable
+            onPress={guardedToggle}
+            accessibilityRole="button"
+            accessibilityLabel={playingShown ? (isHindi ? 'रोकें' : 'Pause') : isHindi ? 'चलाएँ' : 'Play'}
+            style={({ pressed }) => [
+              styles.playBtn,
+              { backgroundColor: pressed ? colors.primaryDark : colors.primary },
+            ]}
+          >
+            <Icon name={playingShown ? 'pause' : 'play'} size={34} color="#FFFFFF" />
+          </Pressable>
+          <AppText variant="small" weight="700" color={colors.navy} align="center">
+            {playingShown ? (isHindi ? 'रोकें' : 'Pause') : isHindi ? 'चलाएँ' : 'Play'}
+          </AppText>
+        </View>
+        {playable.length > 1 ? (
+          <TransportButton
+            icon="next"
+            label={isHindi ? 'अगला' : 'Next'}
+            onPress={() => step(1)}
+            colors={colors}
+          />
+        ) : null}
+      </View>
+
+      {showProgress ? (
+        <View style={styles.skipRow}>
+          <Button
+            variant="secondary"
+            title={isHindi ? '10 सेकंड पीछे' : 'Back 10 sec'}
+            onPress={() => skipBy(-SKIP_MS)}
+            style={styles.flex}
+          />
+          <Button
+            variant="secondary"
+            title={isHindi ? '10 सेकंड आगे' : 'Ahead 10 sec'}
+            onPress={() => skipBy(SKIP_MS)}
+            style={styles.flex}
+          />
+        </View>
+      ) : null}
+
+      <InfoNote icon="offline">
+        {playError === 'failed'
+          ? isHindi
+            ? 'ट्रैक शुरू नहीं हो सका। इंटरनेट जाँचकर फिर कोशिश करें।'
+            : 'The track could not start. Check your internet and try again.'
+          : isHindi
+            ? 'ऑडियो इंटरनेट से चलता है। ट्रैक शुरू न हो तो कनेक्शन जाँचकर फिर कोशिश करें।'
+            : 'Audio streams over the internet. If a track does not start, check your connection and try again.'}
+      </InfoNote>
+
+      {/* Tracks / lyrics */}
+      <View style={styles.tabs}>
+        <Chip
+          icon="list"
+          label={isHindi ? `भजन व आरती (${playable.length})` : `Tracks (${playable.length})`}
+          selected={activeTab === 'tracks'}
+          onPress={() => setActiveTab('tracks')}
+        />
+        <Chip
+          icon="book"
+          label={isHindi ? 'पावन पाठ' : 'Lyrics'}
+          selected={activeTab === 'lyrics'}
+          onPress={() => setActiveTab('lyrics')}
+        />
+      </View>
+
+      {activeTab === 'tracks' ? (
+        <View style={styles.list}>
+          {playable.map((item, index) => (
+            <TrackRow
+              key={item.id}
+              track={item}
+              index={index}
+              isCurrent={item.id === shown.id}
+              isPlaying={shownIsLoaded && isPlaying}
+              onPress={() => start(item)}
+              isHindi={isHindi}
+              colors={colors}
+            />
+          ))}
+        </View>
+      ) : (
+        <Card>
+          {shown.significance ? (
+            <View style={[styles.significance, { backgroundColor: colors.primaryLight }]}>
+              <AppText variant="bodyBold" color={colors.navy}>
+                {isHindi ? 'महत्व' : 'Significance'}
+              </AppText>
+              <AppText variant="body" color={colors.text}>
+                {shown.significance}
+              </AppText>
+            </View>
+          ) : null}
+          {!isHindi ? (
+            <AppText variant="small" color={colors.muted} style={styles.lyricsNote}>
+              Lyrics are in Hindi / Sanskrit.
+            </AppText>
+          ) : null}
+          <View style={styles.lyrics}>
+            {(shown.lyrics || []).map((verse, i) => (
+              <AppText key={`${shown.id}-${i}`} variant="bodyLarge" color={colors.navy}>
+                {verse}
+              </AppText>
+            ))}
+          </View>
+        </Card>
+      )}
+    </>
+  );
+}
+
+/* --------------------------------------------------------------- Screen */
+
+export default function AudioPlayerScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
+  const { colors } = useTheme();
+  const { isHindi } = useLanguage();
+  const { tracks, speakChant } = useAudio();
+
+  // Tracks without a recorded licence are not listed at all.
+  const playable = useMemo(() => (tracks || []).filter(isTrackPlayable), [tracks]);
+  const hasTracks = playable.length > 0;
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Disc Visualizer Card */}
-        <View style={styles.heroCard}>
-          <View style={styles.discOuterGlow}>
-            <Animated.View style={[styles.discCircle, { transform: [{ rotate: spin }] }]}>
-              <View style={styles.discInnerRing}>
-                <View style={styles.discCenter}>
-                  <AppText style={styles.discPeacock}>🦚</AppText>
-                </View>
-              </View>
-            </Animated.View>
-          </View>
+        <TopBar
+          title={isHindi ? 'भक्ति संगीत' : 'Bhakti audio'}
+          subtitle={
+            hasTracks
+              ? isHindi ? 'आरती, भजन और नाम जप' : 'Aarti, bhajans and naam jap'
+              : isHindi ? 'फ़ोन की आवाज़ में नाम जप' : "Naam jap in your phone's voice"
+          }
+          onBack={() => navigation.goBack()}
+          right={<LanguageToggle />}
+        />
 
-          {/* Current Track Meta */}
-          <AppText style={styles.trackTitle}>{currentTrack.titleHindi}</AppText>
-          <AppText style={styles.trackDeity}>{currentTrack.deity}</AppText>
-          <View style={styles.templeBadge}>
-            <AppText style={styles.templeBadgeText}>📍 {currentTrack.temple}</AppText>
-          </View>
+        <View style={styles.content}>
+          {hasTracks ? (
+            <Player
+              playable={playable}
+              requestedId={route?.params?.trackId}
+              isHindi={isHindi}
+              colors={colors}
+            />
+          ) : null}
+
+          <ChantSection speakChant={speakChant} isHindi={isHindi} colors={colors} />
+
+          {!hasTracks ? (
+            <InfoNote icon="music">
+              {isHindi
+                ? 'रिकॉर्ड किए गए भजन और आरती, उन्हें साझा करने की अनुमति मिलने के बाद यहाँ जोड़े जाएँगे।'
+                : 'Recorded bhajans and aartis will be added here once we have permission to share them.'}
+            </InfoNote>
+          ) : null}
         </View>
-
-        {/* Player Controls Container */}
-        <View style={styles.controlsCard}>
-          {/* Progress Bar */}
-          <TouchableOpacity
-            style={styles.progressContainer}
-            activeOpacity={0.9}
-            onPress={handleProgressBarPress}
-          >
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
-              <View style={[styles.progressThumb, { left: `${progressPercent}%` }]} />
-            </View>
-          </TouchableOpacity>
-
-          {/* Time row */}
-          <View style={styles.timeRow}>
-            <AppText style={styles.timeText}>{formatTime(position)}</AppText>
-            <AppText style={styles.timeText}>{formatTime(duration)}</AppText>
-          </View>
-
-          {/* Main Controls Row */}
-          <View style={styles.transportRow}>
-            {/* Rewind 10s */}
-            <TouchableOpacity style={styles.subCtrlBtn} onPress={handleRewind10}>
-              <AppText style={styles.subCtrlText}>-10s</AppText>
-            </TouchableOpacity>
-
-            {/* Prev Track */}
-            <TouchableOpacity style={styles.skipBtn} onPress={previousTrack}>
-              <AppText style={styles.skipIcon}>⏮</AppText>
-            </TouchableOpacity>
-
-            {/* Play/Pause Button */}
-            <TouchableOpacity
-              style={styles.playPauseBtn}
-              activeOpacity={0.85}
-              onPress={() => (isPlaying ? pauseTrack() : resumeTrack())}
-            >
-              <AppText style={styles.playPauseIcon}>{isPlaying ? '⏸' : '▶'}</AppText>
-            </TouchableOpacity>
-
-            {/* Next Track */}
-            <TouchableOpacity style={styles.skipBtn} onPress={nextTrack}>
-              <AppText style={styles.skipIcon}>⏭</AppText>
-            </TouchableOpacity>
-
-            {/* Forward 10s */}
-            <TouchableOpacity style={styles.subCtrlBtn} onPress={handleForward10}>
-              <AppText style={styles.subCtrlText}>+10s</AppText>
-            </TouchableOpacity>
-          </View>
-
-          {/* Devotional Chant Buttons */}
-          <View style={styles.chantRow}>
-            <TouchableOpacity
-              style={styles.quickChantBtn}
-              onPress={() => speakChant('राधे राधे, जय श्री राधे')}
-            >
-              <AppText style={styles.quickChantText}>📿 राधे राधे बोलो</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.quickChantBtn, styles.quickChantBtnGold]}
-              onPress={() => speakChant('हरे कृष्ण हरे कृष्ण कृष्ण कृष्ण हरे हरे')}
-            >
-              <AppText style={styles.quickChantText}>✨ महामंत्र जप</AppText>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Segmented Switch: Lyrics vs Playlist */}
-        <View style={styles.tabSwitch}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'lyrics' && styles.tabButtonActive]}
-            onPress={() => setActiveTab('lyrics')}
-          >
-            <AppText
-              style={[styles.tabText, activeTab === 'lyrics' && styles.tabTextActive]}
-            >
-              📜 पावन पाठ (Lyrics)
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'playlist' && styles.tabButtonActive]}
-            onPress={() => setActiveTab('playlist')}
-          >
-            <AppText
-              style={[styles.tabText, activeTab === 'playlist' && styles.tabTextActive]}
-            >
-              🎶 भजन व आरती संग्रह ({tracks.length})
-            </AppText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content based on Tab */}
-        {activeTab === 'lyrics' ? (
-          <View style={styles.lyricsCard}>
-            <View style={styles.significanceBox}>
-              <AppText style={styles.significanceLabel}>🌸 फलश्रुति व महत्व:</AppText>
-              <AppText style={styles.significanceText}>{currentTrack.significance}</AppText>
-            </View>
-
-            <View style={styles.lyricsBody}>
-              {currentTrack.lyrics &&
-                currentTrack.lyrics.map((verse, index) => (
-                  <View key={index} style={styles.verseRow}>
-                    <AppText style={styles.verseDot}>🪷</AppText>
-                    <AppText style={styles.verseText}>{verse}</AppText>
-                  </View>
-                ))}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.playlistCard}>
-            {tracks.map((item, index) => {
-              const isSelected = item.id === currentTrack.id;
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.playlistItem,
-                    isSelected && styles.playlistItemSelected,
-                  ]}
-                  activeOpacity={0.7}
-                  onPress={() => playTrack(item, index)}
-                >
-                  <View style={styles.playlistIndexCircle}>
-                    <AppText style={styles.playlistIndexText}>
-                      {isSelected && isPlaying ? '▶' : index + 1}
-                    </AppText>
-                  </View>
-                  <View style={styles.playlistMeta}>
-                    <AppText
-                      style={[
-                        styles.playlistTitle,
-                        isSelected && styles.playlistTitleActive,
-                      ]}
-                    >
-                      {item.titleHindi}
-                    </AppText>
-                    <AppText style={styles.playlistSub}>
-                      {item.deity} • {item.durationDisplay}
-                    </AppText>
-                  </View>
-                  <View style={styles.playIndicator}>
-                    <AppText style={styles.playIndicatorText}>
-                      {isSelected ? 'सक्रिय' : 'बजाएं'}
-                    </AppText>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(217, 119, 6, 0.15)',
-    backgroundColor: colors.background,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    ...shadows.sm,
-  },
-  backArrow: {
-    fontSize: 22,
-    color: colors.primaryNavy,
-    fontWeight: '700',
-  },
-  headerTitleWrap: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.primaryNavy,
-    lineHeight: 24,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.saffron,
-    lineHeight: 16,
-  },
-  chantHeaderButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(217, 119, 6, 0.12)',
-    borderWidth: 1,
-    borderColor: colors.saffron,
-  },
-  chantHeaderText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.saffron,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  heroCard: {
-    backgroundColor: '#FFFFFF',
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 20 },
+  artwork: {
+    height: 220,
     borderRadius: 24,
-    padding: 20,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.15)',
-    ...shadows.md,
-    marginBottom: 16,
-  },
-  discOuterGlow: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    ...shadows.md,
-  },
-  discCircle: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: colors.primaryNavy,
-    borderWidth: 4,
-    borderColor: colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  discInnerRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
-    borderColor: 'rgba(244, 197, 66, 0.5)',
-    borderStyle: 'dashed',
+  artworkInner: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  discCenter: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.saffron,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  discPeacock: {
-    fontSize: 24,
-  },
-  trackTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.primaryNavy,
-    textAlign: 'center',
-    lineHeight: 28,
-  },
-  trackDeity: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.saffron,
-    marginTop: 4,
-  },
-  templeBadge: {
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.2)',
-  },
-  templeBadgeText: {
-    fontSize: 12,
-    color: '#92400E',
-    fontWeight: '600',
-  },
-  controlsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.15)',
-    ...shadows.md,
-    marginBottom: 16,
-  },
-  progressContainer: {
-    paddingVertical: 10,
-  },
-  progressBarBg: {
-    height: 6,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 3,
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  progressBarFill: {
-    height: 6,
-    backgroundColor: colors.saffron,
-    borderRadius: 3,
-  },
+  meta: { alignItems: 'center', gap: 4 },
+  inline: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' },
+  progressHit: { height: 48, justifyContent: 'center' },
+  progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: 6 },
   progressThumb: {
     position: 'absolute',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.saffron,
+    top: 24 - 9,
+    width: 18,
+    height: 18,
+    marginLeft: -9,
+    borderRadius: 9,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
-    marginLeft: -8,
-    ...shadows.sm,
   },
-  timeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: -2,
-    marginBottom: 12,
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '400',
-  },
-  transportRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    marginVertical: 6,
-  },
-  subCtrlBtn: {
-    padding: 8,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-  },
-  subCtrlText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primaryNavy,
-  },
-  skipBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  skipIcon: {
-    fontSize: 20,
-    color: colors.primaryNavy,
-  },
-  playPauseBtn: {
+  timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -6 },
+  transport: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-around' },
+  transportItem: { alignItems: 'center', gap: 6, minWidth: 80 },
+  transportBtn: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.saffron,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.gold,
-    ...shadows.md,
+    marginTop: 8,
   },
-  playPauseIcon: {
-    fontSize: 26,
-    color: '#FFFFFF',
-    lineHeight: 30,
+  playBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  skipRow: { flexDirection: 'row', gap: 12 },
+  section: { gap: 10 },
+  sectionHeader: { marginBottom: 0 },
   chantRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  quickChantBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: colors.saffron,
     alignItems: 'center',
-  },
-  quickChantBtnGold: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#10B981',
-  },
-  quickChantText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.primaryNavy,
-  },
-  tabSwitch: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(217, 119, 6, 0.1)',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  tabButtonActive: {
-    backgroundColor: colors.saffron,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.primaryNavy,
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  lyricsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.15)',
-    ...shadows.md,
-  },
-  significanceBox: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
-    padding: 14,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.saffron,
-    marginBottom: 16,
-  },
-  significanceLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400E',
-    marginBottom: 4,
-  },
-  significanceText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#78350F',
-    lineHeight: 20,
-  },
-  lyricsBody: {
-    paddingVertical: 8,
-  },
-  verseRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  verseDot: {
-    fontSize: 16,
-    marginRight: 10,
-    marginTop: 2,
-  },
-  verseText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primaryNavy,
-    lineHeight: 24,
-  },
-  playlistCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.15)',
-    ...shadows.md,
-  },
-  playlistItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: 12,
+    minHeight: 72,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
-  playlistItemSelected: {
-    backgroundColor: '#FEF3C7',
-    borderBottomColor: 'transparent',
-  },
-  playlistIndexCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
+  chantIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  chantPlay: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  playlistIndexText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.saffron,
-  },
-  playlistMeta: {
-    flex: 1,
-  },
-  playlistTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.primaryNavy,
-    lineHeight: 21,
-  },
-  playlistTitleActive: {
-    color: colors.saffron,
-  },
-  playlistSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  playIndicator: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: '#FFFBEB',
-  },
-  playIndicatorText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.saffron,
-  },
+  rowDivider: { height: StyleSheet.hairlineWidth, marginLeft: 68 },
+  tabs: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  list: { gap: 12 },
+  trackRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  trackIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  significance: { borderRadius: 14, padding: 14, gap: 4 },
+  lyricsNote: { marginTop: 12 },
+  lyrics: { gap: 10, marginTop: 16 },
 });

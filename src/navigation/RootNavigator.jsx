@@ -25,8 +25,11 @@ import YatraDetailScreen from '../screens/yatra/YatraDetailScreen';
 import ParikramaDetailScreen from '../screens/yatra/ParikramaDetailScreen';
 import SmartPlannerScreen from '../screens/yatra/SmartPlannerScreen';
 import PlacesScreen from '../screens/places/PlacesScreen';
+import PlaceDetailScreen from '../screens/places/PlaceDetailScreen';
 import AudioPlayerScreen from '../screens/audio/AudioPlayerScreen';
 import HelpdeskScreen from '../screens/helpdesk/HelpdeskScreen';
+import MapScreen from '../screens/map/MapScreen';
+import MoreScreen from '../screens/more/MoreScreen';
 
 // Auth Stack Navigator
 import AuthNavigator from './AuthNavigator';
@@ -38,22 +41,43 @@ const Stack = createNativeStackNavigator();
 const TAB_ROUTES = [
   ROUTES.HOME,
   ROUTES.TEMPLES,
-  ROUTES.YATRA,
+  ROUTES.MAP,
   ROUTES.PANCHANG,
+  ROUTES.MORE,
 ];
+
+const TAB_SCREEN_OPTIONS = { animation: 'fade', gestureEnabled: false };
+// One instance per tab: navigating to a tab that is already in the stack brings that
+// screen to the top (keeping its search and filters) instead of stacking a copy.
+const SINGLE_INSTANCE = () => 'tab';
+
+// Lets App tell the navigator when the container is ready, so a restored
+// (non-Home) screen shows or hides the tab bar correctly on cold start.
+export const routeSync = {
+  listener: null,
+  notify() {
+    if (this.listener) this.listener();
+  },
+};
 
 export function RootNavigator() {
   const { colors } = useTheme();
   const [currentRoute, setCurrentRoute] = useState(ROUTES.HOME);
 
   useEffect(() => {
-    const unsubscribe = navigationRef.addListener('state', () => {
-      const activeRouteName = navigationRef.getCurrentRoute()?.name;
+    const sync = () => {
+      const activeRouteName = navigationRef.isReady() ? navigationRef.getCurrentRoute()?.name : null;
       if (activeRouteName) {
         setCurrentRoute(activeRouteName);
       }
-    });
-    return unsubscribe;
+    };
+    routeSync.listener = sync;
+    sync();
+    const unsubscribe = navigationRef.addListener('state', sync);
+    return () => {
+      routeSync.listener = null;
+      unsubscribe();
+    };
   }, []);
 
   const isTabScreen = TAB_ROUTES.includes(currentRoute);
@@ -64,14 +88,19 @@ export function RootNavigator() {
         initialRouteName={ROUTES.HOME}
         screenOptions={{
           headerShown: false,
-          animation: 'fade_from_bottom',
+          // iOS push: new screens slide in from the right and can be swiped back.
+          animation: 'slide_from_right',
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        {/* Primary Destinations */}
-        <Stack.Screen name={ROUTES.HOME} component={HomeScreen} />
-        <Stack.Screen name={ROUTES.TEMPLES} component={TempleListScreen} />
-        <Stack.Screen name={ROUTES.PANCHANG} component={PanchangScreen} />
+        {/* Tab destinations: peers, so they cross-fade and cannot be swiped "back" (HIG tab bars). */}
+        <Stack.Screen name={ROUTES.HOME} component={HomeScreen} options={TAB_SCREEN_OPTIONS} getId={SINGLE_INSTANCE} />
+        <Stack.Screen name={ROUTES.TEMPLES} component={TempleListScreen} options={TAB_SCREEN_OPTIONS} getId={SINGLE_INSTANCE} />
+        <Stack.Screen name={ROUTES.PANCHANG} component={PanchangScreen} options={TAB_SCREEN_OPTIONS} getId={SINGLE_INSTANCE} />
+        <Stack.Screen name={ROUTES.MAP} component={MapScreen} options={TAB_SCREEN_OPTIONS} getId={SINGLE_INSTANCE} />
+        <Stack.Screen name={ROUTES.MORE} component={MoreScreen} options={TAB_SCREEN_OPTIONS} getId={SINGLE_INSTANCE} />
+
+        {/* Pushed screens */}
         <Stack.Screen name={ROUTES.YATRA} component={YatraScreen} />
         <Stack.Screen name={ROUTES.FOOD} component={FoodScreen} />
         <Stack.Screen name={ROUTES.EVENTS} component={EventsScreen} />
@@ -103,6 +132,11 @@ export function RootNavigator() {
         <Stack.Screen
           name={ROUTES.PLACES}
           component={PlacesScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name={ROUTES.PLACE_DETAIL}
+          component={PlaceDetailScreen}
           options={{ animation: 'slide_from_right' }}
         />
         <Stack.Screen

@@ -61,6 +61,13 @@ export function formatMinutes(mins) {
   return `${displayH}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+// One "7:45 AM - 12:00 PM" line per darshan window; the original text if it can't be read.
+export function describeDarshanWindows(text) {
+  const windows = parseDarshanWindows(text);
+  if (!windows) return text ? [String(text)] : [];
+  return windows.map(([start, end]) => `${formatMinutes(start)} - ${formatMinutes(end)}`);
+}
+
 export function getTempleStatus(temple, now = new Date()) {
   const istDate = getIndianStandardTime(now);
   const minutes = istDate.getHours() * 60 + istDate.getMinutes();

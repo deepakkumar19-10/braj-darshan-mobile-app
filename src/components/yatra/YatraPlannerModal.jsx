@@ -1,449 +1,204 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import { colors, spacing, radii, shadows } from '../../theme';
-import { AppText, Badge, AppButton, MorpankhIcon } from '../common';
+/**
+ * Braj Darshan - Plan length sheet
+ * Bottom sheet opened from a day plan: choose how many days (1–6) and a pace,
+ * see which day plans from src/data/yatra.json that covers, and jump to a day.
+ *
+ * onSelectDay(day, dayIds) — the chosen day and the ids of every day in the plan.
+ */
+
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { AppText } from '../common/AppText';
+import { Button, Card, Chip, IconButton, InfoNote, ListRow, GUTTER } from '../ui';
 import yatraPlans from '../../data/yatra.json';
 
-export default function YatraPlannerModal({ visible, onClose, onSelectDay }) {
-  const [selectedDays, setSelectedDays] = useState(3);
-  const [pace, setPace] = useState('moderate'); // 'relaxed' | 'moderate' | 'fast'
+const DAY_OPTIONS = [1, 2, 3, 4, 5, 6];
 
-  const filteredPlans = yatraPlans.slice(0, selectedDays);
+const PACES = [
+  {
+    id: 'relaxed',
+    hi: 'आरामदायक',
+    en: 'Relaxed',
+    noteHi: 'हर दिन 2–3 मुख्य स्थान चुनें और दोपहर में विश्राम करें।',
+    noteEn: 'Pick 2–3 main places each day and rest in the afternoon.',
+  },
+  {
+    id: 'moderate',
+    hi: 'संतुलित',
+    en: 'Balanced',
+    noteHi: 'मुख्य दर्शन, आरती और मंदिर बंद रहने के समय विश्राम।',
+    noteEn: 'Main darshans and aartis, with rest while temples are closed.',
+  },
+  {
+    id: 'fast',
+    hi: 'तेज़',
+    en: 'Faster',
+    noteHi: 'जल्दी शुरू करें; अधिक स्थान, पर लंबे दिन। अपने समूह की थकान का ध्यान रखें।',
+    noteEn: 'Start early; more places but longer days. Watch for tiredness in your group.',
+  },
+];
 
-  // Dynamic budget calculation based on selected days and pace
-  const paceMultiplier = pace === 'relaxed' ? 0.9 : pace === 'fast' ? 1.2 : 1.0;
-  const baseMinBudget = selectedDays * 700 * paceMultiplier;
-  const baseMaxBudget = selectedDays * 1200 * paceMultiplier;
-
-  const totalPlaces = filteredPlans.reduce(
-    (acc, plan) => acc + (plan.places ? plan.places.length : 0),
-    0
+export default function YatraPlannerModal({ visible, onClose, onSelectDay, initialDays }) {
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { isHindi } = useLanguage();
+  const [selectedDays, setSelectedDays] = useState(
+    DAY_OPTIONS.includes(initialDays) ? initialDays : 3
   );
+  const [pace, setPace] = useState('moderate');
+
+  // Start from the current plan length each time the sheet opens.
+  useEffect(() => {
+    if (visible && DAY_OPTIONS.includes(initialDays)) setSelectedDays(initialDays);
+  }, [visible, initialDays]);
+
+  const planDays = yatraPlans.slice(0, selectedDays);
+  const dayIds = planDays.map((d) => d.id);
+  const paceInfo = PACES.find((p) => p.id === pace) || PACES[1];
+
+  const choose = (day) => {
+    if (!day) return;
+    onClose();
+    if (onSelectDay) onSelectDay(day, dayIds);
+  };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={[styles.overlay, { backgroundColor: colors.overlayDark }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleWrap}>
-              <View style={styles.iconCircle}>
-                <AppText variant="h3">✨</AppText>
-              </View>
-              <View>
-                <AppText variant="h3" color={colors.navy}>
-                  स्मार्ट ब्रज यात्रा प्लानर
-                </AppText>
-                <AppText variant="caption" color={colors.muted}>
-                  अपनी पसंद के अनुसार अनुकूलित कार्यक्रम बनाएं
-                </AppText>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={onClose}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <AppText variant="body" weight="700" color={colors.muted}>
-                ✕
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <View style={styles.flex}>
+              <AppText variant="h3" weight="700" color={colors.navy}>
+                {isHindi ? 'योजना के दिन चुनें' : 'Choose plan length'}
               </AppText>
-            </TouchableOpacity>
+              <AppText variant="caption" color={colors.muted}>
+                {isHindi ? 'सुझाई गई दिन-योजनाएं, बुकिंग नहीं' : 'Suggested day plans, not bookings'}
+              </AppText>
+            </View>
+            <IconButton icon="close" onPress={onClose} accessibilityLabel={isHindi ? 'बंद करें' : 'Close'} />
           </View>
 
           <ScrollView
-            style={styles.scrollArea}
+            style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Step 1: Duration Selector */}
-            <View style={styles.section}>
-              <AppText variant="caption" weight="700" color={colors.primary} style={styles.stepTag}>
-                चरण 1 • यात्रा की अवधि
+            <View>
+              <AppText variant="bodyBold" color={colors.navy} style={styles.label}>
+                {isHindi ? 'कितने दिन?' : 'How many days?'}
               </AppText>
-              <AppText variant="h3" color={colors.navy} style={styles.sectionHeading}>
-                कितने दिनों की यात्रा प्लान करना चाहते हैं?
-              </AppText>
-
-              <View style={styles.daysRow}>
-                {[1, 2, 3, 4, 5, 6].map((num) => {
-                  const isActive = selectedDays === num;
-                  return (
-                    <TouchableOpacity
-                      key={num}
-                      style={[
-                        styles.dayPill,
-                        isActive && styles.dayPillActive,
-                      ]}
-                      onPress={() => setSelectedDays(num)}
-                      activeOpacity={0.8}
-                    >
-                      <AppText
-                        variant="caption"
-                        weight="700"
-                        color={isActive ? colors.surface : colors.charcoal}
-                      >
-                        {num} दिन
-                      </AppText>
-                    </TouchableOpacity>
-                  );
-                })}
+              <View style={styles.chipRow}>
+                {DAY_OPTIONS.map((n) => (
+                  <Chip
+                    key={n}
+                    label={isHindi ? `${n} दिन` : `${n} ${n === 1 ? 'day' : 'days'}`}
+                    selected={selectedDays === n}
+                    onPress={() => setSelectedDays(n)}
+                  />
+                ))}
               </View>
             </View>
 
-            {/* Step 2: Pace Selector */}
-            <View style={styles.section}>
-              <AppText variant="caption" weight="700" color={colors.primary} style={styles.stepTag}>
-                चरण 2 • दर्शन की गति (Travel Pace)
+            <View>
+              <AppText variant="bodyBold" color={colors.navy} style={styles.label}>
+                {isHindi ? 'गति' : 'Pace'}
               </AppText>
-              <AppText variant="h3" color={colors.navy} style={styles.sectionHeading}>
-                आपकी यात्रा की शैली कैसी हो?
-              </AppText>
-
-              <View style={styles.paceCardsWrap}>
-                {/* Relaxed */}
-                <TouchableOpacity
-                  style={[
-                    styles.paceCard,
-                    pace === 'relaxed' && styles.paceCardActive,
-                  ]}
-                  onPress={() => setPace('relaxed')}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.paceHeader}>
-                    <AppText variant="body">🌿</AppText>
-                    <AppText
-                      variant="body"
-                      weight="700"
-                      color={pace === 'relaxed' ? colors.primary : colors.navy}
-                    >
-                      आरामदायक (Relaxed)
-                    </AppText>
-                  </View>
-                  <AppText variant="caption" color={colors.muted}>
-                    प्रतिदिन 2-3 प्रमुख मंदिर, वरिष्ठ जनों व परिवार के लिए सर्वोत्तम
-                  </AppText>
-                </TouchableOpacity>
-
-                {/* Moderate */}
-                <TouchableOpacity
-                  style={[
-                    styles.paceCard,
-                    pace === 'moderate' && styles.paceCardActive,
-                  ]}
-                  onPress={() => setPace('moderate')}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.paceHeader}>
-                    <AppText variant="body">⚖️</AppText>
-                    <AppText
-                      variant="body"
-                      weight="700"
-                      color={pace === 'moderate' ? colors.primary : colors.navy}
-                    >
-                      संतुलित (Balanced)
-                    </AppText>
-                  </View>
-                  <AppText variant="caption" color={colors.muted}>
-                    मंदिर दर्शन + विश्राम + स्थानीय ब्रज खान-पान व यमुना आरती
-                  </AppText>
-                </TouchableOpacity>
-
-                {/* Fast */}
-                <TouchableOpacity
-                  style={[
-                    styles.paceCard,
-                    pace === 'fast' && styles.paceCardActive,
-                  ]}
-                  onPress={() => setPace('fast')}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.paceHeader}>
-                    <AppText variant="body">⚡</AppText>
-                    <AppText
-                      variant="body"
-                      weight="700"
-                      color={pace === 'fast' ? colors.primary : colors.navy}
-                    >
-                      तीव्र दर्शन (Fast-track)
-                    </AppText>
-                  </View>
-                  <AppText variant="caption" color={colors.muted}>
-                    अधिकतम स्थल एवं परिक्रमा कम समय में पूर्ण करने हेतु
-                  </AppText>
-                </TouchableOpacity>
+              <View style={styles.chipRow}>
+                {PACES.map((p) => (
+                  <Chip
+                    key={p.id}
+                    label={isHindi ? p.hi : p.en}
+                    selected={pace === p.id}
+                    onPress={() => setPace(p.id)}
+                  />
+                ))}
               </View>
+              <AppText variant="caption" color={colors.textSecondary} style={styles.gapSmall}>
+                {isHindi ? paceInfo.noteHi : paceInfo.noteEn}
+              </AppText>
             </View>
 
-            {/* Generated Summary Card */}
-            <View style={[styles.summaryCard, shadows.sm]}>
-              <View style={styles.summaryTop}>
-                <AppText variant="h3" color={colors.navy}>
-                  📊 यात्रा का अनुमानित विवरण
-                </AppText>
-                <Badge label={`${selectedDays} दिन की यात्रा`} variant="gold" />
-              </View>
-
-              <View style={styles.summaryMetricsRow}>
-                <View style={styles.metricItem}>
-                  <AppText variant="caption" color={colors.muted}>💰 कुल अनुमानित खर्च</AppText>
-                  <AppText variant="body" weight="700" color={colors.primary}>
-                    ₹{Math.round(baseMinBudget)} - ₹{Math.round(baseMaxBudget)}
-                  </AppText>
-                  <AppText variant="caption" color={colors.muted}>(प्रति व्यक्ति)</AppText>
-                </View>
-
-                <View style={styles.metricDivider} />
-
-                <View style={styles.metricItem}>
-                  <AppText variant="caption" color={colors.muted}>🛕 दर्शनीय स्थल</AppText>
-                  <AppText variant="body" weight="700" color={colors.navy}>
-                    {totalPlaces}+ पवित्र स्थल
-                  </AppText>
-                  <AppText variant="caption" color={colors.muted}>संपूर्ण ब्रज मण्डल</AppText>
-                </View>
-              </View>
-            </View>
-
-            {/* Itinerary Preview Breakdown */}
-            <View style={styles.section}>
-              <AppText variant="h3" color={colors.navy} style={styles.sectionHeading}>
-                📋 प्रस्तावित दैनिक कार्यक्रम ({selectedDays} दिन):
+            <View>
+              <AppText variant="bodyBold" color={colors.navy} style={styles.label}>
+                {isHindi ? `इस योजना के दिन (${selectedDays})` : `Days in this plan (${selectedDays})`}
               </AppText>
-
-              {filteredPlans.map((plan) => (
-                <TouchableOpacity
-                  key={plan.id}
-                  style={styles.dayRow}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    onClose();
-                    onSelectDay?.(plan);
-                  }}
-                >
-                  <View style={styles.dayBadgeCol}>
-                    <Badge label={plan.day} variant="gold" />
+              <Card style={styles.listCard}>
+                {planDays.map((day, i) => (
+                  <View key={day.id}>
+                    {i > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
+                    <ListRow
+                      icon="calendar"
+                      title={isHindi ? `दिन ${i + 1} · ${day.title}` : `Day ${i + 1} · ${day.titleEn}`}
+                      subtitle={isHindi ? day.tagline : day.taglineEn}
+                      onPress={() => choose(day)}
+                    />
                   </View>
-
-                  <View style={styles.dayDetailsCol}>
-                    <AppText variant="body" weight="700" color={colors.navy}>
-                      {plan.title}
-                    </AppText>
-                    <AppText
-                      variant="caption"
-                      color={colors.muted}
-                      numberOfLines={1}
-                      style={styles.placesPreview}
-                    >
-                      📍 {plan.places?.slice(0, 3).join(' • ')}...
-                    </AppText>
-                    <View style={styles.dayMeta}>
-                      <AppText variant="caption" color={colors.primary} weight="600">
-                        💰 {plan.estimatedBudget}
-                      </AppText>
-                      <AppText variant="caption" color={colors.charcoal}>
-                        🚗 {plan.transport}
-                      </AppText>
-                    </View>
-                  </View>
-
-                  <AppText variant="body" color={colors.primary} weight="700">
-                    ›
-                  </AppText>
-                </TouchableOpacity>
-              ))}
+                ))}
+              </Card>
             </View>
+
+            <InfoNote>
+              {isHindi
+                ? 'समय केवल सुझाव हैं। त्योहारों पर बदल सकते हैं — कृपया स्थानीय पुष्टि करें।'
+                : 'Times are suggestions. They may change on festivals — confirm locally.'}
+            </InfoNote>
           </ScrollView>
 
-          {/* Footer Action */}
-          <View style={styles.footer}>
-            <AppButton
-              title="चयनित यात्रा कार्यक्रम पर जाएं"
-              variant="primary"
-              size="lg"
-              icon={<MorpankhIcon size={20} />}
-              onPress={() => {
-                onClose();
-                onSelectDay?.(filteredPlans[0]);
-              }}
+          {/* Footer */}
+          <View
+            style={[
+              styles.footer,
+              { borderTopColor: colors.border, backgroundColor: colors.surface, paddingBottom: insets.bottom + 12 },
+            ]}
+          >
+            <Button
+              title={isHindi ? 'दिन 1 से शुरू करें' : 'Start with Day 1'}
+              icon="route"
+              onPress={() => choose(planDays[0])}
             />
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
+  flex: { flex: 1 },
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '90%',
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.base,
-    paddingBottom: spacing.sm,
+    gap: 12,
+    paddingHorizontal: GUTTER,
+    paddingTop: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
   },
-  headerTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  iconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.surfaceGold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtn: {
-    padding: spacing.xs,
-  },
-  scrollArea: {
-    paddingHorizontal: spacing.base,
-  },
-  scrollContent: {
-    paddingVertical: spacing.sm,
-  },
-  section: {
-    marginBottom: spacing.md,
-  },
-  stepTag: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  sectionHeading: {
-    marginBottom: spacing.xs,
-  },
-  daysRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.xxs,
-  },
-  dayPill: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderGold,
-  },
-  dayPillActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  paceCardsWrap: {
-    gap: spacing.xs,
-    marginTop: spacing.xxs,
-  },
-  paceCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  paceCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#FFFBEB',
-  },
-  paceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: 4,
-  },
-  summaryCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    padding: spacing.base,
-    borderWidth: 1,
-    borderColor: colors.borderGold,
-    marginBottom: spacing.md,
-  },
-  summaryTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  summaryMetricsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  metricItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  metricDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: colors.border,
-  },
-  dayRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.sm,
-    marginBottom: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dayBadgeCol: {
-    marginRight: spacing.xs,
-  },
-  dayDetailsCol: {
-    flex: 1,
-    marginRight: spacing.xs,
-  },
-  placesPreview: {
-    marginVertical: 2,
-  },
-  dayMeta: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: 2,
-  },
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  scrollContent: { paddingHorizontal: GUTTER, paddingVertical: 16, gap: 20 },
+  label: { marginBottom: 10 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  gapSmall: { marginTop: 8 },
+  listCard: { paddingVertical: 4 },
+  divider: { height: 1 },
   footer: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: GUTTER,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
 });

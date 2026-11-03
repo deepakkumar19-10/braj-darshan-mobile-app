@@ -1,385 +1,325 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Linking,
-  Alert,
-} from 'react-native';
+/**
+ * Braj Darshan - Help & essentials
+ * Layout from the redesign (design-input/figma "Light · Help"): the national
+ * emergency numbers as one calm list (tap a row to call), practical tips,
+ * travel basics and the app's contact email.
+ *
+ * Honesty rules: only India's national numbers (112, 108) are shown. No office
+ * addresses, local helplines, live chat, request forms or "dispatch" features,
+ * because the app does not run any of those.
+ */
+
+import React from 'react';
+import { StyleSheet, View, ScrollView, Linking, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useFavorites } from '../../context/FavoritesContext';
+import { AppText } from '../../components/common/AppText';
+import { Icon } from '../../components/common/Icon';
 import {
-  AppText,
-  StitchHeader,
-  StitchTag,
-  StitchPill,
-} from '../../components/common';
-import { ROUTES } from '../../navigation/routes';
+  TopBar,
+  LanguageToggle,
+  Card,
+  InfoNote,
+  SectionHeader,
+  ListRow,
+  GUTTER,
+  useBottomInset,
+} from '../../components/ui';
+import { usePressGuard } from '../../hooks/usePressGuard';
+
+const CONTACT_EMAIL = 'divyabraj.darshan@gmail.com';
+
+const EMERGENCY = [
+  {
+    number: '112',
+    icon: 'emergency',
+    urgent: true,
+    titleHi: 'आपातकाल',
+    titleEn: 'Emergency',
+    descHi: 'पुलिस, आग और किसी भी आपात सहायता के लिए',
+    descEn: 'Police, fire and urgent assistance',
+  },
+  {
+    number: '108',
+    icon: 'ambulance',
+    titleHi: 'एंबुलेंस',
+    titleEn: 'Ambulance',
+    descHi: 'तुरंत चिकित्सा सहायता के लिए',
+    descEn: 'For urgent medical help',
+  },
+];
+
+const GROUP_TIPS = [
+  {
+    id: 'lost',
+    icon: 'people',
+    titleHi: 'खोया-पाया',
+    titleEn: 'Lost & found',
+    textHi:
+      'भीड़ में बिछड़ने पर मिलने की एक जगह पहले से तय कर लें। कोई लापता हो तो स्थानीय पुलिस या मंदिर कर्मचारियों से संपर्क करें। आपात स्थिति में 112 पर कॉल करें।',
+    textEn:
+      'Agree on a meeting point before you enter a crowd. If someone is missing, approach local police or temple staff. Call 112 for an emergency.',
+  },
+  {
+    id: 'women',
+    icon: 'safety',
+    titleHi: 'महिलाओं की सुरक्षा',
+    titleEn: "Women's safety",
+    textHi:
+      'अनजान इलाकों में समूह के साथ रहें। रोशनी वाले सार्वजनिक रास्तों का उपयोग करें और असुरक्षित लगे तो 112 पर कॉल करें।',
+    textEn:
+      'Stay with your group in unfamiliar areas. Use well-lit public routes and call 112 if you feel unsafe.',
+  },
+  {
+    id: 'seniors',
+    icon: 'parikrama',
+    titleHi: 'बुज़ुर्गों के साथ यात्रा',
+    titleEn: 'Travelling with seniors',
+    textHi:
+      'दवाइयाँ, पानी और किसी परिजन का नंबर काग़ज़ पर लिखकर साथ रखें। बीच-बीच में बैठने का समय रखें और जल्दबाज़ी न करें।',
+    textEn:
+      'Keep medicines, water and an emergency contact written on paper. Build in seating breaks and avoid rushing.',
+  },
+];
+
+const PLACE_TIPS = [
+  {
+    id: 'phones',
+    icon: 'noPhoto',
+    titleHi: 'फ़ोन, कैमरा और सामान',
+    titleEn: 'Phones, cameras and bags',
+    textHi:
+      'कुछ मंदिरों में फ़ोन, कैमरा या बैग अंदर ले जाने की अनुमति नहीं होती। जहाँ उपलब्ध हो, मंदिर का सामान घर उपयोग करें और नियम गेट पर ही पूछ लें।',
+    textEn:
+      "Some temples do not allow phones, cameras or bags inside. Use the temple's cloakroom where there is one, and check the rules at the gate.",
+  },
+  {
+    id: 'crowds',
+    icon: 'water',
+    titleHi: 'भीड़ और गर्मी',
+    titleEn: 'Crowds and heat',
+    textHi:
+      'त्योहारों और छुट्टियों पर भीड़ बहुत होती है। पानी पीते रहें, धूप से बचें और भीड़ में बच्चों का हाथ पकड़े रखें।',
+    textEn:
+      'Festivals and holidays bring very large crowds. Drink water often, avoid the midday sun and hold children by the hand in crowds.',
+  },
+  {
+    id: 'yamuna',
+    icon: 'ghat',
+    titleHi: 'यमुना घाट पर',
+    titleEn: 'At the Yamuna ghats',
+    textHi:
+      'वहीं स्नान करें जहाँ स्थानीय लोग स्नान करते हैं और सीढ़ियों के पास रहें। धारा और गहराई बदलती रहती है।',
+    textEn:
+      'Bathe only where local people bathe and stay near the steps. The current and depth can change.',
+  },
+];
+
+const TRAVEL = [
+  {
+    id: 'train',
+    icon: 'train',
+    titleHi: 'ट्रेन से',
+    titleEn: 'By train',
+    textHi:
+      'मथुरा जंक्शन एक प्रमुख पहुँच स्टेशन है। मौजूदा मार्ग और समय-सारिणी के लिए रेलवे से पुष्टि करें।',
+    textEn:
+      'Mathura Junction is a common arrival point. Check with the railway for current routes and schedules.',
+  },
+  {
+    id: 'bus',
+    icon: 'bus',
+    titleHi: 'बस से',
+    titleEn: 'By bus',
+    textHi: 'चढ़ने की जगह, गंतव्य और वापसी की बस ऑपरेटर से पक्का कर लें।',
+    textEn: 'Confirm your boarding point, destination and return service with the operator.',
+  },
+  {
+    id: 'road',
+    icon: 'car',
+    titleHi: 'सड़क से',
+    titleEn: 'By road',
+    textHi:
+      'रास्ते में आराम के ठिकाने तय करें। मंदिरों के आस-पास और त्योहारों पर वाहन के नियम बदल सकते हैं।',
+    textEn:
+      'Plan rest stops. Local vehicle access rules can change around temples and during festivals.',
+  },
+];
+
+function callNumber(number) {
+  Linking.openURL(`tel:${number}`).catch(() => {});
+}
+
+/**
+ * One helpline in the list: small neutral icon, service name, the number and a
+ * quiet call glyph. The whole row is the button (opens the phone dialler).
+ */
+function HelplineRow({ item, isHindi, colors }) {
+  const title = isHindi ? item.titleHi : item.titleEn;
+  const call = usePressGuard(() => callNumber(item.number));
+  return (
+    <Pressable
+      onPress={call}
+      accessibilityRole="button"
+      accessibilityLabel={isHindi ? `${title}, ${item.number} पर कॉल करें` : `Call ${item.number}, ${title}`}
+      accessibilityHint={isHindi ? 'फ़ोन का डायलर खुलेगा' : 'Opens the phone dialler'}
+      style={({ pressed }) => [
+        styles.helpRow,
+        // Background set in both states (Android drops the radius of conditional backgrounds).
+        { backgroundColor: pressed ? colors.surfaceContainerLow : colors.card },
+      ]}
+    >
+      <View style={[styles.helpIcon, { backgroundColor: colors.surfaceContainer }]}>
+        {/* Only 112 keeps a touch of red, on its small icon. */}
+        <Icon name={item.icon} size={18} color={item.urgent ? colors.warning : colors.muted} />
+      </View>
+      <View style={styles.flex}>
+        <AppText variant="body" weight="600" color={colors.navy}>
+          {title}
+        </AppText>
+        <AppText variant="caption" color={colors.muted}>
+          {isHindi ? item.descHi : item.descEn}
+        </AppText>
+      </View>
+      <AppText variant="h3" weight="700" color={colors.navy} style={styles.helpNumber}>
+        {item.number}
+      </AppText>
+      <View style={[styles.callGlyph, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Icon name="phone" size={18} color={colors.primary} />
+      </View>
+    </Pressable>
+  );
+}
+
+function HelplineList({ isHindi, colors }) {
+  return (
+    <Card padded={false}>
+      {EMERGENCY.map((item, index) => (
+        <View key={item.number}>
+          {index > 0 ? <View style={[styles.helpDivider, { backgroundColor: colors.border }]} /> : null}
+          <HelplineRow item={item} isHindi={isHindi} colors={colors} />
+        </View>
+      ))}
+    </Card>
+  );
+}
+
+function TipCard({ tip, isHindi, colors }) {
+  return (
+    <Card>
+      <View style={styles.inlineTop}>
+        <View style={[styles.tipIcon, { backgroundColor: colors.primaryLight }]}>
+          <Icon name={tip.icon} size={22} color={colors.primary} />
+        </View>
+        <AppText variant="h4" weight="700" color={colors.navy} style={styles.flex}>
+          {isHindi ? tip.titleHi : tip.titleEn}
+        </AppText>
+      </View>
+      <AppText variant="body" color={colors.text} style={styles.tipText}>
+        {isHindi ? tip.textHi : tip.textEn}
+      </AppText>
+    </Card>
+  );
+}
 
 export default function HelpdeskScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const bottomInset = useBottomInset();
+  const { colors } = useTheme();
   const { isHindi } = useLanguage();
-  const { favorites } = useFavorites();
-
-  const [selectedSector, setSelectedSector] = useState('mathura_vrindavan');
-  const [pilgrimName, setPilgrimName] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [devoteesCount, setDevoteesCount] = useState('Family of 4 (incl. 2 Seniors)');
-  const [inquiryText, setInquiryText] = useState('');
-
-  const [expandedFaq, setExpandedFaq] = useState(0);
-
-  const sectorOptions = [
-    { id: 'mathura_vrindavan', label: isHindi ? 'मथुरा-वृन्दावन' : 'Mathura-Vrindavan' },
-    { id: 'govardhan', label: isHindi ? 'गोवर्धन परिक्रमा' : 'Govardhan Parikrama' },
-    { id: 'aarti_pass', label: isHindi ? 'आरती व दर्शन पास' : 'Aarti & Darshan Pass' },
-    { id: 'dharmashala', label: isHindi ? 'धर्मशाला बुकिंग' : 'Dharmashala Booking' },
-    { id: 'rickshaw', label: isHindi ? 'ई-रिक्शा निर्धारित दर' : 'E-Rickshaw Fixed Rate' },
-  ];
-
-  const handleCall = (phoneNumber) => {
-    Linking.openURL(`tel:${phoneNumber}`);
-  };
-
-  const handleSubmitInquiry = () => {
-    if (!pilgrimName.trim() || !mobileNumber.trim()) {
-      Alert.alert(
-        isHindi ? 'कृपया विवरण भरें' : 'Required Fields Missing',
-        isHindi ? 'कृपया अपना नाम एवं व्हाट्सएप नंबर दर्ज करें।' : 'Please enter your full name and mobile number.'
-      );
-      return;
-    }
-
-    Alert.alert(
-      isHindi ? 'अभी उपलब्ध नहीं' : 'Not available yet',
-      isHindi
-        ? 'ऑनलाइन सहायता अनुरोध अभी शुरू नहीं हुआ है, इसलिए यह संदेश कहीं भेजा नहीं गया। आपात स्थिति में 112 या एंबुलेंस के लिए 108 पर कॉल करें।'
-        : 'Online help requests have not started yet, so this message was not sent anywhere. In an emergency call 112, or 108 for an ambulance.'
-    );
-  };
-
-  const faqs = [
-    {
-      q: isHindi
-        ? 'गोवर्धन परिक्रमा में बैटरी वाली गोल्फ कार्ट कैसे बुक करें?'
-        : 'How to book battery-operated golf carts at Govardhan Parikrama?',
-      a: isHindi
-        ? 'राधा कुंड स्टैंड एवं दानघाटी परिक्रमा बिंदु पर वरिष्ठ नागरिकों एवं दिव्यांग तीर्थयात्रियों के लिए ₹200-₹250 में अधिकृत सरकारी गोल्फ कार्ट उपलब्ध हैं। अग्रिम ऑनलाइन टोकन की आवश्यकता नहीं है; सरकारी काउंटर प्रातः 05:00 AM से रात्रि 10:00 PM तक निरंतर कार्यरत रहते हैं।'
-        : 'Official battery-operated carts are available at Radha Kund Stand and Dan Ghati Parikrama Point for ₹200-₹250 per senior citizen / differently-abled pilgrim. No advance online token required; government queue counters operate 05:00 AM to 10:00 PM.',
-    },
-    {
-      q: isHindi
-        ? 'श्री कृष्ण जन्मभूमि पर क्लॉक रूम के क्या नियम हैं?'
-        : 'What are the strict cloakroom rules at Janmabhoomi?',
-      a: isHindi
-        ? 'गर्भ गृह परिसर में मोबाइल फोन, स्मार्टवॉच, कैमरा, चमड़े का बेल्ट अथवा चाबियां ले जाना पूर्णतः प्रतिबंधित है। गेट नंबर 1 व 3 के बाहर उत्तर प्रदेश पुलिस प्रमाणित निःशुल्क लॉकर क्लॉक रूम उपलब्ध हैं।'
-        : 'No mobile phones, smartwatches, cameras, belts, or electronic keys are allowed inside the Garbha Griha perimeter. Government-certified locker cloakrooms are available free of charge at Gate No. 1 & 3.',
-    },
-    {
-      q: isHindi
-        ? 'प्रामाणिक महाप्रसाद पैकिंग एवं होम कूरियर विकल्प?'
-        : 'Authentic Prasad packing & courier options?',
-      a: isHindi
-        ? 'बांके बिहारी जी एवं जन्मस्थान मंदिर के अधिकृत काउंटर से सीलबंद डिब्बों में पेड़ा व महाप्रसाद प्राप्त करें। संपूर्ण भारत में 24-48 घंटे में सुरक्षित कूरियर सेवा हेतु मंदिर सेवादार केंद्र पर संपर्क करें।'
-        : 'Devotees can avail official sealed prasad packing at authorized temple counters in Banke Bihari and Janmasthan with next-day express delivery across India.',
-    },
-  ];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Stitch Standard Header */}
-      <StitchHeader
-        title={isHindi ? 'श्री ब्रज दर्शन' : 'Shri Braj Darshan'}
-        subtitle={isHindi ? 'मथुरा • वृन्दावन • गोवर्धन' : 'Mathura • Vrindavan • Govardhan'}
-        wishlistCount={favorites.length}
-        onWishlistPress={() => navigation.navigate(ROUTES.FAVORITES)}
-        onProfilePress={() => navigation.navigate(ROUTES.PROFILE)}
-      />
-
       <ScrollView
+        contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 90 }]}
       >
-        {/* Top Tag & Screen Title */}
-        <View style={styles.titleSection}>
-          <StitchTag
-            text={isHindi ? '🛕 आधिकारिक तीर्थ सेवा सहायता' : 'OFFICIAL SUPPORT'}
-            color="#C2410C"
-            backgroundColor="#FFEDD5"
-          />
-          <AppText variant="h1" color={colors.navy} style={styles.mainTitle}>
-            {isHindi ? 'तीर्थ यात्री सेवा एवं हेल्पलाइन' : 'Pilgrim Seva & Helpdesk'}
-          </AppText>
-          <AppText variant="body" weight="700" color={colors.primary} style={styles.hindiSubtitle}>
-            {isHindi ? '(तीर्थ यात्री सेवा केंद्र)' : '(तीर्थ यात्री सेवा केंद्र)'}
-          </AppText>
-          <AppText variant="caption" color={colors.textSecondary} style={styles.descText}>
+        <TopBar
+          title={isHindi ? 'सहायता व ज़रूरी बातें' : 'Help & essentials'}
+          subtitle={isHindi ? 'ज़रूरी जानकारी पास रखें' : 'Keep important details close'}
+          onBack={() => navigation.goBack()}
+          right={<LanguageToggle />}
+        />
+
+        <View style={styles.content}>
+          <View style={styles.section}>
+            <SectionHeader
+              title={isHindi ? 'सरकारी हेल्पलाइन नंबर' : 'Government helplines'}
+              style={styles.sectionHeader}
+            />
+            <AppText variant="caption" color={colors.muted}>
+              {isHindi ? 'नंबर दबाते ही फ़ोन का डायलर खुलेगा' : 'Tap a number to open your phone dialler'}
+            </AppText>
+            <HelplineList isHindi={isHindi} colors={colors} />
+          </View>
+
+          <InfoNote>
             {isHindi
-              ? 'मथुरा, वृन्दावन, गोवर्धन और बरसाना के तीर्थयात्रियों के लिए 24x7 निरंतर समर्पित व सत्यापित सहायता केंद्र।'
-              : 'Official round-the-clock verified assistance for Mathura, Vrindavan, Govardhan, and Barsana pilgrims.'}
-          </AppText>
-        </View>
+              ? 'तुरंत ख़तरा हो तो 112 पर कॉल करें। अपने पास का कोई पहचान-चिह्न बताएँ और ऑपरेटर के निर्देश मानें।'
+              : "If you are in immediate danger, call 112. Share your nearest landmark and follow the operator's instructions."}
+          </InfoNote>
 
-        {/* 24x7 Emergency Helpline Card */}
-        <View
-          style={[
-            styles.helplineCard,
-            {
-              backgroundColor: isDark ? colors.card : '#FFF7ED',
-              borderColor: '#FED7AA',
-            },
-          ]}
-        >
-          <View style={styles.helplineHeader}>
-            <View style={styles.phoneIconWrap}>
-              <AppText variant="h2" color="#EA580C">
-                🚨
-              </AppText>
-            </View>
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <AppText variant="body" weight="800" color={colors.navy}>
-                {isHindi ? 'आपातकालीन हेल्पलाइन (राष्ट्रीय नंबर)' : 'Emergency helplines (national numbers)'}
-              </AppText>
-              <AppText variant="micro" color={colors.textSecondary} style={{ marginTop: 2 }}>
-                {isHindi
-                  ? 'पुलिस, आग या किसी भी आपात स्थिति में 112, और एंबुलेंस के लिए 108 पर कॉल करें।'
-                  : 'Call 112 for police, fire or any emergency, and 108 for an ambulance.'}
-              </AppText>
-            </View>
-          </View>
-
-          {/* Big Terracotta Call Button */}
-          <TouchableOpacity
-            style={[styles.callBtn, { backgroundColor: colors.primary }]}
-            onPress={() => handleCall('112')}
-            activeOpacity={0.85}
-          >
-            <AppText variant="body" weight="800" color="#FFFFFF">
-              📞 {isHindi ? 'आपातकाल: 112 (कॉल करें)' : 'Emergency: 112 (Call Now)'}
-            </AppText>
-          </TouchableOpacity>
-
-          {/* Quick Contact Pills */}
-          <View style={styles.quickContactsRow}>
-            <TouchableOpacity
-              style={[styles.contactPill, { backgroundColor: '#FEE2E2' }]}
-              onPress={() => handleCall('108')}
-            >
-              <AppText variant="micro" weight="700" color="#DC2626">
-                🚑 {isHindi ? 'चिकित्सा: 108' : 'Medical: 108'}
-              </AppText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.contactPill, { backgroundColor: '#EFF6FF' }]}
-              onPress={() => handleCall('112')}
-            >
-              <AppText variant="micro" weight="700" color="#2563EB">
-                👮 {isHindi ? 'पुलिस: 112' : 'Police: 112'}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-
-        {/* Direct Pilgrim Inquiry Form */}
-        <View
-          style={[
-            styles.inquiryCard,
-            {
-              backgroundColor: isDark ? colors.card : '#FFFFFF',
-              borderColor: isDark ? colors.border : '#E5E7EB',
-            },
-          ]}
-        >
-          <View style={styles.inquiryHeader}>
-            <AppText variant="body" weight="800" color={colors.navy}>
-              📍 {isHindi ? 'सीधा तीर्थ सहायता अनुरोध' : 'Direct Pilgrim Inquiry'}
-            </AppText>
-            <View style={[styles.slaBadge, { backgroundColor: '#DCFCE7' }]}>
-              <AppText variant="micro" weight="700" color="#15803D">
-                {isHindi ? '15-30 मिनट त्वरित सेवा' : '15-30 Min SLA Guaranteed'}
-              </AppText>
-            </View>
-          </View>
-
-          {/* Sector Pills */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.sectorPillsScroll}
-          >
-            {sectorOptions.map((sec) => {
-              const isSelected = selectedSector === sec.id;
-              return (
-                <StitchPill
-                  key={sec.id}
-                  label={sec.label}
-                  selected={isSelected}
-                  onPress={() => setSelectedSector(sec.id)}
-                />
-              );
-            })}
-          </ScrollView>
-
-          {/* Form Fields */}
-          <View style={styles.formGroup}>
-            <AppText variant="micro" weight="700" color={colors.navy} style={{ marginBottom: 4 }}>
-              {isHindi ? 'यात्री का पूरा नाम *' : "Pilgrim's Full Name *"}
-            </AppText>
-            <TextInput
-              style={[
-                styles.inputField,
-                {
-                  backgroundColor: isDark ? colors.cardAlt : '#F8FAFC',
-                  color: colors.text,
-                  borderColor: isDark ? colors.border : '#E2E8F0',
-                },
-              ]}
-              placeholder={isHindi ? 'उदा. राजेश शर्मा' : 'e.g., Rajesh Sharma'}
-              placeholderTextColor={colors.textSecondary}
-              value={pilgrimName}
-              onChangeText={setPilgrimName}
+          <View style={styles.section}>
+            <SectionHeader
+              title={isHindi ? 'अपने साथियों का ध्यान' : 'Care for your group'}
+              style={styles.sectionHeader}
             />
+            {GROUP_TIPS.map((tip) => (
+              <TipCard key={tip.id} tip={tip} isHindi={isHindi} colors={colors} />
+            ))}
           </View>
 
-          <View style={styles.formGroup}>
-            <AppText variant="micro" weight="700" color={colors.navy} style={{ marginBottom: 4 }}>
-              {isHindi ? 'व्हाट्सएप / मोबाइल नंबर *' : 'WhatsApp / Mobile Number *'}
-            </AppText>
-            <View
-              style={[
-                styles.phoneInputWrap,
-                {
-                  backgroundColor: isDark ? colors.cardAlt : '#F8FAFC',
-                  borderColor: isDark ? colors.border : '#E2E8F0',
-                },
-              ]}
-            >
-              <AppText variant="caption" weight="700" color={colors.navy} style={{ paddingHorizontal: 10 }}>
-                🇮🇳 +91
-              </AppText>
-              <TextInput
-                style={[styles.phoneTextInput, { color: colors.text }]}
-                placeholder="10-digit mobile number"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="phone-pad"
-                maxLength={10}
-                value={mobileNumber}
-                onChangeText={setMobileNumber}
-              />
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <AppText variant="micro" weight="700" color={colors.navy} style={{ marginBottom: 4 }}>
-              {isHindi ? 'यात्रियों / वरिष्ठ नागरिकों की संख्या' : 'Number of Devotees / Senior Citizens'}
-            </AppText>
-            <TextInput
-              style={[
-                styles.inputField,
-                {
-                  backgroundColor: isDark ? colors.cardAlt : '#F8FAFC',
-                  color: colors.text,
-                  borderColor: isDark ? colors.border : '#E2E8F0',
-                },
-              ]}
-              value={devoteesCount}
-              onChangeText={setDevoteesCount}
+          <View style={styles.section}>
+            <SectionHeader
+              title={isHindi ? 'मंदिर और घाट पर' : 'At temples and ghats'}
+              style={styles.sectionHeader}
             />
+            {PLACE_TIPS.map((tip) => (
+              <TipCard key={tip.id} tip={tip} isHindi={isHindi} colors={colors} />
+            ))}
           </View>
 
-          <View style={styles.formGroup}>
-            <AppText variant="micro" weight="700" color={colors.navy} style={{ marginBottom: 4 }}>
-              {isHindi ? 'सहायता आवश्यकता विवरण' : 'Inquiry / Special Assistance Details'}
+          <Card>
+            <AppText variant="h4" weight="700" color={colors.navy}>
+              {isHindi ? 'ट्रेन, बस और सड़क' : 'Train, bus & road'}
             </AppText>
-            <TextInput
-              style={[
-                styles.textAreaField,
-                {
-                  backgroundColor: isDark ? colors.cardAlt : '#F8FAFC',
-                  color: colors.text,
-                  borderColor: isDark ? colors.border : '#E2E8F0',
-                },
-              ]}
-              placeholder={
-                isHindi
-                  ? 'उदा. बांके बिहारी जी प्रातः दर्शन हेतु व्हीलचेयर सहयोग की आवश्यकता...'
-                  : 'e.g., Need wheelchair support at Banke Bihari for morning darshan...'
-              }
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={3}
-              value={inquiryText}
-              onChangeText={setInquiryText}
-            />
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitBtn, { backgroundColor: colors.primary }]}
-            onPress={handleSubmitInquiry}
-            activeOpacity={0.85}
-          >
-            <AppText variant="body" weight="800" color="#FFFFFF">
-              {isHindi ? 'अनुरोध भेजें →' : 'Submit Inquiry →'}
-            </AppText>
-          </TouchableOpacity>
-
-          <AppText variant="micro" color={colors.textSecondary} style={{ textAlign: 'center', marginTop: 10 }}>
-            {isHindi
-              ? 'ऑनलाइन सहायता अनुरोध अभी शुरू नहीं हुआ है। आपात स्थिति में ऊपर दिए नंबरों पर कॉल करें।'
-              : 'Online help requests have not started yet. In an emergency, call the numbers above.'}
-          </AppText>
-        </View>
-
-        {/* FAQs */}
-        <View style={styles.faqSection}>
-          <AppText variant="h2" color={colors.navy} style={{ marginBottom: 12 }}>
-            💡 {isHindi ? 'अक्सर पूछे जाने वाले प्रश्न' : 'Frequently Asked Seva Questions'}
-          </AppText>
-
-          {faqs.map((faq, index) => {
-            const isExpanded = expandedFaq === index;
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.faqCard,
-                  {
-                    backgroundColor: isDark ? colors.card : '#FFFFFF',
-                    borderColor: isDark ? colors.border : '#E5E7EB',
-                  },
-                ]}
-              >
-                <TouchableOpacity
-                  style={styles.faqQuestionRow}
-                  onPress={() => setExpandedFaq(isExpanded ? null : index)}
-                  activeOpacity={0.8}
-                >
-                  <AppText variant="body" weight="700" color={colors.navy} style={{ flex: 1 }}>
-                    {faq.q}
+            {TRAVEL.map((t) => (
+              <View key={t.id} style={[styles.inlineTop, styles.travelRow]}>
+                <View style={[styles.tipIcon, { backgroundColor: colors.purnimaLight }]}>
+                  <Icon name={t.icon} size={22} color={colors.purnima} />
+                </View>
+                <View style={styles.flex}>
+                  <AppText variant="bodyBold" color={colors.navy}>
+                    {isHindi ? t.titleHi : t.titleEn}
                   </AppText>
-                  <AppText variant="caption" color={colors.primary}>
-                    {isExpanded ? '▲' : '▼'}
+                  <AppText variant="body" color={colors.text}>
+                    {isHindi ? t.textHi : t.textEn}
                   </AppText>
-                </TouchableOpacity>
-
-                {isExpanded && (
-                  <View style={styles.faqAnswerWrap}>
-                    <AppText variant="caption" color={colors.textSecondary} style={{ lineHeight: 19 }}>
-                      {faq.a}
-                    </AppText>
-                  </View>
-                )}
+                </View>
               </View>
-            );
-          })}
+            ))}
+          </Card>
+
+          <Card>
+            <AppText variant="h4" weight="700" color={colors.navy}>
+              {isHindi ? 'DIVYABRAJ को लिखें' : 'Write to DIVYABRAJ'}
+            </AppText>
+            <AppText variant="body" color={colors.text} style={styles.tipText}>
+              {isHindi
+                ? 'ऐप के बारे में सुझाव या जानकारी में सुधार के लिए ईमेल करें:'
+                : 'For app feedback and content corrections, email:'}
+            </AppText>
+            <ListRow
+              icon="mail"
+              title={CONTACT_EMAIL}
+              subtitle={isHindi ? 'ईमेल ऐप खोलें' : 'Opens your email app'}
+              onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() => {})}
+            />
+            <AppText variant="small" color={colors.muted}>
+              {isHindi ? 'यह आपातकालीन सेवा नहीं है।' : 'Not an emergency service.'}
+            </AppText>
+          </Card>
         </View>
       </ScrollView>
     </View>
@@ -387,189 +327,33 @@ export default function HelpdeskScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  scrollContent: {
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
+  section: { gap: 12, marginTop: 8 },
+  sectionHeader: { marginBottom: 0 },
+  helpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 72,
     paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  titleSection: {
-    marginBottom: 14,
-  },
-  mainTitle: {
-    fontSize: 24,
-    lineHeight: 32,
-    marginTop: 8,
-  },
-  hindiSubtitle: {
-    fontSize: 16,
-    marginTop: 2,
-    marginBottom: 4,
-  },
-  descText: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  helplineCard: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  helplineHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  phoneIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#FFEDD5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  callBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  quickContactsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  contactPill: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  officeCard: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  officeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  facilitiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 14,
-  },
-  facilityTile: {
-    width: '48%',
-    padding: 10,
-    borderRadius: 8,
-  },
-  officeBtnsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  officeWhiteBtn: {
-    flex: 1,
     paddingVertical: 12,
-    borderRadius: 8,
+  },
+  helpIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  helpNumber: { minWidth: 40, textAlign: 'right' },
+  callGlyph: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  officePrimaryBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inquiryCard: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 18,
-  },
-  inquiryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  slaBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  sectorPillsScroll: {
-    gap: 8,
-    paddingVertical: 4,
-    marginBottom: 14,
-  },
-  formGroup: {
-    marginBottom: 12,
-  },
-  inputField: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  phoneInputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  phoneTextInput: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingRight: 12,
-    fontSize: 14,
-  },
-  textAreaField: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    minHeight: 70,
-    textAlignVertical: 'top',
-  },
-  submitBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  faqSection: {
-    marginBottom: 20,
-  },
-  faqCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 10,
-    overflow: 'hidden',
-  },
-  faqQuestionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-  },
-  faqAnswerWrap: {
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 10,
-  },
+  // Inset to line up with the service name, not the icon.
+  helpDivider: { height: StyleSheet.hairlineWidth, marginLeft: 64 },
+  inlineTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  tipIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  tipText: { marginTop: 10 },
+  travelRow: { marginTop: 14, alignItems: 'flex-start' },
 });

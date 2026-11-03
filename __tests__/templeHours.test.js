@@ -1,4 +1,4 @@
-import { getTempleStatus, parseDarshanWindows } from '../src/utils/templeHours';
+import { getTempleStatus, parseDarshanWindows, describeDarshanWindows } from '../src/utils/templeHours';
 import temples from '../src/data/temples.json';
 
 const bankeBihari = temples.find((t) => t.id === 1);
@@ -34,14 +34,25 @@ describe('parseDarshanWindows', () => {
 });
 
 describe('getTempleStatus (IST)', () => {
-  test('opens exactly at 07:45 IST in summer', () => {
-    expect(getTempleStatus(bankeBihari, at('2026-06-15T02:14:00Z')).isOpen).toBe(false);
-    expect(getTempleStatus(bankeBihari, at('2026-06-15T02:15:00Z')).isOpen).toBe(true);
+  // Banke Bihari hours as set by the temple committee in Sep 2025.
+  test('opens exactly at 07:00 IST in summer', () => {
+    expect(getTempleStatus(bankeBihari, at('2026-06-15T01:29:00Z')).isOpen).toBe(false);
+    expect(getTempleStatus(bankeBihari, at('2026-06-15T01:30:00Z')).isOpen).toBe(true);
   });
 
-  test('closes at 12:00 IST and reopens at 17:30 IST', () => {
-    expect(getTempleStatus(bankeBihari, at('2026-06-15T06:30:00Z')).isOpen).toBe(false);
-    expect(getTempleStatus(bankeBihari, at('2026-06-15T12:00:00Z')).isOpen).toBe(true);
+  test('closes at 12:30 IST and reopens at 16:15 IST in summer', () => {
+    expect(getTempleStatus(bankeBihari, at('2026-06-15T06:59:00Z')).isOpen).toBe(true);
+    expect(getTempleStatus(bankeBihari, at('2026-06-15T07:00:00Z')).isOpen).toBe(false);
+    expect(getTempleStatus(bankeBihari, at('2026-06-15T10:44:00Z')).isOpen).toBe(false);
+    expect(getTempleStatus(bankeBihari, at('2026-06-15T10:45:00Z')).isOpen).toBe(true);
+  });
+
+  test('winter hours: 08:00–13:30 and 16:00–21:00 IST', () => {
+    expect(getTempleStatus(bankeBihari, at('2026-12-10T02:29:00Z')).isOpen).toBe(false);
+    expect(getTempleStatus(bankeBihari, at('2026-12-10T02:30:00Z')).isOpen).toBe(true);
+    expect(getTempleStatus(bankeBihari, at('2026-12-10T08:00:00Z')).isOpen).toBe(false);
+    expect(getTempleStatus(bankeBihari, at('2026-12-10T10:30:00Z')).isOpen).toBe(true);
+    expect(getTempleStatus(bankeBihari, at('2026-12-10T15:30:00Z')).isOpen).toBe(false);
   });
 
   test('closed at 23:59 IST', () => {
@@ -49,7 +60,7 @@ describe('getTempleStatus (IST)', () => {
   });
 
   test('different temples can differ at the same moment', () => {
-    // 05:45 IST: Prem Mandir opens 05:30, Banke Bihari opens 07:45
+    // 05:45 IST: Prem Mandir opens 05:30, Banke Bihari opens 07:00
     const moment = at('2026-06-15T00:15:00Z');
     expect(getTempleStatus(premMandir, moment).isOpen).toBe(true);
     expect(getTempleStatus(bankeBihari, moment).isOpen).toBe(false);
@@ -64,5 +75,19 @@ describe('getTempleStatus (IST)', () => {
     const status = getTempleStatus({ timings: {} }, at('2026-06-15T06:00:00Z'));
     expect(status.isKnown).toBe(false);
     expect(status.isOpen).toBe(false);
+  });
+});
+
+describe('describeDarshanWindows', () => {
+  test('shows the temple\'s own hours, not a fixed schedule', () => {
+    expect(describeDarshanWindows(bankeBihari.timings.summer)).toEqual([
+      '7:00 AM - 12:30 PM',
+      '4:15 PM - 9:30 PM',
+    ]);
+  });
+
+  test('falls back to the original text when it cannot be read', () => {
+    expect(describeDarshanWindows('त्योहार पर समय बदलता है')).toEqual(['त्योहार पर समय बदलता है']);
+    expect(describeDarshanWindows(undefined)).toEqual([]);
   });
 });

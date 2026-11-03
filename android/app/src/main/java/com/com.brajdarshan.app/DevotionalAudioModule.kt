@@ -1,7 +1,14 @@
 package com.brajdarshan.app
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
@@ -23,6 +30,35 @@ class DevotionalAudioModule(private val reactContext: ReactApplicationContext) :
 
     private val progressHandler = Handler(Looper.getMainLooper())
     private var progressRunnable: Runnable? = null
+
+    // Audio focus: pause for phone calls, alarms and other apps; resume after a
+    // short interruption (such as a call) ends; duck under navigation prompts.
+    private val audioManager =
+        reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private var focusRequest: AudioFocusRequest? = null
+    private var resumeOnFocusGain = false
+    private var noisyReceiverRegistered = false
+
+    private val mediaAttributes: AudioAttributes = AudioAttributes.Builder()
+        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .build()
+
+    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+        progressHandler.post { handleFocusChange(change) }
+    }
+
+    // Headphones unplugged or Bluetooth disconnected: pause instead of switching to the speaker.
+    private val noisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
+                progressHandler.post {
+                    resumeOnFocusGain = false
+                    pauseInternal()
+                }
+            }
+        }
+    }
 
     init {
         try {
@@ -90,6 +126,123 @@ class DevotionalAudioModule(private val reactContext: ReactApplicationContext) :
         progressRunnable = null
     }
 
+    private fun requestFocus(): Boolean {
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(mediaAttributes)
+                .setOnAudioFocusChangeListener(focusListener, progressHandler)
+                .build()
+            focusRequest = request
+            audioManager.requestAudioFocus(request)
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.requestAudioFocus(
+                focusListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
+        }
+        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonFocus() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.abandonAudioFocus(focusListener)
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    private fun registerNoisyReceiver() {
+        if (noisyReceiverRegistered) return
+        try {
+            val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                reactContext.registerReceiver(noisyReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                reactContext.registerReceiver(noisyReceiver, filter)
+            }
+            noisyReceiverRegistered = true
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    private fun unregisterNoisyReceiver() {
+        if (!noisyReceiverRegistered) return
+        try {
+            reactContext.unregisterReceiver(noisyReceiver)
+        } catch (e: Exception) {
+            // Ignore
+        }
+        noisyReceiverRegistered = false
+    }
+
+    private fun handleFocusChange(change: Int) {
+        val player = mediaPlayer ?: return
+        try {
+            when (change) {
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    resumeOnFocusGain = false
+                    pauseInternal()
+                    abandonFocus()
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    if (player.isPlaying) {
+                        resumeOnFocusGain = true
+                        pauseInternal()
+                    }
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> player.setVolume(0.2f, 0.2f)
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    player.setVolume(1f, 1f)
+                    if (resumeOnFocusGain && isPaused) {
+                        resumeOnFocusGain = false
+                        resumeInternal()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    private fun pauseInternal(): WritableMap? {
+        val player = mediaPlayer ?: return null
+        if (!player.isPlaying) return null
+        player.pause()
+        isPaused = true
+        stopProgressUpdates()
+        val map = Arguments.createMap().apply {
+            putString("state", "paused")
+            putString("trackId", currentTrackId)
+            putInt("position", player.currentPosition)
+        }
+        sendEvent("onPlaybackStateChange", map)
+        return map
+    }
+
+    private fun resumeInternal(): WritableMap? {
+        val player = mediaPlayer ?: return null
+        if (player.isPlaying) return null
+        player.start()
+        isPaused = false
+        registerNoisyReceiver()
+        startProgressUpdates()
+        val map = Arguments.createMap().apply {
+            putString("state", "playing")
+            putString("trackId", currentTrackId)
+            putInt("position", player.currentPosition)
+        }
+        sendEvent("onPlaybackStateChange", map)
+        return map
+    }
+
     @ReactMethod
     fun playTrack(trackData: ReadableMap, promise: Promise) {
         try {
@@ -105,6 +258,12 @@ class DevotionalAudioModule(private val reactContext: ReactApplicationContext) :
 
             stopInternal()
 
+            if (!requestFocus()) {
+                promise.reject("AUDIO_FOCUS_DENIED", "Audio is in use by another app or a phone call")
+                return
+            }
+            registerNoisyReceiver()
+
             currentTrackId = id
             currentTrackTitle = title
             currentTrackArtist = artist
@@ -112,12 +271,7 @@ class DevotionalAudioModule(private val reactContext: ReactApplicationContext) :
             isPaused = false
 
             mediaPlayer = MediaPlayer().apply {
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .build()
-                )
+                setAudioAttributes(mediaAttributes)
                 setDataSource(url)
                 setOnPreparedListener { mp ->
                     mp.start()
@@ -159,21 +313,8 @@ class DevotionalAudioModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun pause(promise: Promise) {
         try {
-            val player = mediaPlayer
-            if (player != null && player.isPlaying) {
-                player.pause()
-                isPaused = true
-                stopProgressUpdates()
-                val map = Arguments.createMap().apply {
-                    putString("state", "paused")
-                    putString("trackId", currentTrackId)
-                    putInt("position", player.currentPosition)
-                }
-                sendEvent("onPlaybackStateChange", map)
-                promise.resolve(map)
-            } else {
-                promise.resolve(null)
-            }
+            resumeOnFocusGain = false
+            promise.resolve(pauseInternal())
         } catch (e: Exception) {
             promise.reject("PAUSE_ERROR", e.message, e)
         }
@@ -182,21 +323,11 @@ class DevotionalAudioModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun resume(promise: Promise) {
         try {
-            val player = mediaPlayer
-            if (player != null && !player.isPlaying) {
-                player.start()
-                isPaused = false
-                startProgressUpdates()
-                val map = Arguments.createMap().apply {
-                    putString("state", "playing")
-                    putString("trackId", currentTrackId)
-                    putInt("position", player.currentPosition)
-                }
-                sendEvent("onPlaybackStateChange", map)
-                promise.resolve(map)
-            } else {
-                promise.resolve(null)
+            if (mediaPlayer != null && !requestFocus()) {
+                promise.reject("AUDIO_FOCUS_DENIED", "Audio is in use by another app or a phone call")
+                return
             }
+            promise.resolve(resumeInternal())
         } catch (e: Exception) {
             promise.reject("RESUME_ERROR", e.message, e)
         }
@@ -204,6 +335,9 @@ class DevotionalAudioModule(private val reactContext: ReactApplicationContext) :
 
     private fun stopInternal() {
         stopProgressUpdates()
+        resumeOnFocusGain = false
+        unregisterNoisyReceiver()
+        abandonFocus()
         mediaPlayer?.let {
             try {
                 if (it.isPlaying) {

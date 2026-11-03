@@ -1,166 +1,178 @@
 /**
  * Braj Darshan - Global Semantic Theme Palette
- * Visual Source of Truth: Google Stitch Design System ("Sacred Serenity")
+ * Source of truth: the divyabraj.com website tokens (App.css) as refined in the
+ * Figma + Stitch redesign (design-input/). Same brand on web and app.
  *
- * Light Mode:
- *   Canvas: Warm Limestone Marble (#FAF9F6)
- *   Primary / Terracotta: Sacred Saffron (#A43700 / #CD4700)
- *   Secondary / Amber: Temple Gold (#F59E0B / #FEF3C7)
- *   Tertiary: Ekadashi Purple (#7C3AED / #EADDFF)
- *   Containers: Pure White (#FFFFFF), Sky Tint (#EFF4FF / #DEE9FC), Peach (#FFF7ED)
- *   Typography: Midnight Charcoal (#121C2A / #1F2937), Subtle Ink (#4B5563)
- *   Borders: Hairline (#E5E7EB / #F3F4F6)
+ * Light: cream #FFF9ED ground, saffron #D97706 brand, navy #17324D headings,
+ *        brown #493225 body text, #EEE2D4 borders, gold #F4C542 accents.
+ * Text-on-cream and white-on-button colours use the deeper saffron #A85A06 so
+ * small text stays at 4.5:1 contrast (#D97706 is kept for large fills).
+ * Dark:  #121212 ground, #1E1E1E surfaces, amber #F59E0B brand, #F5EBDD text.
  *
- * Dark Mode:
- *   Deep Devotional Slate/Charcoal (#121212 / #1E1E1E),
- *   Warm Amber/Saffron glows (#FF8A50), Muted borders, Off-white text (#F3F4F6)
+ * Every key below is used somewhere in the app; keep the names when retuning.
  */
 
 export const lightColors = {
-  // Brand & Sacred Stitch Accents
-  primary: '#A43700',          // Sacred Terracotta / Saffron from Stitch
-  primaryContainer: '#CD4700', // Saffron Container Action
-  primaryDark: '#802A00',      // Deep Burnished Terracotta
-  primaryLight: '#FFF3E0',     // Warm Saffron Tint
-  primaryFixed: '#FFDBCF',     // Soft Peach Pill Fill
-  saffron: '#E65100',          // Classic Saffron
-  terracotta: '#A43700',       // Stitch Primary
-  terracottaDark: '#802A00',
-  terracottaLight: '#FFDBCF',
+  // Brand
+  primary: '#A85A06',          // Deep saffron: links, icons, filled buttons (white text 5:1)
+  primaryContainer: '#D97706', // Website saffron: large fills, active pills
+  primaryDark: '#8A4A05',      // Pressed state
+  primaryLight: '#FDF0DC',     // Saffron tint backgrounds
+  primaryFixed: '#FBE3C2',
+  saffron: '#D97706',
+  terracotta: '#A85A06',
+  terracottaDark: '#8A4A05',
+  terracottaLight: '#FBE3C2',
 
-  // Amber & Temple Gold
-  gold: '#F59E0B',             // Temple Amber Gold
-  goldDark: '#D97706',         // Burnished Gold
-  goldLight: '#FEF3C7',        // Soft Glowing Amber Backdrop
-  secondary: '#F59E0B',
-  secondaryContainer: '#FEA619',
+  // Gold accents (decor only, never small text)
+  gold: '#F4C542',
+  goldDark: '#B7862C',
+  goldLight: '#FEF6D8',
+  accentGold: '#F4C542',
+  secondary: '#F4C542',
+  secondaryContainer: '#E5B32F',
 
-  // Surfaces & Backgrounds
-  background: '#FAF9F6',       // Warm Limestone Marble (Stitch base canvas)
-  canvas: '#FAF9F6',
-  surface: '#FFFFFF',          // Pure Crisp White Card
-  surfaceAlt: '#F5F5F4',       // Soft Stone
-  surfaceContainerLow: '#EFF4FF', // Soft Sky Container
-  surfaceContainer: '#E6EEFF',
-  surfaceContainerHigh: '#DEE9FC',
-  peach: '#FFF7ED',            // Soft Warm Peach Card Fill
+  // Surfaces
+  background: '#FFF9ED',       // Website cream
+  canvas: '#FFF9ED',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F6EEE2',
+  surfaceContainerLow: '#F9F3E7',
+  surfaceContainer: '#F3EDE1',
+  surfaceContainerHigh: '#EDE8DC',
+  surfaceGold: '#FEF6D8',
+  peach: '#FDF0DC',
   card: '#FFFFFF',
-  cardAlt: '#F8F9FA',
-  cardHighlighted: '#FFFBEB',
+  cardAlt: '#F9F3E7',
+  cardHighlighted: '#FEF6D8',
 
-  // Devotional Typography & Contrast
-  navy: '#121C2A',             // Midnight Charcoal Headings (Stitch on-surface)
-  text: '#1F2937',             // Charcoal Body Text
-  textSecondary: '#4B5563',    // Subtle Ink Subtext
-  muted: '#8F7066',            // Earthy Muted Metadata (Stitch outline)
-  subtle: '#9CA3AF',           // Subtle captions
+  // Text
+  navy: '#17324D',             // Headings
+  primaryNavy: '#17324D',
+  charcoal: '#2B211B',
+  text: '#493225',             // Body
+  textSecondary: '#5E4B3E',
+  muted: '#786A5D',            // Secondary text (5:1 on cream)
+  subtle: '#7E7064',
 
-  // Borders & Dividers
-  border: '#E5E7EB',           // Hairline Outline
-  borderLight: '#F3F4F6',      // Very Light Divider
-  divider: '#E5E7EB',
+  // Borders
+  border: '#EEE2D4',
+  borderLight: '#F4ECE0',
+  borderGold: '#EAD9B0',
+  divider: '#EEE2D4',
 
-  // Tab Bar & Navigation
+  // Tab bar
   tabBarBg: '#FFFFFF',
-  tabBarBorder: '#F3F4F6',
-  tabBarActive: '#A43700',
-  tabBarInactive: '#8F7066',
+  tabBarBorder: '#EEE2D4',
+  tabBarActive: '#A85A06',
+  tabBarInactive: '#786A5D',
 
-  // Drawer Specific Tokens
-  drawerBg: '#FAF9F6',
+  // Drawer
+  drawerBg: '#FFF9ED',
   drawerHeaderBg: '#FFFFFF',
-  drawerActiveBg: '#FFF3E0',
-  drawerActiveText: '#A43700',
-  drawerInactiveText: '#4B5563',
-  drawerBorder: '#E5E7EB',
+  drawerActiveBg: '#FDF0DC',
+  drawerActiveText: '#A85A06',
+  drawerInactiveText: '#5E4B3E',
+  drawerBorder: '#EEE2D4',
 
-  // Status & Badges
-  success: '#16A34A',          // Auspicious Green / Open Darshan
-  successLight: '#DCFCE7',
-  warning: '#DC2626',          // Closed / Alert Red
-  warningBg: '#FEF2F2',
-  ekadashi: '#7C3AED',         // Ekadashi Purple
-  ekadashiLight: '#EADDFF',
-  purnima: '#0284C7',          // Purnima Blue
-  purnimaLight: '#E0F2FE',
+  // Status (always paired with an icon and a word)
+  success: '#1F7A4D',          // Open
+  successLight: '#E6F3EC',
+  warning: '#B42318',          // Closed
+  warningBg: '#FBE9E7',
+  error: '#B42318',
+  info: '#786A5D',
+  infoBg: '#F6EEE2',
+  ekadashi: '#6D28D9',
+  ekadashiLight: '#F1EAFE',
+  purnima: '#0F5E66',
+  purnimaLight: '#E3F0EF',
 
-  // Overlays & Scrims
-  overlayDark: 'rgba(18, 28, 42, 0.65)',
+  // Overlays
+  overlayDark: 'rgba(23, 18, 14, 0.62)',
   overlayLight: 'rgba(255, 255, 255, 0.94)',
-  shadow: '#1F2937',
+  shadow: '#2D2018',
   isDark: false,
 };
 
 export const darkColors = {
-  // Brand & Sacred Accents
-  primary: '#FF8A50',          // Radiant Saffron Glow
-  primaryContainer: '#CD4700',
-  primaryDark: '#E65100',
-  primaryLight: '#3D1E0B',     // Deep Saffron Ember
-  primaryFixed: '#3D2010',
-  saffron: '#FF8A50',
-  terracotta: '#FF8A50',
-  terracottaDark: '#E65100',
-  terracottaLight: '#3D2010',
+  // Brand
+  primary: '#F59E0B',
+  primaryContainer: '#D97706',
+  primaryDark: '#D97706',
+  primaryLight: '#3A2610',
+  primaryFixed: '#4A3015',
+  saffron: '#F59E0B',
+  terracotta: '#F59E0B',
+  terracottaDark: '#D97706',
+  terracottaLight: '#3A2610',
 
-  // Amber & Temple Gold
-  gold: '#FBBF24',             // Glowing Temple Gold
-  goldDark: '#F59E0B',
-  goldLight: '#382806',
-  secondary: '#FBBF24',
+  // Gold accents
+  gold: '#F4C542',
+  goldDark: '#E5B32F',
+  goldLight: '#3A3014',
+  accentGold: '#F4C542',
+  secondary: '#F4C542',
   secondaryContainer: '#D97706',
 
-  // Surfaces & Backgrounds
-  background: '#121212',       // Deep Devotional Slate/Charcoal
+  // Surfaces
+  background: '#121212',
   canvas: '#121212',
-  surface: '#1E1E1E',          // Elevated Dark Surface
-  surfaceAlt: '#282828',       // Slightly lighter charcoal
-  surfaceContainerLow: '#1A2230',
-  surfaceContainer: '#222D3D',
-  surfaceContainerHigh: '#273447',
-  peach: '#2A1E14',
+  surface: '#1E1E1E',
+  surfaceAlt: '#262320',
+  surfaceContainerLow: '#1B1917',
+  surfaceContainer: '#23201D',
+  surfaceContainerHigh: '#2B2724',
+  surfaceGold: '#2D2416',
+  peach: '#2A2016',
   card: '#1E1E1E',
-  cardAlt: '#252525',
-  cardHighlighted: '#2D2316',
+  cardAlt: '#252220',
+  cardHighlighted: '#2D2416',
 
-  // Devotional Typography & Contrast
-  navy: '#F9FAFB',             // Pure Off-White Headings
-  text: '#F3F4F6',             // Crisp Off-White Body
-  textSecondary: '#D1D5DB',    // Soft Slate Subtext
-  muted: '#9CA3AF',            // Muted Gray
-  subtle: '#6B7280',
+  // Text
+  navy: '#F5EBDD',
+  primaryNavy: '#F5EBDD',
+  charcoal: '#F5EBDD',
+  text: '#EADFD2',
+  textSecondary: '#D3C6B8',
+  muted: '#B8A99A',
+  subtle: '#9A8C7F',
 
-  // Borders & Dividers
-  border: '#2E2E2E',           // Subtle Dark Border
-  borderLight: '#252525',      // Very Subtle Dark Divider
-  divider: '#2A2A2A',
+  // Borders
+  border: '#2E2A26',
+  borderLight: '#26231F',
+  borderGold: '#4A3B1E',
+  divider: '#2E2A26',
 
-  // Tab Bar & Navigation
-  tabBarBg: '#181818',
-  tabBarBorder: '#2E2E2E',
-  tabBarActive: '#FF8A50',
-  tabBarInactive: '#9CA3AF',
+  // Tab bar
+  tabBarBg: '#181614',
+  tabBarBorder: '#2E2A26',
+  tabBarActive: '#F59E0B',
+  tabBarInactive: '#B8A99A',
 
-  // Drawer Specific Tokens
-  drawerBg: '#181818',
+  // Drawer
+  drawerBg: '#161412',
   drawerHeaderBg: '#1E1E1E',
-  drawerActiveBg: '#3D2010',
-  drawerActiveText: '#FF8A50',
-  drawerInactiveText: '#D1D5DB',
-  drawerBorder: '#2E2E2E',
+  drawerActiveBg: '#3A2610',
+  drawerActiveText: '#F59E0B',
+  drawerInactiveText: '#D3C6B8',
+  drawerBorder: '#2E2A26',
 
-  // Status & Badges
-  success: '#22C55E',
-  successLight: '#14532D',
-  warning: '#EF4444',
-  warningBg: '#451A1A',
-  ekadashi: '#A78BFA',
-  ekadashiLight: '#3B1D70',
-  purnima: '#38BDF8',
-  purnimaLight: '#075985',
+  // Status
+  success: '#4ADE80',
+  successLight: '#14301F',
+  warning: '#F87171',
+  warningBg: '#3A1714',
+  error: '#F87171',
+  info: '#B8A99A',
+  infoBg: '#2A2520',
+  ekadashi: '#C4B5FD',
+  ekadashiLight: '#2E2350',
+  purnima: '#5EC4CC',
+  purnimaLight: '#123A3E',
 
-  // Overlays & Scrims
-  overlayDark: 'rgba(0, 0, 0, 0.85)',
+  // Overlays
+  overlayDark: 'rgba(0, 0, 0, 0.75)',
   overlayLight: 'rgba(30, 30, 30, 0.94)',
   shadow: '#000000',
   isDark: true,

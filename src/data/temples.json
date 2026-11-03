@@ -18,9 +18,9 @@
     "history": "यह मंदिर स्वामी हरिदास जी द्वारा निधिवन में प्रकट किए गए श्री बांके बिहारी जी के विग्रह को समर्पित है। 1864 में वर्तमान भव्य मंदिर का निर्माण गोस्वामी बंधुओं द्वारा कराया गया था। यहाँ कोई घंटी या शंख नहीं बजाया जाता, केवल मधुर नाम संकीर्तन होता है।",
     "architecture": "पारंपरिक राजस्थानी हवेली स्थापत्य कला, जिसमें संगमरमर और मेहराबदार झरोखों का प्रयोग हुआ है।",
     "timings": {
-      "summer": "प्रातः 07:45 से 12:00, सायं 05:30 से रात्रि 09:30",
-      "winter": "प्रातः 08:45 से दोपहर 01:00, सायं 04:30 से रात्रि 08:30",
-      "aarti": "श्रृंगार आरती: 08:00 AM, शयन आरती: 09:15 PM (बिहारी जी में मंगला आरती केवल जन्माष्टमी को होती है)"
+      "summer": "प्रातः 07:00 से दोपहर 12:30, सायं 04:15 से रात्रि 09:30",
+      "winter": "प्रातः 08:00 से दोपहर 01:30, सायं 04:00 से रात्रि 09:00",
+      "aarti": "श्रृंगार आरती दर्शन खुलने पर (गर्मी में 07:00, सर्दी में 08:00)। राजभोग व शयन आरती का समय पर्व व ऋतु के अनुसार बदलता है — मंदिर से पुष्टि करें। मंगला आरती केवल जन्माष्टमी पर होती है।"
     },
     "location": "गोदौलिया रोड, बांके बिहारी कॉलोनी, वृंदावन",
     "festivals": [
@@ -41,8 +41,8 @@
     "nearbyTempleIds": [
       3
     ],
-    "lastVerified": "अक्टूबर 2026",
-    "sourceAttribution": "श्री बांके बिहारी मंदिर प्रबंध कमेटी एवं सेवायत परंपरा",
+    "lastVerified": "नवंबर 2026",
+    "sourceAttribution": "हाई पावर्ड मंदिर प्रबंधन समिति का निर्णय (जिलाधिकारी मथुरा कार्यालय ज्ञापन, 19 सितंबर 2025); मामला सुप्रीम कोर्ट में विचाराधीन",
     "guidelines": [
       {
         "icon": "👗",
@@ -74,28 +74,13 @@
         "id": "shringar",
         "nameHi": "शृंगार आरती",
         "nameEn": "Shringar Aarti",
-        "timeSummer": "08:00 AM",
-        "timeWinter": "09:00 AM",
+        "timeSummer": "07:00 AM",
+        "timeWinter": "08:00 AM",
         "significanceHi": "ठाकुर जी के दिव्य शृंगार एवं नयन दर्शन के उपरांत पावन आरती।"
-      },
-      {
-        "id": "rajbhog",
-        "nameHi": "राजभोग आरती",
-        "nameEn": "Rajbhog Aarti",
-        "timeSummer": "12:00 PM",
-        "timeWinter": "01:00 PM",
-        "significanceHi": "दोपहर के छप्पन भोग अर्पण के पश्चात दोपहर विश्राम से पूर्व आरती।"
-      },
-      {
-        "id": "shayan",
-        "nameHi": "शयन आरती",
-        "nameEn": "Shayan Aarti",
-        "timeSummer": "09:15 PM",
-        "timeWinter": "08:15 PM",
-        "significanceHi": "रात्रि विश्राम से पूर्व ठाकुर जी की अंतिम दिव्य मंगल आरती।"
       }
     ],
-    "imageIsRepresentative": true
+    "imageIsRepresentative": true,
+    "timingsSourceUrl": "https://curlytales.com/india/trending/vrindavans-banke-bihari-temple-extends-darshan-timings-sets-up-systematic-queuing-system-for-devotees/amp/"
   },
   {
     "id": 2,
@@ -307,7 +292,7 @@
     "featured": true,
     "tagline": "The Palace of Vrishabhanu's Beloved Daughter on Bhanugarh Hill",
     "taglineHindi": "भानुगढ़ पर्वत पर विराजित वृषभानु दुलारी का पावन महल",
-    "shortDescription": "भानुगढ़ पर्वत पर स्थित लाड़ली जी का महल, जहाँ विश्व प्रसिद्ध बरसाने की लठमार होली का आयोजन होता है।",
+    "shortDescription": "भानुगढ़ पर्वत पर स्थित लाड़ली जी का महल, जहाँ प्रसिद्ध बरसाने की लठमार होली का आयोजन होता है।",
     "shortDescriptionEn": "The palace of Laadli Ji atop Bhanugarh hill, famous worldwide for the historic Lathmar Holi celebration.",
     "history": "भानुगढ़ पहाड़ी पर स्थित यह महल राजा वृषभानु और श्री राधा रानी का निवास स्थान रहा है। वर्तमान मंदिर का जीर्णोद्धार 1675 ईस्वी में राजा वीर सिंह देव ने करवाया था।",
     "architecture": "लाल और पीले बलुआ पत्थर (Red Sandstone) से निर्मित मध्यकालीन राजस्थानी महल शैली।",
@@ -322,7 +307,7 @@
       "राधाष्टमी (महामहोत्सव)",
       "गोपाष्टमी"
     ],
-    "darshanTips": "मंदिर तक पहुंचने के लिए लगभग 200 सीढ़ियां हैं; वृद्ध जनों के लिए डोली और रोपवे की सुविधा उपलब्ध है।",
+    "darshanTips": "मंदिर तक पहुंचने के लिए लगभग 200 सीढ़ियां हैं; वृद्ध जनों के लिए डोली या रोपवे की सुविधा की स्थिति वहाँ पूछ लें।",
     "nearestStation": "कोसी कलां (18 किमी) / मथुरा जंक्शन (45 किमी)",
     "nearestStationEn": "Kosi Kalan (18 km) / Mathura Junction (45 km)",
     "recommendedDuration": "1.5 - 2.5 घंटे",
@@ -477,7 +462,8 @@
         "timeWinter": "09:30 PM",
         "significanceHi": "रात्रि शयन से पूर्व अंतिम भव्य महाआरती।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   },
   {
     "id": 6,
@@ -582,7 +568,8 @@
         "timeWinter": "05:30 PM",
         "significanceHi": "सायंकालीन दीप व चंवर सेवा आरती।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   },
   {
     "id": 7,
@@ -672,7 +659,8 @@
         "timeWinter": "06:30 PM",
         "significanceHi": "गौधूलि वेला में भजन व दीपदान आरती।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   },
   {
     "id": 8,
@@ -770,7 +758,8 @@
         "timeWinter": "07:00 PM",
         "significanceHi": "सायंकालीन महाआरती।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   },
   {
     "id": 9,
@@ -860,6 +849,7 @@
         "timeWinter": "06:30 PM",
         "significanceHi": "दीप प्रज्वलन व सांध्य आरती।"
       }
-    ]
+    ],
+    "imageIsRepresentative": true
   }
 ]

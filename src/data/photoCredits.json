@@ -1,0 +1,90 @@
+[
+  {
+    "key": "ghats/vishram-ghat",
+    "subject": "Vishram Ghat, Mathura",
+    "author": "Umang108",
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Vishram_Ghat.jpg"
+  },
+  {
+    "key": "ghats/keshi-ghat",
+    "subject": "Keshi Ghat, Vrindavan",
+    "author": "Hano",
+    "licence": "CC BY 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Blick_vom_Keshi-Ghat_auf_den_Fluss_Yamuna.jpg"
+  },
+  {
+    "key": "ghats/radha-kund",
+    "subject": "Radha Kund",
+    "author": "Atarax42",
+    "licence": "CC BY-SA 3.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Radhakund.JPG"
+  },
+  {
+    "key": "ghats/kusum-sarovar",
+    "subject": "Kusum Sarovar, Govardhan",
+    "author": "Arjunfotografer",
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Grandeur_of_kusum_sarovar.jpg"
+  },
+  {
+    "key": "events/deepotsav-river",
+    "subject": "Deepotsav lamps on a river bank",
+    "author": "Subrohit",
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Deepotsav_At_The_River_Bank.jpg"
+  },
+  {
+    "key": "events/gopashtami-pichhavai",
+    "subject": "Gopashtami pichhavai painting, 19th century",
+    "author": "Unknown artist, Rajasthan (via Google Arts & Culture)",
+    "licence": "Public domain",
+    "licenceUrl": "",
+    "source": "https://commons.wikimedia.org/wiki/File:Rajasthan,_India_-_Festival_of_the_Cattle_(Gopashtami);_shrine_hanging_(pichhavai)_-_Google_Art_Project.jpg"
+  },
+  {
+    "key": "events/tulsi-vivah",
+    "subject": "Tulsi Vivah",
+    "author": "Antrabhardwaj2",
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tulsi_Vivah.jpg"
+  },
+  {
+    "key": "temples/daan-ghati-commons",
+    "subject": "Daan Ghati Temple, Govardhan",
+    "author": "Adityavijayavargia",
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Daan_Ghati_Temple_in_Govardhan_2014-10-03.jpg"
+  },
+  {
+    "key": "temples/dwarkadhish-commons",
+    "subject": "Dwarkadhish Temple, Mathura",
+    "author": "Aliva Sahoo",
+    "licence": "CC BY-SA 3.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Dwarkadheesh_Temple_(29706).jpg"
+  },
+  {
+    "key": "temples/raman-reti-commons",
+    "subject": "Raman Reti temple, Gokul",
+    "author": "Parth0308",
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Raman_Reti.jpg"
+  },
+  {
+    "key": "temples/dauji-commons",
+    "subject": "Huranga at Dauji Temple, Baldeo",
+    "author": "Retlaw Snellac Photography from Belgium",
+    "licence": "CC0",
+    "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "source": "https://commons.wikimedia.org/wiki/File:India_-_holi_festivities_(48567516757).jpg"
+  }
+]

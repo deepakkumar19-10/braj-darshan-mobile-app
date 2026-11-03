@@ -41,30 +41,31 @@ export const fontWeights = {
   extraBold: '800',
 };
 
+// Elder-friendly scale: body never below 16. Line heights leave room for Devanagari matras.
 export const fontSizes = {
-  hero: 32,
+  hero: 30,
   h1: 26,
   h2: 22,
-  h3: 18,
-  h4: 16,
-  bodyLarge: 15,
-  body: 14,
-  caption: 12,
-  small: 11,
-  badge: 10,
+  h3: 19,
+  h4: 17,
+  bodyLarge: 17,
+  body: 16,
+  caption: 14,
+  small: 13,
+  badge: 12,
 };
 
 export const lineHeights = {
   hero: 40,
   h1: 34,
-  h2: 28,
-  h3: 24,
-  h4: 22,
-  bodyLarge: 22,
-  body: 20,
-  caption: 16,
-  small: 14,
-  badge: 13,
+  h2: 30,
+  h3: 27,
+  h4: 24,
+  bodyLarge: 26,
+  body: 24,
+  caption: 20,
+  small: 18,
+  badge: 16,
 };
 
 export const typography = {

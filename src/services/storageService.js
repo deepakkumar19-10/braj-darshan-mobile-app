@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import templesData from '../data/temples.json';
 
 const STORAGE_KEYS = {
   FAVORITES: '@braj_favorites_v1',
@@ -10,7 +9,7 @@ const STORAGE_KEYS = {
 };
 
 // Initial default favorites
-const DEFAULT_FAVORITES = [templesData[0], templesData[4]];
+const DEFAULT_FAVORITES = [];
 
 export const storageService = {
   /**
@@ -23,7 +22,6 @@ export const storageService = {
         return JSON.parse(data);
       }
       // If first run, persist default and return
-      await this.saveFavorites(DEFAULT_FAVORITES);
       return DEFAULT_FAVORITES;
     } catch (error) {
       console.warn('Failed to load favorites from storage:', error);

@@ -1,3 +1,4 @@
+import { sunTimesIST, istInstant, panchangAt, kaalWindow } from "./vedicAstro.js";
 // src/services/panchangService.js
 /**
  * Authentic Vedic Panchang & Astronomical Calculation Engine for Braj (Mathura-Vrindavan)
@@ -159,15 +160,15 @@ export const YEAR_FESTIVALS_MAP = {
     badge: "🔱",
     descHi: "वृंदावन के गोपेश्वर महादेव, भूतेश्वर व रंगेश्वर महादेव का महाअभिषेक।"
   },
-  "2026-02-26": {
+  "2026-02-25": {
     nameHi: "बरसाना लट्ठमार होली",
     nameEn: "Barsana Lathmar Holi",
     shortHi: "लट्ठमार होली",
     shortEn: "Lathmar Holi",
     badge: "🎨",
-    descHi: "बरसाना में रंगीली गली में गोपियों और नंदगांव के हुरियारों की विश्वप्रसिद्ध लट्ठमार होली।"
+    descHi: "बरसाना में रंगीली गली में गोपियों और नंदगांव के हुरियारों की प्रसिद्ध लट्ठमार होली।"
   },
-  "2026-02-27": {
+  "2026-02-26": {
     nameHi: "नंदगांव लट्ठमार होली",
     nameEn: "Nandgaon Lathmar Holi",
     shortHi: "नंदगांव होली",
@@ -175,7 +176,7 @@ export const YEAR_FESTIVALS_MAP = {
     badge: "🎨",
     descHi: "नंदभवन में बरसाना के हुरियारों पर नंदगांव की गोपियों का लाठी प्रहार व प्रेममयी होली।"
   },
-  "2026-03-01": {
+  "2026-02-27": {
     nameHi: "वृंदावन फूलों की होली (रंगभरी एकादशी)",
     nameEn: "Phoolon Ki Holi (Rangbhari Ekadashi)",
     shortHi: "फूलों की होली",
@@ -207,7 +208,7 @@ export const YEAR_FESTIVALS_MAP = {
     badge: "🌈",
     descHi: "बलदेव में दाऊजी महाराज का भव्य हुरंगा, जहाँ टेसू के रंगों की नदियाँ बहती हैं।"
   },
-  "2026-03-20": {
+  "2026-03-19": {
     nameHi: "चैत्र नवरात्रि / नव संवत्सर 2083",
     nameEn: "Chaitra Navratri / Hindu New Year",
     shortHi: "नव संवत्सर",
@@ -215,7 +216,7 @@ export const YEAR_FESTIVALS_MAP = {
     badge: "🚩",
     descHi: "विक्रम संवत् 2083 का शुभारंभ और माँ भगवती की नौ दिनों की आराधना।"
   },
-  "2026-03-28": {
+  "2026-03-26": {
     nameHi: "श्री राम नवमी",
     nameEn: "Shri Ram Navami",
     shortHi: "राम नवमी",
@@ -237,7 +238,7 @@ export const YEAR_FESTIVALS_MAP = {
     shortHi: "निर्जला एकादशी",
     shortEn: "Nirjala Ekadashi",
     badge: "💧",
-    descHi: "मथुरा के विश्राम घाट पर लाखों भक्तों का पवित्र यमुना स्नान और शरबत वितरण।"
+    descHi: "मथुरा के विश्राम घाट पर बड़ी संख्या में भक्तों का पवित्र यमुना स्नान और शरबत वितरण।"
   },
   "2026-07-29": {
     nameHi: "गुरु पूर्णिमा (मुड़िया पूनों महामेला)",
@@ -245,7 +246,7 @@ export const YEAR_FESTIVALS_MAP = {
     shortHi: "मुड़िया पूनों मेला",
     shortEn: "Mudiya Poono",
     badge: "🌕",
-    descHi: "गोवर्धन में 21 किमी गिरिराज परिक्रमा का विशाल 5 दिवसीय मेला, 50 लाख से अधिक श्रद्धालु।"
+    descHi: "गोवर्धन में 21 किमी गिरिराज परिक्रमा का विशाल 5 दिवसीय मेला, जिसमें बड़ी संख्या में श्रद्धालु आते हैं।"
   },
   "2026-08-28": {
     nameHi: "रक्षाबंधन एवं झूलन उत्सव समापन",
@@ -281,14 +282,6 @@ export const YEAR_FESTIVALS_MAP = {
     isMajor: true,
     descHi: "श्री राधा रानी के प्राकट्य दिवस पर बरसाना लाड़ली जी मंदिर में भव्य जन्मोत्सव व महाअभिषेक।"
   },
-  "2026-09-28": {
-    nameHi: "सर्वार्थ सिद्धि योग (शुभ नक्षत्र संयोग)",
-    nameEn: "Sarvartha Siddhi Yoga (Auspicious Conjunction)",
-    shortHi: "सिद्ध योग",
-    shortEn: "Siddhi Yoga",
-    badge: "✨",
-    descHi: "रेवती व अश्विनी नक्षत्र का विशेष मंगलकारी संयोग, नवीन साधना व संकल्प हेतु श्रेष्ठ।"
-  },
   "2026-10-20": {
     nameHi: "विजयादशमी (दशहरा मेला)",
     nameEn: "Vijayadashami (Dussehra)",
@@ -313,9 +306,9 @@ export const YEAR_FESTIVALS_MAP = {
     shortEn: "Diwali",
     badge: "🪔",
     isMajor: true,
-    descHi: "यमुना तट और ब्रज के समस्त मंदिरों में लाखों दीपकों से महा दीपदान।"
+    descHi: "यमुना तट और ब्रज के समस्त मंदिरों में दीपकों से महा दीपदान।"
   },
-  "2026-11-09": {
+  "2026-11-10": {
     nameHi: "गोवर्धन पूजा एवं अन्नकूट महोत्सव",
     nameEn: "Govardhan Puja & Annakoot",
     shortHi: "गोवर्धन पूजा / अन्नकूट",
@@ -324,7 +317,7 @@ export const YEAR_FESTIVALS_MAP = {
     isMajor: true,
     descHi: "गिरिराज जी को 56 भोग अर्पित, गायों का श्रृंगार और गोवर्धन महापरिक्रमा।"
   },
-  "2026-11-10": {
+  "2026-11-11": {
     nameHi: "यम द्वितीया (विश्राम घाट भाई दूज स्नान)",
     nameEn: "Yama Dwitiya (Bhai Dooj Snan)",
     shortHi: "यम द्वितीया",
@@ -340,6 +333,14 @@ export const YEAR_FESTIVALS_MAP = {
     badge: "🐄",
     descHi: "भगवान कृष्ण द्वारा प्रथम बार गौ चारण का शुभारंभ, ब्रज की गौशालाओं में विशेष पूजन।"
   },
+  "2026-11-18": {
+    nameHi: "अक्षय नवमी (मथुरा परिक्रमा)",
+    nameEn: "Akshaya Navami (Mathura Parikrama)",
+    shortHi: "अक्षय नवमी",
+    shortEn: "Akshaya Navami",
+    badge: "🙏",
+    descHi: "कार्तिक शुक्ल नवमी पर मथुरा की परिक्रमा और आंवला पूजन।"
+  },
   "2026-11-20": {
     nameHi: "देवउठनी एकादशी (तुलसी विवाह)",
     nameEn: "Devutthana Ekadashi (Tulsi Vivah)",
@@ -347,6 +348,285 @@ export const YEAR_FESTIVALS_MAP = {
     shortEn: "Devutthana Ekadashi",
     badge: "🌿",
     descHi: "चार मास की योग निद्रा से भगवान विष्णु का जागरण और मांगलिक कार्यों का शुभारंभ।"
+  },
+  "2026-11-24": {
+    nameHi: "कार्तिक पूर्णिमा (यमुना स्नान व दीपदान)",
+    nameEn: "Kartik Purnima (Yamuna Snan & Deepdaan)",
+    shortHi: "कार्तिक पूर्णिमा",
+    shortEn: "Kartik Purnima",
+    badge: "🌕",
+    descHi: "कार्तिक मास का समापन — यमुना स्नान और दीपदान।"
+  },
+  "2026-12-14": {
+    nameHi: "विहार पंचमी (बांके बिहारी प्राकट्य उत्सव)",
+    nameEn: "Vihar Panchami (Banke Bihari Prakatya Utsav)",
+    shortHi: "विहार पंचमी",
+    shortEn: "Vihar Panchami",
+    badge: "🎶",
+    descHi: "मार्गशीर्ष शुक्ल पंचमी — निधिवन में स्वामी हरिदास जी के समक्ष ठाकुर बांके बिहारी जी के प्रकट होने का उत्सव।"
+  },
+  "2026-12-20": {
+    nameHi: "गीता जयंती (मोक्षदा एकादशी)",
+    nameEn: "Gita Jayanti (Mokshada Ekadashi)",
+    shortHi: "गीता जयंती",
+    shortEn: "Gita Jayanti",
+    badge: "📖",
+    descHi: "मार्गशीर्ष शुक्ल एकादशी — श्रीकृष्ण द्वारा अर्जुन को गीता उपदेश की स्मृति और मोक्षदा एकादशी व्रत।"
+  },
+
+  // ================= 2027 (YEAR 2027) =================
+  "2027-01-15": {
+    nameHi: "मकर संक्रांति (ब्रज पतंगोत्सव)",
+    nameEn: "Makar Sankranti (Braj Kite Festival)",
+    shortHi: "मकर संक्रांति",
+    shortEn: "Makar Sankranti",
+    badge: "🪁",
+    descHi: "सूर्य का मकर राशि में प्रवेश (14 जनवरी की रात), इसलिए स्नान-दान 15 जनवरी को; यमुना स्नान और ठाकुर जी को खिचड़ी भोग।"
+  },
+  "2027-02-11": {
+    nameHi: "बसंत पंचमी (ब्रज में गुलाल उत्सव आरंभ)",
+    nameEn: "Basant Panchami (Braj colour season begins)",
+    shortHi: "बसंत पंचमी",
+    shortEn: "Basant Panchami",
+    badge: "🌼",
+    descHi: "सरस्वती पूजन; इसी दिन से ब्रज के मंदिरों में गुलाल और होली के पद शुरू होते हैं।"
+  },
+  "2027-03-06": {
+    nameHi: "महाशिवरात्रि (गोपेश्वर महादेव पूजन)",
+    nameEn: "Maha Shivratri (Gopeshwar Mahadev)",
+    shortHi: "महाशिवरात्रि",
+    shortEn: "Maha Shivratri",
+    badge: "🔱",
+    descHi: "वृंदावन के गोपेश्वर महादेव, भूतेश्वर व रंगेश्वर महादेव का महाअभिषेक।"
+  },
+  "2027-03-16": {
+    nameHi: "बरसाना लट्ठमार होली (संभावित)",
+    nameEn: "Barsana Lathmar Holi (tentative)",
+    shortHi: "लट्ठमार होली",
+    shortEn: "Lathmar Holi",
+    badge: "🎨",
+    descHi: "फाल्गुन शुक्ल नवमी। अंतिम तिथि बरसाना मंदिर व प्रशासन घोषित करते हैं — जाने से पहले पुष्टि करें।"
+  },
+  "2027-03-17": {
+    nameHi: "नंदगांव लट्ठमार होली (संभावित)",
+    nameEn: "Nandgaon Lathmar Holi (tentative)",
+    shortHi: "नंदगांव होली",
+    shortEn: "Nandgaon Holi",
+    badge: "🎨",
+    descHi: "फाल्गुन शुक्ल दशमी। अंतिम तिथि नंदगांव मंदिर व प्रशासन घोषित करते हैं — जाने से पहले पुष्टि करें।"
+  },
+  "2027-03-18": {
+    nameHi: "वृंदावन फूलों की होली (रंगभरी एकादशी)",
+    nameEn: "Phoolon Ki Holi (Rangbhari Ekadashi)",
+    shortHi: "फूलों की होली",
+    shortEn: "Flower Holi",
+    badge: "🌸",
+    descHi: "बांके बिहारी जी के आंगन में फूलों की पंखुड़ियों और गुलाल की होली।"
+  },
+  "2027-03-21": {
+    nameHi: "होलिका दहन",
+    nameEn: "Holika Dahan",
+    shortHi: "होलिका दहन",
+    shortEn: "Holika Dahan",
+    badge: "🔥",
+    descHi: "फाल्गुन पूर्णिमा पर बुराई पर अच्छाई की विजय; फालेन गांव में पंडा का जलती होली से निकलना।"
+  },
+  "2027-03-22": {
+    nameHi: "धुलेंडी (रंगवाली होली)",
+    nameEn: "Dhulandi (Rangwali Holi)",
+    shortHi: "धुलेंडी",
+    shortEn: "Holi",
+    badge: "🌈",
+    descHi: "पूरे ब्रज में रंग और गुलाल की होली।"
+  },
+  "2027-03-23": {
+    nameHi: "दाऊजी हुरंगा (बलदेव)",
+    nameEn: "Dauji Huranga (Baldeo)",
+    shortHi: "दाऊजी हुरंगा",
+    shortEn: "Dauji Huranga",
+    badge: "🌈",
+    descHi: "होली के अगले दिन बलदेव में दाऊजी महाराज के मंदिर में हुरंगा।"
+  },
+  "2027-04-07": {
+    nameHi: "चैत्र नवरात्रि / नव संवत्सर 2084",
+    nameEn: "Chaitra Navratri / Hindu New Year",
+    shortHi: "नव संवत्सर",
+    shortEn: "Hindu New Year",
+    badge: "🚩",
+    descHi: "विक्रम संवत् 2084 का शुभारंभ और माँ भगवती की नौ दिनों की आराधना।"
+  },
+  "2027-04-15": {
+    nameHi: "श्री राम नवमी",
+    nameEn: "Shri Ram Navami",
+    shortHi: "राम नवमी",
+    shortEn: "Ram Navami",
+    badge: "🏹",
+    descHi: "मर्यादा पुरुषोत्तम भगवान श्री राम का पावन जन्मोत्सव।"
+  },
+  "2027-05-09": {
+    nameHi: "अक्षय तृतीया (बांके बिहारी जी चरण दर्शन)",
+    nameEn: "Akshaya Tritiya (Charan Darshan)",
+    shortHi: "चरण दर्शन",
+    shortEn: "Charan Darshan",
+    badge: "🪷",
+    descHi: "वर्ष में केवल एक बार बांके बिहारी जी के श्री चरणों के दर्शन एवं चंदन लेप श्रृंगार।"
+  },
+  "2027-06-14": {
+    nameHi: "निर्जला एकादशी (यमुना स्नान मेला)",
+    nameEn: "Nirjala Ekadashi (Yamuna Snan)",
+    shortHi: "निर्जला एकादशी",
+    shortEn: "Nirjala Ekadashi",
+    badge: "💧",
+    descHi: "मथुरा के विश्राम घाट पर पवित्र यमुना स्नान और शरबत वितरण।"
+  },
+  "2027-07-18": {
+    nameHi: "गुरु पूर्णिमा (मुड़िया पूनों मेला)",
+    nameEn: "Guru Purnima (Mudiya Poono Mela)",
+    shortHi: "मुड़िया पूनों मेला",
+    shortEn: "Mudiya Poono",
+    badge: "🌕",
+    descHi: "गोवर्धन में 21 किमी गिरिराज परिक्रमा का मेला।"
+  },
+  "2027-08-04": {
+    nameHi: "हरियाली तीज (बांके बिहारी हिंडोला दर्शन)",
+    nameEn: "Hariyali Teej (Banke Bihari Hindola)",
+    shortHi: "हरियाली तीज",
+    shortEn: "Hariyali Teej",
+    badge: "🌿",
+    descHi: "श्रावण शुक्ल तृतीया पर बांके बिहारी जी स्वर्ण-रजत हिंडोले में दर्शन देते हैं; ब्रज में झूलन उत्सव।"
+  },
+  "2027-08-17": {
+    nameHi: "रक्षाबंधन एवं झूलन उत्सव समापन",
+    nameEn: "Raksha Bandhan & Jhulan Utsav",
+    shortHi: "रक्षाबंधन / झूलन",
+    shortEn: "Raksha Bandhan",
+    badge: "🎋",
+    descHi: "सावन मास के झूलन उत्सव का समापन और रक्षाबंधन पर्व।"
+  },
+  "2027-08-25": {
+    nameHi: "श्री कृष्ण जन्माष्टमी",
+    nameEn: "Shri Krishna Janmashtami",
+    shortHi: "🎉 जन्माष्टमी",
+    shortEn: "🎉 Janmashtami",
+    badge: "🦚",
+    isMajor: true,
+    descHi: "मथुरा श्रीकृष्ण जन्मस्थान व बांके बिहारी मंदिर में मध्यरात्रि जन्मोत्सव और पंचामृत अभिषेक।"
+  },
+  "2027-08-26": {
+    nameHi: "गोकुल नंदोत्सव (दधिकांदो)",
+    nameEn: "Gokul Nandotsav (Dadhikando)",
+    shortHi: "नंदोत्सव",
+    shortEn: "Nandotsav",
+    badge: "🏺",
+    descHi: "नंदबाबा के आंगन में हल्दी-दही का छिड़काव और बधाई गायन।"
+  },
+  "2027-09-08": {
+    nameHi: "श्री राधाष्टमी (बरसाना)",
+    nameEn: "Shri Radhashtami (Barsana)",
+    shortHi: "🌸 राधाष्टमी",
+    shortEn: "🌸 Radhashtami",
+    badge: "👑",
+    isMajor: true,
+    descHi: "श्री राधा रानी के प्राकट्य दिवस पर बरसाना लाड़ली जी मंदिर में जन्मोत्सव व महाअभिषेक।"
+  },
+  "2027-10-09": {
+    nameHi: "विजयादशमी (दशहरा मेला)",
+    nameEn: "Vijayadashami (Dussehra)",
+    shortHi: "विजयादशमी",
+    shortEn: "Dussehra",
+    badge: "🏹",
+    descHi: "भगवान राम की विजय और रावण दहन मेला।"
+  },
+  "2027-10-14": {
+    nameHi: "शरद पूर्णिमा (महारास दर्शन)",
+    nameEn: "Sharad Purnima (Maharaas Darshan)",
+    shortHi: "शरद पूर्णिमा",
+    shortEn: "Sharad Purnima",
+    badge: "🌕",
+    isMajor: true,
+    descHi: "वृंदावन वंशीवट और निधिवन में महारास लीला, ठाकुर जी का श्वेत वेश श्रृंगार।"
+  },
+  "2027-10-22": {
+    nameHi: "राधा कुंड स्नान (अहोई अष्टमी)",
+    nameEn: "Radha Kund Snan (Ahoi Ashtami)",
+    shortHi: "राधा कुंड स्नान",
+    shortEn: "Radha Kund Snan",
+    badge: "🌙",
+    descHi: "कार्तिक कृष्ण अष्टमी की मध्यरात्रि गोवर्धन के राधा कुंड में पवित्र स्नान।"
+  },
+  "2027-10-29": {
+    nameHi: "दीपावली (दीपदान महोत्सव)",
+    nameEn: "Deepawali (Festival of Lights)",
+    shortHi: "दीपावली",
+    shortEn: "Diwali",
+    badge: "🪔",
+    isMajor: true,
+    descHi: "यमुना तट और ब्रज के मंदिरों में दीपदान।"
+  },
+  "2027-10-30": {
+    nameHi: "गोवर्धन पूजा एवं अन्नकूट महोत्सव",
+    nameEn: "Govardhan Puja & Annakoot",
+    shortHi: "गोवर्धन पूजा / अन्नकूट",
+    shortEn: "Govardhan Puja",
+    badge: "⛰️",
+    isMajor: true,
+    descHi: "गिरिराज जी को अन्नकूट भोग, गायों का श्रृंगार और गोवर्धन परिक्रमा।"
+  },
+  "2027-10-31": {
+    nameHi: "यम द्वितीया (विश्राम घाट भाई दूज स्नान)",
+    nameEn: "Yama Dwitiya (Bhai Dooj Snan)",
+    shortHi: "यम द्वितीया",
+    shortEn: "Bhai Dooj",
+    badge: "🌊",
+    descHi: "मथुरा के विश्राम घाट पर भाई-बहन का साथ में यमुना स्नान।"
+  },
+  "2027-11-06": {
+    nameHi: "गोपाष्टमी (गौ पूजा महोत्सव)",
+    nameEn: "Gopashtami (Gau Mata Puja)",
+    shortHi: "गोपाष्टमी",
+    shortEn: "Gopashtami",
+    badge: "🐄",
+    descHi: "भगवान कृष्ण द्वारा प्रथम बार गौ चारण का शुभारंभ, ब्रज की गौशालाओं में विशेष पूजन।"
+  },
+  "2027-11-07": {
+    nameHi: "अक्षय नवमी (मथुरा परिक्रमा)",
+    nameEn: "Akshaya Navami (Mathura Parikrama)",
+    shortHi: "अक्षय नवमी",
+    shortEn: "Akshaya Navami",
+    badge: "🙏",
+    descHi: "कार्तिक शुक्ल नवमी पर मथुरा की परिक्रमा और आंवला पूजन।"
+  },
+  "2027-11-10": {
+    nameHi: "देवउठनी एकादशी (तुलसी विवाह)",
+    nameEn: "Devutthana Ekadashi (Tulsi Vivah)",
+    shortHi: "देवउठनी एकादशी",
+    shortEn: "Devutthana Ekadashi",
+    badge: "🌿",
+    descHi: "चार मास की योग निद्रा से भगवान विष्णु का जागरण और मांगलिक कार्यों का शुभारंभ।"
+  },
+  "2027-11-14": {
+    nameHi: "कार्तिक पूर्णिमा (यमुना स्नान व दीपदान)",
+    nameEn: "Kartik Purnima (Yamuna Snan & Deepdaan)",
+    shortHi: "कार्तिक पूर्णिमा",
+    shortEn: "Kartik Purnima",
+    badge: "🌕",
+    descHi: "कार्तिक मास का समापन — यमुना स्नान और दीपदान।"
+  },
+  "2027-12-03": {
+    nameHi: "विहार पंचमी (बांके बिहारी प्राकट्य उत्सव)",
+    nameEn: "Vihar Panchami (Banke Bihari Prakatya Utsav)",
+    shortHi: "विहार पंचमी",
+    shortEn: "Vihar Panchami",
+    badge: "🎶",
+    descHi: "मार्गशीर्ष शुक्ल पंचमी — निधिवन में स्वामी हरिदास जी के समक्ष ठाकुर बांके बिहारी जी के प्रकट होने का उत्सव।"
+  },
+  "2027-12-09": {
+    nameHi: "गीता जयंती (मोक्षदा एकादशी)",
+    nameEn: "Gita Jayanti (Mokshada Ekadashi)",
+    shortHi: "गीता जयंती",
+    shortEn: "Gita Jayanti",
+    badge: "📖",
+    descHi: "मार्गशीर्ष शुक्ल एकादशी — श्रीकृष्ण द्वारा अर्जुन को गीता उपदेश की स्मृति और मोक्षदा एकादशी व्रत।"
   },
 
   // ================= 2025 (YEAR 2025) =================
@@ -372,6 +652,16 @@ export const YEAR_FESTIVALS_MAP = {
   "2025-10-22": { nameHi: "यम द्वितीया", nameEn: "Yama Dwitiya", shortHi: "भाई दूज", shortEn: "Bhai Dooj", badge: "🌊" },
   "2025-11-01": { nameHi: "देवउठनी एकादशी", nameEn: "Devutthana Ekadashi", shortHi: "देवउठनी एकादशी", shortEn: "Devutthana Ekadashi", badge: "🌿" }
 };
+
+// Seasons by lunar month pair: Chaitra–Vaishakha = Vasanta, and so on.
+const RITUS = [
+  { hi: "बसंत ऋतु", en: "Vasanta (Spring)" },
+  { hi: "ग्रीष्म ऋतु", en: "Grishma (Summer)" },
+  { hi: "वर्षा ऋतु", en: "Varsha (Monsoon)" },
+  { hi: "शरद ऋतु", en: "Sharad (Autumn)" },
+  { hi: "हेमंत ऋतु", en: "Hemanta (Pre-winter)" },
+  { hi: "शिशिर ऋतु", en: "Shishira (Winter)" },
+];
 
 /**
  * Format Date to YYYY-MM-DD
@@ -505,21 +795,19 @@ export function calculatePanchang(date) {
   const day = d.getDate();
   const weekday = d.getDay();
 
-  // Vikram Samvat calculation
-  const vikramSamvat = year + (month > 3 || (month === 3 && day >= 22) ? 57 : 56);
-  // Shaka Samvat (starts Chaitra)
-  const shakaSamvat = year - (month > 3 || (month === 3 && day >= 22) ? 78 : 79);
+  // Sunrise/sunset for Mathura (NOAA method, includes the equation of time).
+  const { sunriseIST, sunsetIST } = sunTimesIST(year, month, day);
+
+  // Tithi, nakshatra, yoga, karana and lunar month from true Sun/Moon positions at sunrise.
+  const p = panchangAt(istInstant(year, month, day, sunriseIST));
+
+  // Vikram Samvat changes at Chaitra Shukla Pratipada; Shaka Samvat is 135 years behind.
+  const vikramSamvat = year + (month <= 4 && p.monthAmanta >= 9 ? 56 : 57);
+  const shakaSamvat = vikramSamvat - 135;
   // Krishna / Kali Samvat
   const krishnaSamvat = 5252;
 
-  // Synodic Month reference (New Moon base)
-  const refNewMoon = new Date(2024, 0, 11, 11, 57).getTime();
-  const diffDays = (d.getTime() - refNewMoon) / (1000 * 60 * 60 * 24);
-  const lunarCycle = 29.53058867;
-  const lunarAge = ((diffDays % lunarCycle) + lunarCycle) % lunarCycle;
-
-  // Tithi calculation (30 tithis per lunar cycle)
-  const tithiIndex = Math.floor((lunarAge / lunarCycle) * 30);
+  const tithiIndex = p.tithi;
   const isShukla = tithiIndex < 15;
   const pakshaHi = isShukla ? "शुक्ल पक्ष" : "कृष्ण पक्ष";
   const pakshaEn = isShukla ? "Shukla Paksha" : "Krishna Paksha";
@@ -528,48 +816,23 @@ export function calculatePanchang(date) {
     ? TITHIS_SHUKLA[tithiIndex]
     : TITHIS_KRISHNA[tithiIndex - 15];
 
-  // Nakshatra calculation (27 nakshatras)
-  const nakshatraIndex = Math.floor(((diffDays * 1.033) % 27 + 27)) % 27;
-  const nakshatraObj = NAKSHATRAS[nakshatraIndex];
+  const nakshatraObj = NAKSHATRAS[p.nakshatra];
+  const yogaObj = YOGAS[p.yoga];
+  const karanaObj = KARANAS[p.karana];
 
-  // Yoga & Karana
-  const yogaIndex = (tithiIndex + nakshatraIndex) % 27;
-  const yogaObj = YOGAS[yogaIndex];
-  const karanaIndex = (tithiIndex * 2) % 11;
-  const karanaObj = KARANAS[karanaIndex];
+  // Month as counted in Braj (purnimanta): Krishna paksha belongs to the next month.
+  const hinduMonthObj = HINDU_MONTHS[p.monthPurnimanta];
+  const hinduMonthHi = (p.isAdhik ? "अधिक " : "") + hinduMonthObj.hi;
+  const hinduMonthEn = (p.isAdhik ? "Adhik " : "") + hinduMonthObj.en;
 
-  // Hindu Lunar Month approx mapping
-  const hinduMonthIdx = (month + 10) % 12; // March approx Chaitra
-  const hinduMonthObj = HINDU_MONTHS[hinduMonthIdx];
+  // Ritu: two lunar months each, starting with Chaitra.
+  const ritu = RITUS[Math.floor(p.monthAmanta / 2)];
+  const rituHi = ritu.hi;
+  const rituEn = ritu.en;
 
-  // Ritu (Seasons)
-  let rituHi = "हेमंत ऋतु";
-  let rituEn = "Hemanta (Pre-winter)";
-  if (month >= 3 && month <= 4) { rituHi = "बसंत ऋतु"; rituEn = "Vasanta (Spring)"; }
-  else if (month >= 5 && month <= 6) { rituHi = "ग्रीष्म ऋतु"; rituEn = "Grishma (Summer)"; }
-  else if (month >= 7 && month <= 8) { rituHi = "वर्षा ऋतु"; rituEn = "Varsha (Monsoon)"; }
-  else if (month >= 9 && month <= 10) { rituHi = "शरद ऋतु"; rituEn = "Sharad (Autumn)"; }
-  else if (month >= 11 && month <= 12) { rituHi = "हेमंत ऋतु"; rituEn = "Hemanta (Pre-winter)"; }
-  else { rituHi = "शिशिर ऋतु"; rituEn = "Shishira (Winter)"; }
+  const ayanaHi = p.isUttarayana ? "उत्तरायण" : "दक्षिणायन";
+  const ayanaEn = p.isUttarayana ? "Uttarayana" : "Dakshinayana";
 
-  const ayanaHi = month >= 7 ? "दक्षिणायन" : "उत्तरायण";
-  const ayanaEn = month >= 7 ? "Dakshinayana" : "Uttarayana";
-
-  // Solar Sunrise & Sunset for Mathura (27.49°N, 77.67°E)
-  const dayOfYear = Math.floor((d - new Date(year, 0, 0)) / 1000 / 60 / 60 / 24);
-  const declination = 23.45 * Math.sin(((284 + dayOfYear) / 365) * 2 * Math.PI);
-  const hourAngle = Math.acos(
-    -Math.tan((27.4924 * Math.PI) / 180) * Math.tan((declination * Math.PI) / 180)
-  );
-
-  const solarNoonUTC = 12 - 77.6737 / 15;
-  const sunriseUTC = solarNoonUTC - (hourAngle * 180) / Math.PI / 15;
-  const sunsetUTC = solarNoonUTC + (hourAngle * 180) / Math.PI / 15;
-
-  // Indian Standard Time (UTC + 5.5)
-  const sunriseIST = sunriseUTC + 5.5;
-  const sunsetIST = sunsetUTC + 5.5;
-  const solarNoonIST = solarNoonUTC + 5.5;
 
   const sunrise = formatHours(sunriseIST);
   const sunset = formatHours(sunsetIST);
@@ -580,9 +843,10 @@ export function calculatePanchang(date) {
   const dayLengthStr = `${dayLengthHours} घंटे ${dayLengthMins} मिनट`;
 
   // Shubh Muhurats
-  // 1. Abhijit Muhurat: 8th muhurat of the day (centered at Solar Noon, 48 minutes duration)
-  const abhijitStart = solarNoonIST - 0.4;
-  const abhijitEnd = solarNoonIST + 0.4;
+  // 1. Abhijit Muhurat: the 8th of the day's 15 muhurtas (around solar noon)
+  const muhurta = (sunsetIST - sunriseIST) / 15;
+  const abhijitStart = sunriseIST + 7 * muhurta;
+  const abhijitEnd = sunriseIST + 8 * muhurta;
   const abhijitMuhurat = `${formatHours(abhijitStart)} – ${formatHours(abhijitEnd)}`;
 
   // 2. Brahma Muhurat: 2 muhurats before sunrise (~1 hr 36 mins to ~48 mins before sunrise)
@@ -595,43 +859,15 @@ export function calculatePanchang(date) {
   const godhuliEnd = sunsetIST + 0.25;
   const godhuliMuhurat = `${formatHours(godhuliStart)} – ${formatHours(godhuliEnd)}`;
 
-  // 4. Vijaya Muhurat: ~02:05 PM to 02:53 PM
-  const vijayaStart = solarNoonIST + 2.0;
-  const vijayaEnd = solarNoonIST + 2.8;
+  // 4. Vijaya Muhurat: the 11th of the day's 15 muhurtas
+  const vijayaStart = sunriseIST + 10 * muhurta;
+  const vijayaEnd = sunriseIST + 11 * muhurta;
   const vijayaMuhurat = `${formatHours(vijayaStart)} – ${formatHours(vijayaEnd)}`;
 
   // Inauspicious Muhurats (Ashubh)
-  // Rahu Kaal (Weekday specific segment in Mathura)
-  const rahuKaalParts = {
-    0: "04:30 PM – 06:00 PM",
-    1: "07:30 AM – 09:00 AM",
-    2: "03:00 PM – 04:30 PM",
-    3: "12:00 PM – 01:30 PM",
-    4: "01:30 PM – 03:00 PM",
-    5: "10:30 AM – 12:00 PM",
-    6: "09:00 AM – 10:30 AM"
-  };
-
-  // Yamaganda Kaal
-  const yamagandaParts = {
-    0: "12:00 PM – 01:30 PM",
-    1: "10:30 AM – 12:00 PM",
-    2: "09:00 AM – 10:30 AM",
-    3: "07:30 AM – 09:00 AM",
-    4: "06:00 AM – 07:30 AM",
-    5: "03:00 PM – 04:30 PM",
-    6: "01:30 PM – 03:00 PM"
-  };
-
-  // Gulika Kaal
-  const gulikaParts = {
-    0: "03:00 PM – 04:30 PM",
-    1: "01:30 PM – 03:00 PM",
-    2: "12:00 PM – 01:30 PM",
-    3: "10:30 AM – 12:00 PM",
-    4: "09:00 AM – 10:30 AM",
-    5: "07:30 AM – 09:00 AM",
-    6: "06:00 AM – 07:30 AM"
+  const kaal = (kind) => {
+    const [start, end] = kaalWindow(kind, weekday, sunriseIST, sunsetIST);
+    return `${formatHours(start)} – ${formatHours(end)}`;
   };
 
   const dateKey = formatDateKey(d);
@@ -662,8 +898,9 @@ export function calculatePanchang(date) {
     yogaEn: yogaObj.en,
     karanaHi: karanaObj.hi,
     karanaEn: karanaObj.en,
-    hinduMonthHi: hinduMonthObj.hi,
-    hinduMonthEn: hinduMonthObj.en,
+    hinduMonthHi,
+    hinduMonthEn,
+    isAdhikMaas: p.isAdhik,
     samvat: String(vikramSamvat),
     shakaSamvat: String(shakaSamvat),
     krishnaSamvat: String(krishnaSamvat),
@@ -674,9 +911,9 @@ export function calculatePanchang(date) {
     sunrise,
     sunset,
     dayLength: dayLengthStr,
-    rahukaal: rahuKaalParts[weekday],
-    yamaganda: yamagandaParts[weekday],
-    gulika: gulikaParts[weekday],
+    rahukaal: kaal("rahu"),
+    yamaganda: kaal("yamaganda"),
+    gulika: kaal("gulika"),
     abhijitMuhurat,
     brahmaMuhurat,
     godhuliMuhurat,

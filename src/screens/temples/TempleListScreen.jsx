@@ -1,415 +1,272 @@
-import React, { useState } from 'react';
+/**
+ * Braj Darshan - Temples
+ * Design: design-input/figma "Light · Temples". Search, List/Map switch, town
+ * chips built from the data (no empty filters), an "Open now" filter, and
+ * compact rows showing each temple's own status and today's hours.
+ */
+
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
-  ScrollView,
   FlatList,
-  TouchableOpacity,
+  ScrollView,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useFavorites } from '../../context/FavoritesContext';
 import { AppText } from '../../components/common/AppText';
-import StitchHeader from '../../components/common/StitchHeader';
-import StitchSearchBar from '../../components/common/StitchSearchBar';
-import StitchTag from '../../components/common/StitchTag';
-import StitchPill from '../../components/common/StitchPill';
-import StitchTempleCard from '../../components/temples/StitchTempleCard';
-import ActiveAartiModeBanner from '../../components/temples/ActiveAartiModeBanner';
+import { Icon } from '../../components/common/Icon';
+import {
+  Card,
+  Chip,
+  InfoNote,
+  LanguageToggle,
+  Photo,
+  SearchField,
+  StatusBadge,
+  TopBar,
+  GUTTER,
+  useBottomInset,
+} from '../../components/ui';
+import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
 import templesData from '../../data/temples.json';
+import {
+  getTempleStatus,
+  getTodaysWindows,
+  getIndianStandardTime,
+  formatMinutes,
+} from '../../utils/templeHours';
+import { getTempleImage, isTempleImageRepresentative } from '../../utils/imageAssets';
+import { searchTerms, searchFields } from '../../utils/searchText';
+import { useNow } from '../../hooks/useNow';
 
-const CITIES = [
-  { id: 'All', hi: 'सभी', en: 'All' },
-  { id: 'Vrindavan', hi: 'वृंदावन', en: 'Vrindavan' },
-  { id: 'Mathura', hi: 'मथुरा', en: 'Mathura' },
-  { id: 'Govardhan', hi: 'गोवर्धन', en: 'Govardhan' },
-  { id: 'Barsana', hi: 'बरसाना', en: 'Barsana' },
-  { id: 'Gokul', hi: 'गोकुल', en: 'Gokul' },
-  { id: 'Nandgaon', hi: 'नंदगांव', en: 'Nandgaon' },
-];
+function todayHours(temple) {
+  const windows = getTodaysWindows(temple, getIndianStandardTime(new Date()));
+  if (!windows) return null;
+  return windows.map(([s, e]) => `${formatMinutes(s)}–${formatMinutes(e)}`).join(' · ');
+}
+
+const TOWNS = (() => {
+  const seen = new Map();
+  templesData.forEach((t) => {
+    if (!seen.has(t.city)) seen.set(t.city, { id: t.city, en: t.city, hi: t.cityHindi || t.city });
+  });
+  return [...seen.values()];
+})();
+
+// Every typed word must appear in the temple's names, deity or town; Hindi spelling variants are folded.
+function matches(temple, terms) {
+  if (!terms.length) return true;
+  const hay = searchFields(temple.name, temple.nameHindi, temple.deity, temple.deityHindi, temple.city, temple.cityHindi).join(' ');
+  return terms.every((t) => hay.includes(t));
+}
+
+const TempleRow = React.memo(function TempleRow({ temple, isHindi, colors, onOpen, isFav, onToggleFav, now }) {
+  const status = getTempleStatus(temple, now);
+  const hours = todayHours(temple);
+  const favGuard = usePressGuard(onToggleFav, 300);
+  return (
+    <Card onPress={onOpen} style={styles.row} accessibilityLabel={temple.name}>
+      <View style={styles.rowInner}>
+        <Photo
+          source={getTempleImage(temple)}
+          style={styles.thumb}
+          accessibilityLabel={temple.name}
+        />
+        <View style={styles.flex}>
+          <AppText variant="body" weight="700" color={colors.navy} numberOfLines={2}>
+            {isHindi ? temple.nameHindi : temple.name}
+          </AppText>
+          <AppText variant="small" color={colors.muted} numberOfLines={1}>
+            {isHindi ? `${temple.name} · ${temple.cityHindi}` : `${temple.nameHindi} · ${temple.city}`}
+          </AppText>
+          <View style={styles.badgeWrap}>
+            <StatusBadge status={status} size="sm" />
+          </View>
+          {hours ? (
+            <AppText variant="small" color={colors.textSecondary}>
+              {isHindi ? `आज: ${hours}` : `Today: ${hours}`}
+            </AppText>
+          ) : null}
+        </View>
+        <Pressable
+          onPress={favGuard}
+          hitSlop={8}
+          style={styles.favBtn}
+          accessibilityRole="button"
+          accessibilityLabel={isFav ? (isHindi ? 'सहेजे से हटाएँ' : 'Remove from saved') : isHindi ? 'सहेजें' : 'Save'}
+          accessibilityState={{ selected: isFav }}
+        >
+          <Icon name="heart" filled={isFav} size={24} color={isFav ? colors.warning : colors.muted} />
+        </Pressable>
+      </View>
+      {isTempleImageRepresentative(temple) ? (
+        <AppText variant="badge" color={colors.muted} style={styles.repNote}>
+          {isHindi ? 'प्रतीकात्मक चित्र' : 'Representative photo'}
+        </AppText>
+      ) : null}
+    </Card>
+  );
+});
 
 export default function TempleListScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const bottomInset = useBottomInset();
+  const { colors } = useTheme();
   const { isHindi } = useLanguage();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const [searchQuery, setSearchQuery] = useState(route?.params?.search || '');
-  const [selectedCity, setSelectedCity] = useState('All');
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'map'
-  const [selectedMapTemple, setSelectedMapTemple] = useState(templesData[0]);
+  const [town, setTown] = useState('All');
+  const [openOnly, setOpenOnly] = useState(false);
+  const now = useNow(); // open/closed badges move on while the list stays open
 
-  // Filtering
-  const filteredTemples = templesData.filter((temple) => {
-    const matchesCity =
-      selectedCity === 'All' ||
-      temple.city.toLowerCase() === selectedCity.toLowerCase();
+  // A new search from Home reaches an already-open Temples screen too.
+  useEffect(() => {
+    if (route?.params?.search !== undefined) setSearchQuery(route.params.search);
+  }, [route?.params?.search]);
 
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return matchesCity;
+  const temples = useMemo(() => {
+    const q = searchTerms(searchQuery.trim().toLowerCase());
+    return templesData.filter(
+      (t) =>
+        (town === 'All' || t.city === town) &&
+        matches(t, q) &&
+        (!openOnly || getTempleStatus(t, now).isOpen)
+    );
+  }, [searchQuery, town, openOnly, now]);
 
-    const matchesSearch =
-      temple.name.toLowerCase().includes(q) ||
-      temple.nameHindi.includes(q) ||
-      temple.deity.toLowerCase().includes(q) ||
-      temple.city.toLowerCase().includes(q) ||
-      temple.shortDescription.toLowerCase().includes(q);
+  const openTemple = useCallback(
+    (temple) => navigation.navigate(ROUTES.TEMPLE_DETAIL, { id: temple.id, temple }),
+    [navigation]
+  );
 
-    return matchesCity && matchesSearch;
-  });
-
-  return (
-    <View
-      style={[
-        styles.root,
-        {
-          backgroundColor: colors.background,
-          paddingTop: insets.top,
-        },
-      ]}
-    >
-      {/* 1. Universal Stitch Header */}
-      <StitchHeader
-        title={isHindi ? 'श्री धाम मंदिर दर्शन' : 'Braj Temple Darshan'}
-        subtitle={isHindi ? 'प्रमुख देवालय व आरती' : 'Verified Aarti & Timings'}
+  const header = (
+    <View>
+      <TopBar
+        title={isHindi ? 'मंदिर' : 'Temples'}
+        subtitle={
+          isHindi
+            ? `${templesData.length} मंदिर · त्योहारों पर समय बदल सकता है`
+            : `${templesData.length} temples · timings may change on festivals`
+        }
+        right={<LanguageToggle />}
       />
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 110 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* 2. Dhamic Directory Heading */}
-        <View style={styles.titleSection}>
-          <StitchTag
-            icon="🛕"
-            text={isHindi ? 'धामिक मंदिर डायरेक्टरी' : 'Dhamic Directory'}
-            variant="saffron"
-          />
+      <SearchField
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder={isHindi ? 'मंदिर, देवता या शहर खोजें' : 'Search temple, deity or town'}
+        style={styles.search}
+      />
 
-          <AppText variant="h1" weight="700" color={colors.navy} style={styles.mainTitle}>
-            {isHindi ? 'ब्रज मंदिर दर्शन (देवालय)' : 'Braj Temple Darshan (मंदिर दर्शन)'}
-          </AppText>
+      <View style={styles.segment}>
+        <Chip label={isHindi ? 'सूची' : 'List'} icon="list" selected onPress={() => {}} />
+        <Chip label={isHindi ? 'नक्शा' : 'Map'} icon="map" selected={false} onPress={() => navigation.navigate(ROUTES.MAP)} />
+      </View>
 
-          <AppText variant="caption" color={colors.textSecondary} style={styles.subtitle}>
-            {isHindi
-              ? '८४ कोस ब्रज मण्डल के सभी प्रमुख देवालयों की प्रमाणित आरती समय सारणी व दर्शन गाइड।'
-              : 'Verified opening hours, live aarti schedule & GPS navigation across the 84 Kos Braj Mandal.'}
-          </AppText>
-        </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <Chip label={isHindi ? 'सभी' : 'All'} selected={town === 'All'} onPress={() => setTown('All')} />
+        {TOWNS.map((t) => (
+          <Chip key={t.id} label={isHindi ? t.hi : t.en} selected={town === t.id} onPress={() => setTown(t.id)} />
+        ))}
+      </ScrollView>
 
-        {/* 3. Search Bar */}
-        <StitchSearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder={
-            isHindi
-              ? 'मंदिर का नाम, ईष्ट देव या शहर खोजें...'
-              : 'Search by deity, temple name, or city...'
-          }
+      <View style={styles.segment}>
+        <Chip
+          label={isHindi ? 'अभी खुले' : 'Open now'}
+          icon="open"
+          selected={openOnly}
+          onPress={() => setOpenOnly((v) => !v)}
         />
+        <AppText variant="small" color={colors.muted} style={styles.count}>
+          {isHindi ? `${temples.length} परिणाम` : `${temples.length} results`}
+        </AppText>
+      </View>
+    </View>
+  );
 
-        {/* 4. City Filter Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.cityFilterScroll}
-        >
-          {CITIES.map((c) => {
-            const isActive = selectedCity === c.id;
-            return (
-              <StitchPill
-                key={c.id}
-                label={isHindi ? c.hi : c.en}
-                active={isActive}
-                onPress={() => setSelectedCity(c.id)}
-                size="sm"
-              />
-            );
-          })}
-        </ScrollView>
-
-        {/* 5. View Mode Toggle (List View vs Map View) */}
-        <View style={styles.toggleRow}>
-          <View
-            style={[
-              styles.viewToggleGroup,
-              {
-                backgroundColor: isDark ? colors.cardAlt : colors.surfaceContainer,
-                borderColor: isDark ? colors.border : colors.border,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={[
-                styles.viewBtn,
-                viewMode === 'list' && [styles.viewBtnActive, { backgroundColor: colors.primary }],
-              ]}
-              onPress={() => setViewMode('list')}
-              activeOpacity={0.8}
-            >
-              <AppText
-                variant="small"
-                weight="700"
-                color={viewMode === 'list' ? '#FFFFFF' : colors.textSecondary}
-              >
-                📑 {isHindi ? 'सूची (List View)' : 'List View'}
-              </AppText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.viewBtn,
-                viewMode === 'map' && [styles.viewBtnActive, { backgroundColor: colors.primary }],
-              ]}
-              onPress={() => setViewMode('map')}
-              activeOpacity={0.8}
-            >
-              <AppText
-                variant="small"
-                weight="700"
-                color={viewMode === 'map' ? '#FFFFFF' : colors.textSecondary}
-              >
-                🗺️ {isHindi ? 'मानचित्र (Map View)' : 'Map View'}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-
-          <StitchPill
-            label={isHindi ? 'समीपता' : 'Proximity'}
-            icon="🧭"
-            count={filteredTemples.length}
-            size="sm"
-            onPress={() => {}}
-          />
-        </View>
-
-        {/* 6. Active Aarti Mode in Map View */}
-        {viewMode === 'map' ? (
-          <View style={styles.mapSection}>
-            <ActiveAartiModeBanner
-              onBellPress={() => {}}
-              onShankhPress={() => {}}
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <FlatList
+        data={temples}
+        keyExtractor={(t) => String(t.id)}
+        ListHeaderComponent={header}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingBottom: bottomInset }}
+        renderItem={({ item }) => (
+          <View style={styles.rowWrap}>
+            <TempleRow
+              temple={item}
+              isHindi={isHindi}
+              colors={colors}
+              onOpen={() => openTemple(item)}
+              isFav={isFavorite(item.id)}
+              onToggleFav={() => toggleFavorite(item)}
+              now={now}
             />
-
-            {/* Interactive Dham Map View Simulation */}
-            <View
-              style={[
-                styles.mapCanvas,
-                {
-                  backgroundColor: isDark ? '#1C2833' : '#F1F8E9',
-                  borderColor: isDark ? colors.border : '#C8E6C9',
-                },
-              ]}
-            >
-              <View style={styles.yamunaRiver}>
-                <AppText variant="small" weight="700" color="#0284C7">
-                  〜 यमुना नदी पावन प्रवाह 〜
-                </AppText>
-              </View>
-
-              {/* Pin 1: Banke Bihari */}
-              <TouchableOpacity
-                style={[
-                  styles.mapPin,
-                  { top: 50, left: 30 },
-                  selectedMapTemple?.id === 1 && styles.mapPinActive,
-                ]}
-                onPress={() => setSelectedMapTemple(templesData[0])}
-                activeOpacity={0.8}
-              >
-                <AppText variant="small" weight="700" color="#FFFFFF">
-                  🛕 बांके बिहारी (In 15m)
-                </AppText>
-              </TouchableOpacity>
-
-              {/* Pin 2: Krishna Janmasthan */}
-              <TouchableOpacity
-                style={[
-                  styles.mapPin,
-                  { top: 120, right: 30 },
-                  selectedMapTemple?.id === 2 && styles.mapPinActive,
-                ]}
-                onPress={() => setSelectedMapTemple(templesData[1])}
-                activeOpacity={0.8}
-              >
-                <AppText variant="small" weight="700" color="#FFFFFF">
-                  🛕 जन्मस्थान (In 42m)
-                </AppText>
-              </TouchableOpacity>
-
-              {/* Pin 3: Radha Rani Barsana */}
-              <TouchableOpacity
-                style={[
-                  styles.mapPin,
-                  { bottom: 30, left: 50 },
-                  selectedMapTemple?.id === 5 && styles.mapPinActive,
-                ]}
-                onPress={() => setSelectedMapTemple(templesData[4])}
-                activeOpacity={0.8}
-              >
-                <AppText variant="small" weight="700" color="#FFFFFF">
-                  🛕 श्रीजी मंदिर
-                </AppText>
-              </TouchableOpacity>
-            </View>
-
-            {/* Selected Temple Preview Card in Map View */}
-            {selectedMapTemple && (
-              <StitchTempleCard
-                temple={selectedMapTemple}
-                onPress={() =>
-                  navigation.navigate(ROUTES.TEMPLE_DETAIL, {
-                    id: selectedMapTemple.id,
-                    temple: selectedMapTemple,
-                  })
-                }
-              />
-            )}
-          </View>
-        ) : (
-          /* List of Temples */
-          <View style={styles.listContainer}>
-            {filteredTemples.map((temple) => (
-              <StitchTempleCard
-                key={temple.id}
-                temple={temple}
-                onPress={() =>
-                  navigation.navigate(ROUTES.TEMPLE_DETAIL, {
-                    id: temple.id,
-                    temple,
-                  })
-                }
-              />
-            ))}
           </View>
         )}
-
-        {/* 7. Pilgrim's Note on Darshan Etiquette */}
-        <View
-          style={[
-            styles.etiquetteCard,
-            {
-              backgroundColor: isDark ? colors.cardAlt : colors.peach,
-              borderColor: isDark ? colors.border : 'rgba(164, 55, 0, 0.18)',
-            },
-          ]}
-        >
-          <AppText variant="caption" weight="700" color={colors.primary}>
-            🛕 {isHindi ? 'तीर्थयात्री दर्शन शिष्टाचार (Pilgrim Etiquette)' : "Pilgrim's Note • Darshan Etiquette"}
-          </AppText>
-          <AppText variant="caption" color={colors.textSecondary} style={styles.etiquetteText}>
-            {isHindi
-              ? 'वृंदावन व मथुरा के अधिकांश देवालयों में दोपहर १२:३० से सायं ०४:३० बजे तक पट विश्राम (शयन) रहता है। कृपया अपनी यात्रा प्रातः मंगला आरती अथवा सायं संध्या आरती के अनुसार नियोजित करें।'
-              : 'Most temple sanctums in Vrindavan strictly follow midday afternoon closure (Pat Shayan) between 12:30 PM & 04:30 PM. Plan your journey around early Mangla or evening Sandhya Aartis.'}
-          </AppText>
-        </View>
-      </ScrollView>
+        ListEmptyComponent={
+          <View style={styles.rowWrap}>
+            <InfoNote icon="search">
+              {isHindi
+                ? 'कोई मंदिर नहीं मिला। दूसरा नाम या शहर आज़माएँ।'
+                : 'No temple found. Try another name or town.'}
+            </InfoNote>
+            {searchQuery || town !== 'All' || openOnly ? (
+              <View style={styles.emptyActions}>
+                <Chip
+                  label={isHindi ? 'सभी फ़िल्टर हटाएँ' : 'Clear search and filters'}
+                  icon="close"
+                  onPress={() => {
+                    setSearchQuery('');
+                    setTown('All');
+                    setOpenOnly(false);
+                  }}
+                />
+              </View>
+            ) : null}
+          </View>
+        }
+        ListFooterComponent={
+          <View style={styles.rowWrap}>
+            <InfoNote>
+              {isHindi
+                ? 'समय मंदिरों के नियमित समय पर आधारित है, लाइव नहीं। त्योहारों पर बदल सकता है — जाने से पहले स्थानीय पुष्टि करें।'
+                : 'Based on regular temple timings, not live. They change on festivals — confirm locally before you go.'}
+            </InfoNote>
+          </View>
+        }
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  titleSection: {
-    marginVertical: 8,
-  },
-  mainTitle: {
-    fontSize: 22,
-    lineHeight: 28,
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  cityFilterScroll: {
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  search: { marginHorizontal: GUTTER },
+  emptyActions: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  segment: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    paddingVertical: 10,
+    paddingHorizontal: GUTTER,
+    marginTop: 12,
   },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  viewToggleGroup: {
-    flexDirection: 'row',
-    borderRadius: 9999,
-    padding: 3,
-    borderWidth: 1,
-  },
-  viewBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 9999,
-  },
-  viewBtnActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  mapSection: {
-    marginBottom: 10,
-  },
-  mapCanvas: {
-    height: 240,
-    borderRadius: 20,
-    borderWidth: 1,
-    position: 'relative',
-    overflow: 'hidden',
-    marginBottom: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  yamunaRiver: {
-    position: 'absolute',
-    transform: [{ rotate: '-25deg' }],
-    backgroundColor: 'rgba(2, 132, 199, 0.12)',
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 9999,
-  },
-  mapPin: {
-    position: 'absolute',
-    backgroundColor: '#A43700',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 9999,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  mapPinActive: {
-    backgroundColor: '#CD4700',
-    borderWidth: 2,
-    borderColor: '#FDE68A',
-    transform: [{ scale: 1.08 }],
-  },
-  listContainer: {
-    marginVertical: 4,
-  },
-  etiquetteCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 14,
-    marginVertical: 8,
-  },
-  etiquetteText: {
-    marginTop: 4,
-    lineHeight: 18,
-  },
+  chips: { paddingHorizontal: GUTTER, gap: 8, marginTop: 12 },
+  count: { marginLeft: 'auto' },
+  rowWrap: { paddingHorizontal: GUTTER, marginTop: 12 },
+  row: { padding: 12 },
+  rowInner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  thumb: { width: 88, height: 88, borderRadius: 14 },
+  badgeWrap: { marginVertical: 6 },
+  favBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginTop: -8, marginRight: -8 },
+  repNote: { marginTop: 6 },
 });

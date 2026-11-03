@@ -1,294 +1,181 @@
+/**
+ * Braj Darshan - Side drawer
+ * A full directory of the app: the four main tabs, then the same groups and
+ * sections as the More tab (MORE_GROUPS + MORE_SECTIONS), so both lists always
+ * match. Vector icons only. There is no sign-in: accounts are not available in
+ * this app. "About" lives in Settings, not as a separate entry.
+ */
+
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Animated,
-  TouchableWithoutFeedback,
-  Dimensions,
-  Platform,
-} from 'react-native';
+import { StyleSheet, View, ScrollView, Animated, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawer } from '../../context/DrawerContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useAuth } from '../../context/AuthContext';
-import { useFavorites } from '../../context/FavoritesContext';
-import { MorpankhIcon, LotusIcon, Badge } from '../common';
+import { AppText } from '../common/AppText';
+import { Icon } from '../common/Icon';
+import { IconButton, LanguageToggle, ListRow } from '../ui';
 import { ROUTES } from '../../navigation/routes';
+import { MORE_GROUPS, openSection, sectionsInGroup } from '../../screens/more/MoreScreen';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const APP_VERSION = '1.0';
+
+const MAIN_SECTIONS = [
+  { id: 'home', icon: 'home', route: ROUTES.HOME, hi: 'होम', en: 'Home' },
+  { id: 'temples', icon: 'temple', route: ROUTES.TEMPLES, hi: 'मंदिर', en: 'Temples' },
+  { id: 'map', icon: 'map', route: ROUTES.MAP, hi: 'नक्शा', en: 'Map' },
+  { id: 'panchang', icon: 'panchang', route: ROUTES.PANCHANG, hi: 'पंचांग', en: 'Panchang' },
+];
+
+function DrawerRow({ item, active, isHindi, colors, onPress }) {
+  return (
+    // A background in both states keeps the rounded corners on Android.
+    <View style={[styles.rowWrap, { backgroundColor: active ? colors.drawerActiveBg : colors.drawerBg }]}>
+      {active ? <View style={[styles.activeBar, { backgroundColor: colors.primary }]} /> : null}
+      <ListRow
+        icon={item.icon}
+        title={isHindi ? item.hi : item.en}
+        onPress={onPress}
+        right={item.url ? <Icon name="externalLink" size={18} color={colors.muted} /> : undefined}
+      />
+    </View>
+  );
+}
+
+function GroupLabel({ children, isHindi, colors }) {
+  return (
+    <AppText
+      variant="small"
+      weight="700"
+      color={colors.muted}
+      // Capitals and letter spacing only for English: spacing breaks Devanagari conjuncts.
+      style={[styles.groupLabel, !isHindi && styles.groupLabelEn]}
+      accessibilityRole="header"
+    >
+      {children}
+    </AppText>
+  );
+}
 
 export default function CustomDrawer({ navigation }) {
   const insets = useSafeAreaInsets();
   const { isOpen, closeDrawer, animValue, drawerWidth, currentRoute, setCurrentRoute } = useDrawer();
-  const { colors, isDark, toggleTheme } = useTheme();
-  const { t, isHindi, toggleLanguage } = useLanguage();
-  const { user, isGuest, logout } = useAuth();
-  const { favorites } = useFavorites();
+  const { colors } = useTheme();
+  const { isHindi } = useLanguage();
 
-  if (!isOpen) return null;
+  if (!isOpen || !animValue) return null;
 
   const translateX = animValue.interpolate({
     inputRange: [0, 1],
     outputRange: [-drawerWidth, 0],
   });
 
-  const backdropOpacity = animValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.6],
-  });
+  let activeRoute = currentRoute;
+  try {
+    activeRoute = navigation?.getCurrentRoute?.()?.name || currentRoute;
+  } catch (e) {
+    activeRoute = currentRoute;
+  }
 
-  const handleNavigate = (routeName) => {
-    setCurrentRoute(routeName);
+  const handlePress = (item) => {
     closeDrawer();
-    navigation.navigate(routeName);
+    if (!item.url) setCurrentRoute(item.route);
+    openSection((route, params) => navigation.navigate(route, params), item);
   };
 
-  const handleSignOutOrIn = async () => {
-    closeDrawer();
-    if (isGuest) {
-      navigation.navigate(ROUTES.AUTH_STACK);
-    } else {
-      await logout();
-      setCurrentRoute(ROUTES.HOME);
-      navigation.navigate(ROUTES.HOME);
-    }
-  };
-
-  const navItems = [
-    {
-      route: ROUTES.HOME,
-      icon: '🏠',
-      label: t('drawer.home', 'श्री धाम (होम)'),
-      subtitle: isHindi ? 'मुख्य पृष्ठ व दर्शन' : 'Main Sanctuary',
-    },
-    {
-      route: ROUTES.TEMPLES,
-      icon: '🛕',
-      label: t('drawer.temples', 'मंदिर (प्रमुख देवालय)'),
-      subtitle: isHindi ? 'आरती समय व दर्शन' : 'Aarti & Darshan',
-    },
-    {
-      route: ROUTES.PANCHANG,
-      icon: '🗓️',
-      label: t('drawer.panchang', 'पंचांग (तिथि व मुहूर्त)'),
-      subtitle: isHindi ? 'अभिजीत व शुभ योग' : 'Tithi & Muhurat',
-    },
-    {
-      route: ROUTES.YATRA,
-      icon: '🧭',
-      label: t('drawer.yatra', 'यात्रा व परिक्रमा गाइड'),
-      subtitle: isHindi ? 'गोवर्धन व चौरासी कोस' : 'Parikrama & Routes',
-    },
-    {
-      route: ROUTES.FOOD,
-      icon: '🍯',
-      label: t('drawer.food', 'ब्रज प्रसाद व भोजन'),
-      subtitle: isHindi ? 'मथुरा पेड़ा, कचौरी व भोग' : 'Prasad & Delicacies',
-    },
-    {
-      route: ROUTES.EVENTS,
-      icon: '🎉',
-      label: t('drawer.events', 'वार्षिक उत्सव व मेले'),
-      subtitle: isHindi ? 'जन्माष्टमी, होली व उत्सव' : 'Festivals & Utsav',
-    },
-    {
-      route: ROUTES.FAVORITES,
-      icon: '❤️',
-      label: t('drawer.favorites', 'मेरी दर्शन सूची'),
-      badge: favorites.length > 0 ? String(favorites.length) : null,
-      subtitle: isHindi ? 'सहेजे गए मंदिर' : 'Saved Sanctuary',
-    },
-    {
-      route: ROUTES.PLACES,
-      icon: '🌊',
-      label: isHindi ? 'पवित्र कुंड व घाट' : 'Kunds & Ghats',
-      subtitle: isHindi ? 'राधा कुंड व विश्राम घाट' : 'Sacred Waters',
-    },
-    {
-      route: ROUTES.HELPDESK,
-      icon: '🛟',
-      label: isHindi ? 'तीर्थ सेवा केंद्र' : 'Pilgrim Helpdesk',
-      subtitle: isHindi ? '24x7 हेल्पलाइन व सेवा' : '24x7 Emergency Seva',
-    },
-    {
-      route: ROUTES.PROFILE,
-      icon: '👤',
-      label: t('drawer.profile', 'मेरी प्रोफ़ाइल'),
-      subtitle: isHindi ? 'तीर्थ प्राथमिकताएं' : 'Account & Prefs',
-    },
-    {
-      route: ROUTES.SETTINGS,
-      icon: '⚙️',
-      label: t('drawer.settings', 'सेटिंग्स व डेटा'),
-      subtitle: isHindi ? 'सूचनाएं व ऑफलाइन कैश' : 'App & Offline Data',
-    },
-  ];
+  const renderRow = (item) => (
+    <DrawerRow
+      key={item.id}
+      item={item}
+      active={!item.url && !item.params && item.route === activeRoute}
+      isHindi={isHindi}
+      colors={colors}
+      onPress={() => handlePress(item)}
+    />
+  );
 
   return (
-    <View style={styles.absoluteContainer} pointerEvents="box-none">
-      {/* Dimmed Scrim / Backdrop */}
-      <TouchableWithoutFeedback onPress={closeDrawer}>
-        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
+    <View style={styles.absolute} pointerEvents="box-none">
+      <TouchableWithoutFeedback
+        onPress={closeDrawer}
+        accessibilityRole="button"
+        accessibilityLabel={isHindi ? 'मेनू बंद करें' : 'Close menu'}
+      >
+        <Animated.View
+          style={[styles.backdrop, { backgroundColor: colors.overlayDark, opacity: animValue }]}
+        />
       </TouchableWithoutFeedback>
 
-      {/* Sliding Drawer Container */}
       <Animated.View
         style={[
-          styles.drawerPanel,
+          styles.panel,
           {
             width: drawerWidth,
             backgroundColor: colors.drawerBg,
-            borderRightColor: colors.drawerBorder,
+            borderRightColor: colors.border,
+            shadowColor: colors.shadow,
             transform: [{ translateX }],
             paddingTop: insets.top + 8,
             paddingBottom: insets.bottom + 12,
           },
         ]}
       >
-        {/* Header: Devotee Profile & Aura */}
-        <View style={[styles.headerCard, { backgroundColor: colors.drawerHeaderBg, borderColor: colors.border }]}>
-          <View style={styles.headerTopRow}>
-            <View style={[styles.avatarWrap, { backgroundColor: colors.primaryLight, borderColor: colors.gold }]}>
-              <Text style={styles.avatarEmoji}>{user?.avatar || (isGuest ? '🪷' : '🦚')}</Text>
-            </View>
-            <View style={styles.headerInfo}>
-              <Text style={[styles.userName, { color: colors.navy }]} numberOfLines={1}>
-                {user?.name || (isHindi ? 'अतिथि तीर्थयात्री' : 'Guest Pilgrim')}
-              </Text>
-              <Text style={[styles.userStatus, { color: colors.muted }]} numberOfLines={1}>
-                {isGuest
-                  ? (isHindi ? 'अतिथि तीर्थयात्री' : 'Guest Pilgrim')
-                  : (user?.email || 'devotee@brajdarshan.org')}
-              </Text>
-            </View>
+        {/* Brand */}
+        <View style={styles.header}>
+          <View style={[styles.brandTile, { backgroundColor: colors.primaryLight }]}>
+            <Icon name="temple" size={26} color={colors.primary} />
           </View>
-
-          {/* Quick Controls: Language & Theme Switchers */}
-          <View style={styles.quickBar}>
-            <TouchableOpacity
-              style={[
-                styles.quickToggle,
-                { backgroundColor: isDark ? colors.cardAlt : colors.borderLight, borderColor: colors.border },
-              ]}
-              onPress={toggleLanguage}
-              activeOpacity={0.7}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Text style={[styles.quickToggleText, { color: colors.primary }]}>
-                {isHindi ? '🇬🇧 English' : '🇮🇳 हिन्दी'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.quickToggle,
-                { backgroundColor: isDark ? colors.cardAlt : colors.borderLight, borderColor: colors.border },
-              ]}
-              onPress={toggleTheme}
-              activeOpacity={0.7}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Text style={[styles.quickToggleText, { color: colors.goldDark }]}>
-                {isDark ? '☀️ Light' : '🌙 Dark'}
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.flex}>
+            <AppText variant="h3" weight="700" color={colors.navy} numberOfLines={2}>
+              श्री ब्रज दर्शन
+            </AppText>
+            <AppText variant="small" weight="600" color={colors.muted}>
+              DIVYABRAJ
+            </AppText>
           </View>
+          <IconButton
+            icon="close"
+            onPress={closeDrawer}
+            accessibilityLabel={isHindi ? 'मेनू बंद करें' : 'Close menu'}
+          />
         </View>
 
-        {/* Navigation Destination List */}
+        <View style={styles.controls}>
+          <LanguageToggle />
+          <AppText variant="caption" color={colors.textSecondary} style={styles.flex}>
+            {isHindi ? 'भाषा: हिन्दी' : 'Language: English'}
+          </AppText>
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
         <ScrollView
-          style={styles.menuScroll}
-          contentContainerStyle={styles.menuContent}
+          style={styles.flex}
+          contentContainerStyle={styles.menu}
           showsVerticalScrollIndicator={false}
         >
-          {navItems.map((item) => {
-            const isActive = currentRoute === item.route;
-            return (
-              <TouchableOpacity
-                key={item.route}
-                style={[
-                  styles.navItem,
-                  isActive && {
-                    backgroundColor: colors.drawerActiveBg,
-                  },
-                ]}
-                onPress={() => handleNavigate(item.route)}
-                activeOpacity={0.75}
-              >
-                {/* Active Accent Bar on Left */}
-                {isActive && (
-                  <View style={[styles.activeAccentBar, { backgroundColor: colors.primary }]} />
-                )}
+          <GroupLabel isHindi={isHindi} colors={colors}>
+            {isHindi ? 'मुख्य' : 'Main'}
+          </GroupLabel>
+          {MAIN_SECTIONS.map(renderRow)}
 
-                <Text style={styles.itemIcon}>{item.icon}</Text>
-
-                <View style={styles.itemTextWrap}>
-                  <Text
-                    style={[
-                      styles.itemLabel,
-                      {
-                        color: isActive ? colors.drawerActiveText : colors.drawerInactiveText,
-                        fontWeight: isActive ? '700' : '600',
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.label}
-                  </Text>
-                  <Text style={[styles.itemSub, { color: colors.muted }]} numberOfLines={1}>
-                    {item.subtitle}
-                  </Text>
-                </View>
-
-                {item.badge && (
-                  <View style={[styles.badgePill, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.badgePillText}>{item.badge}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Divider */}
-          <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-
-          {/* Sign In / Sign Out Item */}
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={handleSignOutOrIn}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.itemIcon}>{isGuest ? '🔑' : '🚪'}</Text>
-            <View style={styles.itemTextWrap}>
-              <Text
-                style={[
-                  styles.itemLabel,
-                  { color: isGuest ? colors.primary : colors.warning, fontWeight: '700' },
-                ]}
-              >
-                {isGuest
-                  ? t('drawer.signIn', 'साइन इन / नया खाता')
-                  : t('drawer.signOut', 'लॉग आउट (Sign Out)')}
-              </Text>
-              <Text style={[styles.itemSub, { color: colors.muted }]}>
-                {isGuest
-                  ? (isHindi ? 'डेटा सिंक व बैकअप' : 'Sync wishlist & notes')
-                  : (isHindi ? 'अतिथि मोड में वापस' : 'Return to guest mode')}
-              </Text>
+          {MORE_GROUPS.map((group) => (
+            <View key={group.id}>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <GroupLabel isHindi={isHindi} colors={colors}>
+                {isHindi ? group.hi : group.en}
+              </GroupLabel>
+              {sectionsInGroup(group.id).map(renderRow)}
             </View>
-          </TouchableOpacity>
+          ))}
         </ScrollView>
 
-        {/* Footer: Sacred Branding */}
-        <View style={[styles.drawerFooter, { borderTopColor: colors.border }]}>
-          <Text style={[styles.footerMantra, { color: colors.primary }]}>॥ राधे राधे ॥</Text>
-          <Text style={[styles.footerVersion, { color: colors.muted }]}>
-            {isHindi ? 'श्री ब्रज दर्शन' : 'Braj Darshan'} • v1.0.0
-          </Text>
+        <View style={[styles.footer, { borderTopColor: colors.border }]}>
+          <AppText variant="small" color={colors.muted} align="center">
+            {isHindi
+              ? `कोई खाता नहीं चाहिए · संस्करण ${APP_VERSION}`
+              : `No account needed · Version ${APP_VERSION}`}
+          </AppText>
         </View>
       </Animated.View>
     </View>
@@ -296,158 +183,50 @@ export default function CustomDrawer({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  absoluteContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  flex: { flex: 1 },
+  absolute: {
+    ...StyleSheet.absoluteFill,
     zIndex: 9999,
     elevation: 9999,
   },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#000000',
-  },
-  drawerPanel: {
+  backdrop: { ...StyleSheet.absoluteFill },
+  panel: {
     position: 'absolute',
     top: 0,
     left: 0,
     bottom: 0,
     borderRightWidth: 1,
-    shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 16,
   },
-  headerCard: {
-    marginHorizontal: 12,
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  headerTopRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
-  avatarWrap: {
+  brandTile: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarEmoji: {
-    fontSize: 22,
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  userStatus: {
-    fontSize: 12,
-  },
-  quickBar: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  quickToggle: {
-    flex: 1,
-    height: 36, // Min touch area with hitSlop
-    borderRadius: 8,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickToggleText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  menuScroll: {
-    flex: 1,
-  },
-  menuContent: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  navItem: {
+  controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginVertical: 2,
-    minHeight: 48, // Apple HIG min 44pt touch target
-    position: 'relative',
-  },
-  activeAccentBar: {
-    position: 'absolute',
-    left: 0,
-    top: 6,
-    bottom: 6,
-    width: 4,
-    borderRadius: 2,
-  },
-  itemIcon: {
-    fontSize: 20,
-    width: 32,
-    textAlign: 'center',
-    marginRight: 10,
-  },
-  itemTextWrap: {
-    flex: 1,
-  },
-  itemLabel: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  itemSub: {
-    fontSize: 11,
-    marginTop: 1,
-    lineHeight: 14,
-  },
-  badgePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginLeft: 6,
-  },
-  badgePillText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  menuDivider: {
-    height: 1,
-    marginVertical: 8,
-    marginHorizontal: 12,
-  },
-  drawerFooter: {
-    borderTopWidth: 1,
-    paddingTop: 10,
+    gap: 12,
     paddingHorizontal: 16,
-    alignItems: 'center',
+    paddingBottom: 4,
   },
-  footerMantra: {
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 2,
-    marginBottom: 2,
-  },
-  footerVersion: {
-    fontSize: 11,
-  },
+  menu: { paddingHorizontal: 8, paddingBottom: 12 },
+  groupLabel: { paddingHorizontal: 12, marginTop: 6, marginBottom: 2 },
+  groupLabelEn: { textTransform: 'uppercase', letterSpacing: 0.5 },
+  rowWrap: { borderRadius: 14, paddingHorizontal: 12, overflow: 'hidden' },
+  activeBar: { position: 'absolute', left: 0, top: 12, bottom: 12, width: 4, borderRadius: 2 },
+  divider: { height: 1, marginVertical: 10, marginHorizontal: 12 },
+  footer: { borderTopWidth: 1, paddingTop: 12, paddingHorizontal: 16 },
 });

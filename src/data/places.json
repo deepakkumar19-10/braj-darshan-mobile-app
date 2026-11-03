@@ -151,7 +151,8 @@
     ],
     "bestTime": "सर्दियों और त्योहारों के समय",
     "visitDuration": "2–3 घंटे",
-    "experience": "शांत वातावरण, कृष्ण भक्ति और आध्यात्मिक अनुभव"
+    "experience": "शांत वातावरण, कृष्ण भक्ति और आध्यात्मिक अनुभव",
+    "imageIsRepresentative": true
   },
   {
     "id": 8,
@@ -173,7 +174,8 @@
     ],
     "bestTime": "बलराम जयंती एवं होली",
     "visitDuration": "2–4 घंटे",
-    "experience": "बलराम जी के दर्शन, पूजा और ब्रज संस्कृति"
+    "experience": "बलराम जी के दर्शन, पूजा और ब्रज संस्कृति",
+    "imageIsRepresentative": true
   },
   {
     "id": 9,
@@ -195,6 +197,7 @@
     ],
     "bestTime": "नवरात्रि एवं धार्मिक पर्व",
     "visitDuration": "1–3 घंटे",
-    "experience": "देवी दर्शन, पूजा और लोक संस्कृति"
+    "experience": "देवी दर्शन, पूजा और लोक संस्कृति",
+    "imageIsRepresentative": true
   }
 ]

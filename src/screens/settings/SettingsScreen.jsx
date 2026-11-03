@@ -1,280 +1,378 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Switch,
-  Alert,
-  Linking,
-} from 'react-native';
+/**
+ * Braj Darshan - Settings
+ * Language, appearance (System / Light / Dark, System is the default), text size,
+ * offline data, and "About & privacy". About has no screen of its own: it is the
+ * "About" row here, which opens in place. Navigating to Settings with
+ * { section: 'about' } opens it and scrolls to it.
+ * No sign-in anywhere: accounts are not available. Only settings that really
+ * change the app are shown here.
+ */
+
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, ScrollView, Linking, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storageService } from '../../services/storageService';
-import { AppHeader, MorpankhIcon } from '../../components/common';
-import { useDrawer } from '../../context/DrawerContext';
-import audioService from '../../services/audioService';
+import { AppText } from '../../components/common/AppText';
+import { Icon } from '../../components/common/Icon';
+import {
+  Button,
+  Card,
+  Chip,
+  InfoNote,
+  LanguageToggle,
+  ListRow,
+  SectionHeader,
+  TopBar,
+  GUTTER,
+  useBottomInset,
+} from '../../components/ui';
+import { ROUTES } from '../../navigation/routes';
+import { PRIVACY_URL } from '../more/MoreScreen';
+import { PHOTO_CREDITS } from '../../utils/photoCredits';
 
-export default function SettingsScreen({ navigation }) {
+const APP_VERSION = '1.0';
+
+const LANGUAGE_OPTIONS = [
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'en', label: 'English' },
+];
+
+const THEME_OPTIONS = [
+  { mode: 'system', icon: 'theme', hi: 'फ़ोन के अनुसार', en: 'System' },
+  { mode: 'light', icon: 'sun', hi: 'लाइट', en: 'Light' },
+  { mode: 'dark', icon: 'tithi', hi: 'डार्क', en: 'Dark' },
+];
+
+function CardTitle({ icon, title, value, colors }) {
+  return (
+    <View style={styles.cardTitle}>
+      <View style={[styles.cardIcon, { backgroundColor: colors.primaryLight }]}>
+        <Icon name={icon} size={22} color={colors.primary} />
+      </View>
+      <View style={styles.flex}>
+        <AppText variant="h4" weight="700" color={colors.navy} accessibilityRole="header">
+          {title}
+        </AppText>
+        {value ? (
+          <AppText variant="caption" weight="600" color={colors.primary}>
+            {value}
+          </AppText>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+export default function SettingsScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
-  const { t, isHindi } = useLanguage();
-  const { openDrawer } = useDrawer();
+  const bottomInset = useBottomInset();
+  const { colors, isDark, themeMode, setThemeMode } = useTheme();
+  const { isHindi, language, setLanguage } = useLanguage();
 
-  const [aartiAlerts, setAartiAlerts] = useState(true);
-  const [chantOnLaunch, setChantOnLaunch] = useState(true);
-  const [highQualityAudio, setHighQualityAudio] = useState(true);
+  const section = route?.params?.section;
+  const scrollRef = useRef(null);
+  const bodyY = useRef(0);
+  const aboutY = useRef(0);
+  const [aboutOpen, setAboutOpen] = useState(section === 'about');
+  const [creditsOpen, setCreditsOpen] = useState(false);
+  // 'idle' | 'confirm' | 'working' | 'done' | 'error'
+  const [clearState, setClearState] = useState('idle');
 
+  // Opened with { section: 'about' }: expand About and scroll to it.
   useEffect(() => {
-    async function loadSettings() {
-      const s = await storageService.getSettings();
-      if (s) {
-        if (typeof s.aartiAlerts === 'boolean') setAartiAlerts(s.aartiAlerts);
-        if (typeof s.chantEnabled === 'boolean') setChantOnLaunch(s.chantEnabled);
-        if (typeof s.highQualityAudio === 'boolean') setHighQualityAudio(s.highQualityAudio);
-      }
-    }
-    loadSettings();
-  }, []);
+    if (section !== 'about') return undefined;
+    setAboutOpen(true);
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, bodyY.current + aboutY.current - 12),
+        animated: true,
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [section]);
 
-  const updateSetting = async (key, val) => {
-    const s = await storageService.getSettings();
-    const updated = { ...s, [key]: val };
-    await storageService.saveSettings(updated);
+  const goBack = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate(ROUTES.MORE);
   };
 
-  const handleTestChant = async () => {
-    await audioService.speakChant(isHindi ? 'राधे राधे' : 'Radhe Radhe');
+  const clearOfflineData = async () => {
+    setClearState('working');
+    const result = await storageService.clearCache();
+    setClearState(result && result.success ? 'done' : 'error');
   };
 
-  const handleClearCache = () => {
-    Alert.alert(
-      isHindi ? 'कैश डेटा साफ़ करें' : 'Clear Cache',
-      isHindi
-        ? 'क्या आप स्थानीय अस्थायी डेटा को ताज़ा करना चाहते हैं? आपकी दर्शन सूची सुरक्षित रहेगी।'
-        : 'Do you want to refresh cached data? Your wishlist will remain safe.',
-      [
-        { text: isHindi ? 'रद्द करें' : 'Cancel', style: 'cancel' },
-        {
-          text: isHindi ? 'साफ़ करें' : 'Clear',
-          onPress: async () => {
-            const result = await storageService.clearCache();
-            Alert.alert(
-              result.success ? (isHindi ? 'सफल' : 'Success') : (isHindi ? 'त्रुटि' : 'Error'),
-              result.success
-                ? t('settings.cacheCleared', 'कैश डेटा सफलतापूर्वक साफ़ हुआ!')
-                : (isHindi ? 'कैश साफ़ नहीं हो सका। कृपया दोबारा कोशिश करें।' : 'Could not clear the cache. Please try again.')
-            );
-          },
-        },
-      ]
-    );
+  const openPrivacy = () => {
+    Linking.openURL(PRIVACY_URL).catch(() => {});
   };
+
+  const currentLanguage = isHindi ? 'अभी: हिन्दी' : 'Currently: English';
+
+  const activeTheme = THEME_OPTIONS.find((opt) => opt.mode === themeMode) || THEME_OPTIONS[0];
+  let currentTheme;
+  if (activeTheme.mode === 'system') {
+    currentTheme = isHindi
+      ? `अभी: फ़ोन के अनुसार (${isDark ? 'डार्क' : 'लाइट'})`
+      : `Currently: System (${isDark ? 'dark' : 'light'})`;
+  } else {
+    currentTheme = isHindi ? `अभी: ${activeTheme.hi}` : `Currently: ${activeTheme.en}`;
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <AppHeader
-        title={t('settings.title', 'सेटिंग्स')}
-        subtitle={t('settings.subtitle', 'ऐप प्राथमिकताएं एवं ऑफलाइन डेटा')}
-        showBack={false}
-        leftAction={
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={openDrawer}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text style={[styles.menuIcon, { color: colors.navy }]}>☰</Text>
-          </TouchableOpacity>
-        }
-      />
-
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 90 }]}
+        ref={scrollRef}
+        contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Section: Notifications */}
-        <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.navy }]}>
-            🔔 {t('settings.notifications', 'सूचनाएं')}
-          </Text>
+        <TopBar
+          title={isHindi ? 'सेटिंग्स' : 'Settings'}
+          subtitle={isHindi ? 'ऐप को अपने अनुसार सहज बनाएँ' : 'Make the app comfortable for you'}
+          onBack={goBack}
+          right={<LanguageToggle />}
+        />
 
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextCol}>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>
-                {t('settings.aartiAlerts', 'दैनिक आरती व संध्या स्मरण')}
-              </Text>
-              <Text style={[styles.settingDesc, { color: colors.muted }]}>
-                {isHindi ? 'बांके बिहारी व द्वारकाधीश आरती समय पूर्व सूचना' : 'Alerts before Banke Bihari & Dwarkadhish Aarti'}
-              </Text>
-            </View>
-            <Switch
-              value={aartiAlerts}
-              onValueChange={(val) => {
-                setAartiAlerts(val);
-                updateSetting('aartiAlerts', val);
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={aartiAlerts ? '#FFFFFF' : '#F4F4F5'}
+        <View
+          style={styles.body}
+          onLayout={(e) => {
+            bodyY.current = e.nativeEvent.layout.y;
+          }}
+        >
+          {/* Language. The heading names both languages so it can be found in either. */}
+          <Card>
+            <CardTitle
+              icon="language"
+              title={isHindi ? 'भाषा · Language' : 'Language · भाषा'}
+              value={currentLanguage}
+              colors={colors}
             />
-          </View>
-        </View>
-
-        {/* Section: Audio Preferences */}
-        <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.navy }]}>
-            🎶 {t('settings.audioPref', 'भक्ति संगीत प्राथमिकताएं')}
-          </Text>
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextCol}>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>
-                {t('settings.chantOnLaunch', 'ऐप खोलने पर "राधे राधे" जयकारा')}
-              </Text>
-              <Text style={[styles.settingDesc, { color: colors.muted }]}>
-                {isHindi ? 'नेत्र-सुखद आध्यात्मिक स्वागत ध्वनि' : 'Spiritual welcome chant upon app launch'}
-              </Text>
+            <View style={styles.chips}>
+              {LANGUAGE_OPTIONS.map((opt) => (
+                <Chip
+                  key={opt.code}
+                  icon={language === opt.code ? 'open' : undefined}
+                  label={opt.label}
+                  selected={language === opt.code}
+                  onPress={() => setLanguage(opt.code)}
+                />
+              ))}
             </View>
-            <Switch
-              value={chantOnLaunch}
-              onValueChange={(val) => {
-                setChantOnLaunch(val);
-                updateSetting('chantEnabled', val);
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={chantOnLaunch ? '#FFFFFF' : '#F4F4F5'}
+            <AppText variant="caption" color={colors.textSecondary} style={styles.note}>
+              {isHindi
+                ? 'मेनू और जानकारी इसी भाषा में दिखेंगी। ऊपर के बटन से भी कभी भी बदल सकते हैं।'
+                : 'Menus and information are shown in this language. You can also switch any time with the button at the top.'}
+            </AppText>
+          </Card>
+
+          {/* Appearance */}
+          <Card>
+            <CardTitle
+              icon="theme"
+              title={isHindi ? 'रंग-रूप (थीम)' : 'Appearance (theme)'}
+              value={currentTheme}
+              colors={colors}
             />
-          </View>
-
-          {chantOnLaunch && (
-            <TouchableOpacity
-              style={[styles.testChantBtn, { backgroundColor: isDark ? colors.cardAlt : colors.primaryLight }]}
-              onPress={handleTestChant}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.testChantText, { color: colors.primary }]}>
-                🔊 {isHindi ? '"राधे राधे" ध्वनि का परीक्षण करें' : 'Test "Radhe Radhe" Voice'}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={[styles.settingRow, { marginTop: 14 }]}>
-            <View style={styles.settingTextCol}>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>
-                {t('settings.highQualityAudio', 'उच्च गुणवत्ता भजन ऑडियो')}
-              </Text>
-              <Text style={[styles.settingDesc, { color: colors.muted }]}>
-                {isHindi ? 'स्पष्ट ध्वनि एवं संपूर्ण पद' : 'Lossless devotional bitrate'}
-              </Text>
+            <View style={styles.chips}>
+              {THEME_OPTIONS.map((opt) => (
+                <Chip
+                  key={opt.mode}
+                  icon={opt.icon}
+                  label={isHindi ? opt.hi : opt.en}
+                  selected={activeTheme.mode === opt.mode}
+                  onPress={() => setThemeMode(opt.mode)}
+                />
+              ))}
             </View>
-            <Switch
-              value={highQualityAudio}
-              onValueChange={(val) => {
-                setHighQualityAudio(val);
-                updateSetting('highQualityAudio', val);
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={highQualityAudio ? '#FFFFFF' : '#F4F4F5'}
-            />
-          </View>
-        </View>
+            <AppText variant="caption" color={colors.textSecondary} style={styles.note}>
+              {isHindi
+                ? '"फ़ोन के अनुसार" चुनने पर ऐप आपके फ़ोन की लाइट या डार्क सेटिंग अपनाता है। यही शुरुआती सेटिंग है।'
+                : '"System" follows your phone\'s light or dark setting. This is the default.'}
+            </AppText>
+          </Card>
 
-        {/* Section: Storage & Cache */}
-        <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.navy }]}>
-            💾 {t('settings.offlineStorage', 'ऑफलाइन डेटा एवं कैश')}
-          </Text>
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextCol}>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>
-                {t('settings.clearCache', 'कैश डेटा साफ़ करें')}
-              </Text>
-              <Text style={[styles.settingDesc, { color: colors.muted }]}>
-                {t('settings.clearCacheDesc', 'दर्शन सूची सुरक्षित रखते हुए स्थानीय डेटा ताज़ा करें')}
-              </Text>
+          {/* Text size */}
+          <Card>
+            <CardTitle icon="textSize" title={isHindi ? 'अक्षरों का आकार' : 'Text size'} colors={colors} />
+            <AppText variant="body" color={colors.text}>
+              {isHindi
+                ? 'अक्षरों का आकार आपके फ़ोन की सेटिंग के अनुसार चलता है। बड़ा करने के लिए फ़ोन की डिस्प्ले सेटिंग में फ़ॉन्ट साइज़ बढ़ाएँ।'
+                : "Text follows your phone's font size. To make it bigger, increase the font size in your phone's display settings."}
+            </AppText>
+            <View style={[styles.preview, { backgroundColor: colors.primaryLight }]}>
+              <AppText variant="h4" weight="700" color={colors.navy}>
+                {isHindi ? 'राधे राधे' : 'Radhe Radhe'}
+              </AppText>
+              <AppText variant="body" color={colors.text}>
+                {isHindi ? 'अपनी गति से यात्रा करें।' : 'Take your yatra at your own pace.'}
+              </AppText>
             </View>
-            <TouchableOpacity
-              style={[styles.clearPill, { borderColor: colors.primary }]}
-              onPress={handleClearCache}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.clearPillText, { color: colors.primary }]}>
-                {isHindi ? 'साफ़ करें' : 'Clear'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </Card>
 
-        {/* Section: About & Trust */}
-        <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.aboutHeader}>
-            <View style={[styles.aboutIconWrap, { backgroundColor: colors.primaryLight }]}>
-              <MorpankhIcon size={32} />
-            </View>
-            <View>
-              <Text style={[styles.aboutTitle, { color: colors.navy }]}>
-                {isHindi ? 'श्री ब्रज दर्शन' : 'Braj Darshan'}
-              </Text>
-              <Text style={[styles.aboutVersion, { color: colors.primary }]}>
-                v1.0.0 • {t('settings.architecture', 'React Native New Architecture')}
-              </Text>
-            </View>
-          </View>
+          {/* Offline data */}
+          <Card>
+            <CardTitle icon="offline" title={isHindi ? 'ऑफ़लाइन डेटा' : 'Offline data'} colors={colors} />
+            <AppText variant="body" color={colors.text}>
+              {isHindi
+                ? 'मंदिर, पंचांग और उत्सवों की जानकारी ऐप में ही है और बिना इंटरनेट के चलती है। रास्ता (दिशा) और ऑनलाइन ऑडियो के लिए इंटरनेट चाहिए।'
+                : 'Temple, Panchang and festival information is built into the app and works without internet. Directions and online audio need internet.'}
+            </AppText>
 
-          <Text style={[styles.aboutDescText, { color: colors.textSecondary }]}>
-            {t(
-              'settings.aboutDesc',
-              'मथुरा, वृन्दावन, गोवर्धन, बरसाना और गोकुल धाम के संपूर्ण दर्शन हेतु एक प्रामाणिक डिजिटल साथी।'
+            {clearState === 'confirm' || clearState === 'working' ? (
+              <View style={[styles.confirmBox, { backgroundColor: colors.infoBg }]}>
+                <AppText variant="body" weight="700" color={colors.navy}>
+                  {isHindi ? 'ऑफ़लाइन डेटा साफ़ करें?' : 'Clear offline data?'}
+                </AppText>
+                <AppText variant="caption" color={colors.textSecondary}>
+                  {isHindi
+                    ? 'अस्थायी डेटा हटेगा। आपके सहेजे मंदिर, भाषा और थीम बने रहेंगे।'
+                    : 'Temporary data will be removed. Your saved temples, language and theme are kept.'}
+                </AppText>
+                {/* Stacked, so the labels never get cut off at a large font size. */}
+                <View style={styles.confirmButtons}>
+                  <Button
+                    title={isHindi ? 'हाँ, साफ़ करें' : 'Yes, clear'}
+                    onPress={clearOfflineData}
+                    disabled={clearState === 'working'}
+                  />
+                  <Button
+                    variant="secondary"
+                    title={isHindi ? 'रहने दें' : 'Cancel'}
+                    onPress={() => setClearState('idle')}
+                    disabled={clearState === 'working'}
+                  />
+                </View>
+              </View>
+            ) : (
+              <Button
+                variant="secondary"
+                icon="trash"
+                title={isHindi ? 'डेटा साफ़ करें' : 'Clear data'}
+                accessibilityLabel={isHindi ? 'ऑफ़लाइन डेटा साफ़ करें' : 'Clear offline data'}
+                onPress={() => setClearState('confirm')}
+                style={styles.clearButton}
+              />
             )}
-          </Text>
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            {clearState === 'done' ? (
+              <InfoNote icon="open" style={styles.result}>
+                {isHindi
+                  ? 'ऑफ़लाइन डेटा साफ़ हो गया। सहेजे मंदिर, भाषा और थीम बने हुए हैं।'
+                  : 'Offline data cleared. Saved temples, language and theme were kept.'}
+              </InfoNote>
+            ) : null}
+            {clearState === 'error' ? (
+              <InfoNote icon="alert" style={styles.result}>
+                {isHindi ? 'डेटा साफ़ नहीं हो सका। कृपया दोबारा कोशिश करें।' : 'Could not clear the data. Please try again.'}
+              </InfoNote>
+            ) : null}
+            {clearState === 'idle' ? (
+              <AppText variant="caption" color={colors.textSecondary} style={styles.note}>
+                {isHindi
+                  ? 'इससे केवल अस्थायी डेटा हटता है, आपकी सहेजी मंदिर सूची नहीं।'
+                  : 'This clears temporary data only, not your saved temple list.'}
+              </AppText>
+            ) : null}
+          </Card>
 
-          <View style={styles.linkList}>
-            <TouchableOpacity
-              style={styles.infoLinkRow}
-              onPress={() =>
-                Alert.alert(
-                  isHindi ? 'गोपनीयता नीति' : 'Privacy Policy',
+          {/* About & privacy */}
+          <View
+            style={styles.group}
+            onLayout={(e) => {
+              aboutY.current = e.nativeEvent.layout.y;
+            }}
+          >
+            <SectionHeader title={isHindi ? 'परिचय व गोपनीयता' : 'About & privacy'} />
+            <Card style={styles.listCard}>
+              <ListRow
+                icon="info"
+                title={isHindi ? 'परिचय' : 'About'}
+                subtitle={
                   isHindi
-                    ? 'श्री ब्रज दर्शन ऐप किसी भी व्यक्तिगत डेटा को ट्रैक या साझा नहीं करता है। आपकी दर्शन सूची केवल आपके डिवाइस पर सुरक्षित रूप से संग्रहित रहती है।'
-                    : 'Braj Darshan does not track or share personal data. Your wishlist remains stored privately on your device.'
-                )
-              }
-            >
-              <Text style={[styles.infoLinkText, { color: colors.text }]}>
-                📜 {t('settings.privacy', 'गोपनीयता नीति')}
-              </Text>
-              <Text style={[styles.linkArrow, { color: colors.muted }]}>›</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.infoLinkRow}
-              onPress={() =>
-                Alert.alert(
-                  isHindi ? 'तीर्थ सेवा नियम' : 'Terms of Service',
+                    ? 'श्री ब्रज दर्शन · DIVYABRAJ द्वारा'
+                    : 'Shri Braj Darshan, by DIVYABRAJ'
+                }
+                onPress={() => setAboutOpen((open) => !open)}
+                right={
+                  <View style={aboutOpen ? styles.chevronOpen : null}>
+                    <Icon name="chevronDown" size={20} color={colors.muted} />
+                  </View>
+                }
+              />
+              {aboutOpen ? (
+                <View style={styles.about}>
+                  <AppText variant="body" color={colors.text}>
+                    {isHindi
+                      ? 'ब्रज — मथुरा, वृंदावन, गोवर्धन, बरसाना और गोकुल — के मंदिरों, घाटों, उत्सवों और पंचांग की सरल जानकारी, DIVYABRAJ की ओर से।'
+                      : 'A gentle guide to the temples, ghats, festivals and Panchang of Braj — Mathura, Vrindavan, Govardhan, Barsana and Gokul — from DIVYABRAJ.'}
+                  </AppText>
+                  <AppText variant="caption" color={colors.textSecondary}>
+                    {isHindi
+                      ? 'मंदिरों का समय नियमित समय-सारणी पर आधारित है और त्योहारों पर बदल सकता है — कृपया स्थानीय पुष्टि करें। पंचांग फ़ोन पर गणना से बनता है और अनुमानित है।'
+                      : 'Temple timings follow regular schedules and may change on festivals — please confirm locally. The Panchang is calculated on your phone and is approximate.'}
+                  </AppText>
+                </View>
+              ) : null}
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <ListRow
+                icon="safety"
+                title={isHindi ? 'गोपनीयता नीति' : 'Privacy policy'}
+                subtitle={
                   isHindi
-                    ? 'सभी आरती समय व पंचांग गणना वैदिक सिद्धांतों पर आधारित हैं। विशेष पर्वों पर मंदिर प्रबंधन द्वारा समय में परिवर्तन संभव है।'
-                    : 'All aarti timings and panchang calculations are based on Vedic principles. Timings may vary on festival days per temple trust guidelines.'
-                )
-              }
-            >
-              <Text style={[styles.infoLinkText, { color: colors.text }]}>
-                ⚖️ {t('settings.terms', 'तीर्थ सेवा नियम व शर्तें')}
-              </Text>
-              <Text style={[styles.linkArrow, { color: colors.muted }]}>›</Text>
-            </TouchableOpacity>
+                    ? 'साइन-इन की ज़रूरत नहीं · divyabraj.com पर खुलेगा'
+                    : 'No sign-in required · opens divyabraj.com'
+                }
+                onPress={openPrivacy}
+                right={<Icon name="externalLink" size={20} color={colors.muted} />}
+              />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <ListRow
+                icon="camera"
+                title={isHindi ? 'फ़ोटो श्रेय' : 'Photo credits'}
+                subtitle={
+                  isHindi
+                    ? `Wikimedia Commons से ${PHOTO_CREDITS.length} फ़ोटो`
+                    : `${PHOTO_CREDITS.length} photos from Wikimedia Commons`
+                }
+                onPress={() => setCreditsOpen((open) => !open)}
+                right={
+                  <View style={creditsOpen ? styles.chevronOpen : null}>
+                    <Icon name="chevronDown" size={20} color={colors.muted} />
+                  </View>
+                }
+              />
+              {creditsOpen ? (
+                <View style={styles.about}>
+                  {PHOTO_CREDITS.map((c) => (
+                    <Pressable
+                      key={c.key}
+                      onPress={() => Linking.openURL(c.source).catch(() => {})}
+                      accessibilityRole="link"
+                      style={({ pressed }) => [styles.creditRow, { opacity: pressed ? 0.6 : 1 }]}
+                    >
+                      <AppText variant="caption" weight="700" color={colors.navy}>
+                        {c.subject}
+                      </AppText>
+                      <AppText variant="small" color={colors.textSecondary}>
+                        {`${c.author} · ${c.licence}`}
+                      </AppText>
+                    </Pressable>
+                  ))}
+                  <AppText variant="small" color={colors.muted}>
+                    {isHindi
+                      ? 'किसी फ़ोटो पर दबाएँ तो Wikimedia पर उसका पेज और पूरा लाइसेंस खुलेगा।'
+                      : 'Tap a photo credit to open its Wikimedia page and full licence.'}
+                  </AppText>
+                </View>
+              ) : null}
+            </Card>
+            <AppText variant="small" color={colors.muted} align="center" style={styles.version}>
+              {isHindi
+                ? `श्री ब्रज दर्शन · संस्करण ${APP_VERSION}`
+                : `Shri Braj Darshan · Version ${APP_VERSION}`}
+            </AppText>
           </View>
-        </View>
-
-        {/* Sacred Footer Signature */}
-        <View style={styles.sacredFooter}>
-          <Text style={[styles.footerChant, { color: colors.primary }]}>॥ राधे राधे ॥</Text>
-          <Text style={[styles.footerText, { color: colors.muted }]}>
-            श्री कृष्णाय नमः • {t('settings.allRights', 'सर्वाधिकार सुरक्षित।')}
-          </Text>
         </View>
       </ScrollView>
     </View>
@@ -282,137 +380,30 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  menuButton: {
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  body: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
+  group: { marginTop: 8 },
+  cardTitle: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
+  cardIcon: {
     width: 44,
     height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIcon: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  sectionCard: {
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 48,
-  },
-  settingTextCol: {
-    flex: 1,
-    marginRight: 16,
-  },
-  settingLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  settingDesc: {
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  testChantBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    marginTop: 10,
-    alignSelf: 'flex-start',
-  },
-  testChantText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  clearPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    minHeight: 44, // 44pt touch target
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearPillText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  aboutHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
-  },
-  aboutIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aboutTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  aboutVersion: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  aboutDescText: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 14,
-  },
-  divider: {
-    height: 1,
-    marginBottom: 12,
-  },
-  linkList: {
-    gap: 8,
-  },
-  infoLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 44,
-  },
-  infoLinkText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  linkArrow: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sacredFooter: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  footerChant: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  footerText: {
-    fontSize: 12,
-  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  note: { marginTop: 12 },
+  preview: { marginTop: 14, padding: 14, borderRadius: 14, gap: 4 },
+  confirmBox: { marginTop: 16, padding: 14, borderRadius: 14, gap: 6 },
+  confirmButtons: { gap: 10, marginTop: 8 },
+  clearButton: { marginTop: 16 },
+  result: { marginTop: 12 },
+  listCard: { paddingVertical: 4 },
+  // Starts under the row text, past the 44px icon tile and its 14px gap.
+  divider: { height: 1, marginLeft: 58 },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
+  creditRow: { gap: 2, minHeight: 44, justifyContent: 'center' },
+  about: { gap: 8, paddingTop: 2, paddingBottom: 14 },
+  version: { marginTop: 12 },
 });

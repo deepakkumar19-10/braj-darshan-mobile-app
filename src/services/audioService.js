@@ -82,6 +82,13 @@ class AudioService {
         });
       } catch (err) {
         console.warn('DevotionalAudio play error:', err);
+        this.stateListeners.forEach((listener) => {
+          try {
+            listener({ state: 'error', trackId: track.id });
+          } catch (e) {
+            // Ignore listener errors
+          }
+        });
         return null;
       }
     }

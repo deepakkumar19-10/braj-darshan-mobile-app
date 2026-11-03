@@ -89,8 +89,46 @@ function imageFromDataPath(path) {
   return IMAGES_BY_NAME[key] || null;
 }
 
+// Real photos of these temples from Wikimedia Commons (credited in data/photoCredits.json),
+// used in the app instead of the website's stand-in pictures, which showed other places.
+// null = no trustworthy photo yet: Chandrawal Maiya's website picture is AI-generated, so
+// the app shows its placeholder rather than pass that off as the temple.
+const COMMONS_TEMPLE_PHOTOS = {
+  5: { source: require('../assets/images/temples/daan-ghati-commons.jpg'), key: 'temples/daan-ghati-commons' },
+  6: { source: require('../assets/images/temples/dwarkadhish-commons.jpg'), key: 'temples/dwarkadhish-commons' },
+  7: { source: require('../assets/images/temples/raman-reti-commons.jpg'), key: 'temples/raman-reti-commons' },
+  8: { source: require('../assets/images/temples/dauji-commons.jpg'), key: 'temples/dauji-commons' },
+  9: null,
+};
+
+// Places that are the same sites as those temples (places.json ids).
+const COMMONS_PLACE_PHOTOS = {
+  7: COMMONS_TEMPLE_PHOTOS[7],
+  8: COMMONS_TEMPLE_PHOTOS[8],
+  9: null,
+};
+
+// Temples without a photo of their own show their town (marked representative in the data).
 export function getTempleImage(temple) {
-  return temple ? imageFromDataPath(temple.image) : null;
+  if (!temple) return null;
+  if (temple.id in COMMONS_TEMPLE_PHOTOS) return COMMONS_TEMPLE_PHOTOS[temple.id]?.source || null;
+  return (
+    imageFromDataPath(temple.image) ||
+    IMAGES_BY_NAME[`places/${String(temple.city || '').toLowerCase()}`] ||
+    null
+  );
+}
+
+/** True when the photo shown is a stand-in rather than this temple ("Representative photo" tag). */
+export function isTempleImageRepresentative(temple) {
+  if (!temple) return false;
+  if (temple.id in COMMONS_TEMPLE_PHOTOS) return false;
+  return Boolean(temple.imageIsRepresentative);
+}
+
+/** Credit key (data/photoCredits.json) for a temple's Commons photo, or null. */
+export function templePhotoKey(temple) {
+  return (temple && COMMONS_TEMPLE_PHOTOS[temple.id]?.key) || null;
 }
 
 export function getFoodImage(food) {
@@ -102,7 +140,19 @@ export function getEventImage(event) {
 }
 
 export function getPlaceImage(place) {
-  return place ? imageFromDataPath(place.image) : null;
+  if (!place) return null;
+  if (place.id in COMMONS_PLACE_PHOTOS) return COMMONS_PLACE_PHOTOS[place.id]?.source || null;
+  return imageFromDataPath(place.image);
+}
+
+export function isPlaceImageRepresentative(place) {
+  if (!place) return false;
+  if (place.id in COMMONS_PLACE_PHOTOS) return false;
+  return Boolean(place.imageIsRepresentative);
+}
+
+export function placePhotoKey(place) {
+  return (place && COMMONS_PLACE_PHOTOS[place.id]?.key) || null;
 }
 
 export default {

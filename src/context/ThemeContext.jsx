@@ -8,7 +8,8 @@ const THEME_STORAGE_KEY = '@braj_theme_mode_v1';
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [themeMode, setThemeModeState] = useState('light'); // 'light' | 'dark' | 'system'
+  // Follows the phone's light/dark setting live until the user picks one in Settings.
+  const [themeMode, setThemeModeState] = useState('system'); // 'light' | 'dark' | 'system'
   const [systemScheme, setSystemScheme] = useState(Appearance.getColorScheme() || 'light');
   const [isReady, setIsReady] = useState(false);
 
