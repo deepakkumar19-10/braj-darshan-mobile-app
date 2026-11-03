@@ -54,11 +54,9 @@ function ThemedApp() {
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-        translucent={false}
-      />
+      {/* Android draws edge-to-edge, so the status bar has no colour of its own (React Native 0.88
+          dropped backgroundColor/translucent); this View's background shows through it. */}
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <NavigationContainer
         ref={navigationRef}
         linking={linking}

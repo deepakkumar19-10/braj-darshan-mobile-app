@@ -5,6 +5,7 @@
 
 import { ROUTES } from './routes';
 
+/** @type {import('@react-navigation/native').LinkingOptions<any>} */
 export const linking = {
   prefixes: ['brajdarshan://'],
   config: {
