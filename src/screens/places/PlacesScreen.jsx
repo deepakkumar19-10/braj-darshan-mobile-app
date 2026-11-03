@@ -38,7 +38,8 @@ import {
 import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
 import { searchTerms } from '../../utils/searchText';
-import { PLACE_ITEMS, GHAT_ITEMS, openPlaceDirections } from '../../utils/placeItems';
+import { getPlaceItems, GHAT_ITEMS, openPlaceDirections } from '../../utils/placeItems';
+import { usePlaces } from '../../services/contentService';
 
 const FILTERS = [
   { id: 'all', icon: 'location', hi: 'सभी', en: 'All' },
@@ -154,18 +155,19 @@ export default function PlacesScreen({ navigation, route }) {
     if (paramSearch !== undefined) setQuery(paramSearch);
   }, [paramSearch, paramFilter]);
 
+  const placeData = usePlaces(); // re-render when newer place data arrives
   const terms = useMemo(() => searchTerms(normalizeSearch(query)), [query]);
   const isSearching = terms.length > 0;
 
   const { places, ghats, allCount } = useMemo(() => {
-    const placeHits = PLACE_ITEMS.filter((item) => matchesTerms(item, terms));
+    const placeHits = getPlaceItems(placeData).filter((item) => matchesTerms(item, terms));
     const ghatHits = GHAT_ITEMS.filter((item) => matchesTerms(item, terms));
     return {
       places: filter === 'ghats' ? [] : placeHits,
       ghats: filter === 'places' ? [] : ghatHits,
       allCount: placeHits.length + ghatHits.length,
     };
-  }, [terms, filter]);
+  }, [terms, filter, placeData]);
 
   const shownCount = places.length + ghats.length;
   const openItem = (item) => navigation.navigate(ROUTES.PLACE_DETAIL, { key: item.key });

@@ -29,17 +29,23 @@ import {
 import { usePressGuard } from '../../hooks/usePressGuard';
 import { getPlaceImage } from '../../utils/imageAssets';
 import parikramaData from '../../data/parikrama.json';
-import templesData from '../../data/temples.json';
+import { getTemples } from '../../services/contentService';
 
-const daanGhati = templesData.find((t) => t.id === 5);
+// Daan Ghati Mandir (temple 5) is the usual starting point of the Govardhan parikrama.
+function daanGhatiDestination() {
+  const daanGhati = getTemples().find((t) => t.id === 5);
+  return daanGhati ? `${daanGhati.latitude},${daanGhati.longitude}` : 'Daan Ghati Mandir, Govardhan';
+}
 
 // Per-parikrama extras. `en` mirrors the Hindi-only data fields in the same order.
 const EXTRA = {
   govardhan: {
     image: 'places/govardhan',
     lengthHi: 'लगभग 21 किमी',
-    // Daan Ghati Mandir (temples.json) is the usual starting point.
-    destination: daanGhati ? `${daanGhati.latitude},${daanGhati.longitude}` : 'Daan Ghati Mandir, Govardhan',
+    // Read from the current temple data each time directions are opened.
+    get destination() {
+      return daanGhatiDestination();
+    },
     en: {
       name: 'Govardhan Parikrama',
       length: 'About 21 km',

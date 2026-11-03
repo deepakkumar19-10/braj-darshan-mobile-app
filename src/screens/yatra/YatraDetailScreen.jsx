@@ -33,7 +33,7 @@ import { getTempleImage, isTempleImageRepresentative } from '../../utils/imageAs
 import { formatMinutes, getIndianStandardTime, getTodaysWindows } from '../../utils/templeHours';
 import { ROUTES } from '../../navigation/routes';
 import yatraData from '../../data/yatra.json';
-import templesData from '../../data/temples.json';
+import { getTemples } from '../../services/contentService';
 
 // English text for the Hindi-only fields of yatra.json (same order as the data).
 const DAY_EN = {
@@ -135,7 +135,7 @@ function parseStop(text) {
 
 function templeFor(text) {
   const hit = TEMPLE_MATCHES.find(([word]) => String(text).includes(word));
-  return hit ? templesData.find((t) => t.id === hit[1]) || null : null;
+  return hit ? getTemples().find((t) => t.id === hit[1]) || null : null;
 }
 
 function darshanLine(temple, isHindi) {

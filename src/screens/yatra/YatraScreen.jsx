@@ -30,7 +30,7 @@ import { getPlaceImage } from '../../utils/imageAssets';
 import { ROUTES } from '../../navigation/routes';
 import yatraData from '../../data/yatra.json';
 import parikramaData from '../../data/parikrama.json';
-import placesData from '../../data/places.json';
+import { getPlaces } from '../../services/contentService';
 
 // Each plan is a set of the day plans in yatra.json, in travel order.
 const PLANS = [
@@ -107,7 +107,7 @@ const QUICK_INCLUDE = [
 ];
 
 function placeImage(name) {
-  return getPlaceImage(placesData.find((p) => p.name === name));
+  return getPlaceImage(getPlaces().find((p) => p.name === name));
 }
 
 function PlanCard({ plan, onOpen, isHindi, colors }) {

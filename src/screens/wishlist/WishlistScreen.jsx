@@ -34,8 +34,7 @@ import {
   isTempleImageRepresentative,
   isPlaceImageRepresentative,
 } from '../../utils/imageAssets';
-import templesData from '../../data/temples.json';
-import placesData from '../../data/places.json';
+import { getPlaces, getTemples, usePlaces, useTemples } from '../../services/contentService';
 import foodData from '../../data/food.json';
 
 const KIND_LABEL = {
@@ -56,7 +55,7 @@ function sameItem(a, b) {
  * where possible (so names, photos and timings are never out of date). Entries that
  * were stored as a bare id, with no name, cannot be shown and are skipped.
  */
-export function getSavedItems(favorites) {
+export function getSavedItems(favorites, templesData = getTemples(), placesData = getPlaces()) {
   const items = [];
   (favorites || []).forEach((fav, index) => {
     if (!fav || typeof fav !== 'object' || fav.id === undefined || fav.id === null) return;
@@ -145,7 +144,12 @@ export default function WishlistScreen({ navigation }) {
   const { favorites, toggleFavorite, isLoaded } = useFavorites();
   const [lastRemoved, setLastRemoved] = useState(null);
 
-  const items = useMemo(() => getSavedItems(favorites), [favorites]);
+  const templesData = useTemples();
+  const placesData = usePlaces();
+  const items = useMemo(
+    () => getSavedItems(favorites, templesData, placesData),
+    [favorites, templesData, placesData]
+  );
   const hasTemples = items.some((i) => i.kind === 'temple');
 
   // The "Undo" offer disappears after a few seconds.

@@ -6,3 +6,7 @@ jest.mock('@react-native-community/netinfo', () =>
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest'),
 );
+
+// No real network in tests: the app's content refresh (src/services/contentService.js)
+// then falls back to the bundled data. Tests that need answers replace global.fetch.
+global.fetch = jest.fn(() => Promise.reject(new TypeError('Network request failed')));

@@ -9,7 +9,7 @@
 import { Linking } from 'react-native';
 import { getPlaceImage, isPlaceImageRepresentative, placePhotoKey } from './imageAssets';
 import { searchFields } from './searchText';
-import placesData from '../data/places.json';
+import { getPlaces } from '../services/contentService';
 import { GHATS } from '../data/ghats';
 
 export const CITY_HI = {
@@ -43,32 +43,45 @@ export function visitLengthEn(text) {
   return `${m[1]} ${one ? 'hour' : 'hours'}`;
 }
 
-export const PLACE_ITEMS = placesData.map((p) => ({
-  key: `place-${p.id}`,
-  kind: 'place',
-  icon: 'location',
-  nameHi: p.nameHindi,
-  nameEn: p.name,
-  townHi: CITY_HI[p.city] || p.city,
-  townEn: p.city,
-  descHi: p.shortDescription,
-  descEn: p.shortDescriptionEn,
-  image: getPlaceImage(p),
-  representative: isPlaceImageRepresentative(p),
-  photoKey: placePhotoKey(p),
-  place: p,
-  searchFields: searchFields(
-    p.name,
-    p.nameHindi,
-    p.city,
-    CITY_HI[p.city],
-    p.category,
-    p.shortDescription,
-    p.shortDescriptionEn,
-    p.description,
-    p.highlights || []
-  ),
-}));
+function toPlaceItem(p) {
+  return {
+    key: `place-${p.id}`,
+    kind: 'place',
+    icon: 'location',
+    nameHi: p.nameHindi,
+    nameEn: p.name,
+    townHi: CITY_HI[p.city] || p.city,
+    townEn: p.city,
+    descHi: p.shortDescription,
+    descEn: p.shortDescriptionEn,
+    image: getPlaceImage(p),
+    representative: isPlaceImageRepresentative(p),
+    photoKey: placePhotoKey(p),
+    place: p,
+    searchFields: searchFields(
+      p.name,
+      p.nameHindi,
+      p.city,
+      CITY_HI[p.city],
+      p.category,
+      p.shortDescription,
+      p.shortDescriptionEn,
+      p.description,
+      p.highlights || []
+    ),
+  };
+}
+
+// Rebuilt only when the place list changes (bundled data -> downloaded copy).
+let placeItemsCache = { source: null, items: [] };
+
+/** Sacred towns as list items, from the current place data (downloaded copy or bundled). */
+export function getPlaceItems(places = getPlaces()) {
+  if (placeItemsCache.source !== places) {
+    placeItemsCache = { source: places, items: places.map(toPlaceItem) };
+  }
+  return placeItemsCache.items;
+}
 
 export const GHAT_ITEMS = GHATS.map((g) => ({
   key: `ghat-${g.id}`,
@@ -88,10 +101,8 @@ export const GHAT_ITEMS = GHATS.map((g) => ({
   searchFields: searchFields(g.nameEn, g.nameHi, g.townEn, g.townHi, g.descEn, g.descHi, g.query),
 }));
 
-export const ALL_PLACE_ITEMS = [...PLACE_ITEMS, ...GHAT_ITEMS];
-
-export function findPlaceItem(key) {
-  return ALL_PLACE_ITEMS.find((item) => item.key === key) || null;
+export function findPlaceItem(key, places = getPlaces()) {
+  return [...getPlaceItems(places), ...GHAT_ITEMS].find((item) => item.key === key) || null;
 }
 
 /** Google Maps directions: exact point for towns with coordinates, a name search for the rest. */

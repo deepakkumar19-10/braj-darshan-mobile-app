@@ -39,7 +39,7 @@ import {
 import { usePressGuard } from '../../hooks/usePressGuard';
 import { useNow } from '../../hooks/useNow';
 import { ROUTES } from '../../navigation/routes';
-import templesData from '../../data/temples.json';
+import { useTemples } from '../../services/contentService';
 import { getTempleStatus, getTodaysWindows, getIndianStandardTime, formatMinutes } from '../../utils/templeHours';
 import { getTempleImage, isTempleImageRepresentative } from '../../utils/imageAssets';
 
@@ -223,9 +223,10 @@ export default function MapScreen({ navigation }) {
   const mapHeight = Math.round(mapWidth * 0.82);
   const project = useMemo(() => makeProjector(mapWidth, mapHeight, 28), [mapWidth, mapHeight]);
 
+  const templesData = useTemples();
   const temples = useMemo(
     () => templesData.filter((t) => !openOnly || getTempleStatus(t, now).isOpen),
-    [openOnly, now]
+    [templesData, openOnly, now]
   );
   const clusters = useMemo(() => clusterPins(temples, project), [temples, project]);
   const selected = clusters.find((c) => c.id === selectedId) || null;

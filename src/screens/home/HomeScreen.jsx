@@ -35,8 +35,7 @@ import { ROUTES } from '../../navigation/routes';
 import { calculatePanchang } from '../../services/panchangService';
 import { getTempleStatus } from '../../utils/templeHours';
 import { getTempleImage, isTempleImageRepresentative } from '../../utils/imageAssets';
-import templesData from '../../data/temples.json';
-import placesData from '../../data/places.json';
+import { usePlaces, useTemples } from '../../services/contentService';
 import eventsData from '../../data/events.json';
 import foodData from '../../data/food.json';
 import { GHATS } from '../../data/ghats';
@@ -54,7 +53,7 @@ const RESULTS_PER_GROUP = 4;
 const withSearchable = (items) => items.map((item) => ({ ...item, searchable: searchFields(item.fields) }));
 
 // Everything Home can find, in one list: temples, towns, ghats, festivals and food.
-function buildSearchIndex() {
+function buildSearchIndex(templesData, placesData) {
   return withSearchable([
     ...templesData.map((t) => ({
       key: `temple-${t.id}`,
@@ -283,7 +282,9 @@ export default function HomeScreen({ navigation }) {
   }, [todayKey]);
   const festivalDays = festival ? daysUntil(festival.key, now) : null;
   const festivalImage = useMemo(() => getFestivalImage(festival), [festival]);
-  const searchIndex = useMemo(buildSearchIndex, []);
+  const templesData = useTemples();
+  const placesData = usePlaces();
+  const searchIndex = useMemo(() => buildSearchIndex(templesData, placesData), [templesData, placesData]);
 
   // Temples open right now first, then the rest, so the row is never empty.
   const featured = useMemo(() => {
@@ -291,7 +292,7 @@ export default function HomeScreen({ navigation }) {
     return [...withStatus.filter((x) => x.open), ...withStatus.filter((x) => !x.open)]
       .slice(0, 6)
       .map((x) => x.t);
-  }, [now]);
+  }, [now, templesData]);
   const anyOpen = featured.length > 0 && getTempleStatus(featured[0], now).isOpen;
 
   const go = (route, params) => navigation.navigate(route, params);

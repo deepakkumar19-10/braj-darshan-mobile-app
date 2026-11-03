@@ -1,9 +1,9 @@
 /**
  * Braj Darshan (श्री ब्रज दर्शन) - Mobile Application
  *
- * App shell: providers, error boundary, offline banner, deep links, and
- * navigation-state restore so the app reopens where the user left it after the
- * OS kills it, the battery dies or it is swiped away.
+ * App shell: providers, error boundary, offline banner, deep links, temple/place
+ * data refresh from the website, and navigation-state restore so the app reopens
+ * where the user left it after the OS kills it, the battery dies or it is swiped away.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -22,6 +22,7 @@ import { linking } from './src/navigation/linking';
 import { loadNavigationState, saveNavigationState } from './src/navigation/persistence';
 import AppErrorBoundary from './src/components/system/AppErrorBoundary';
 import OfflineBanner from './src/components/system/OfflineBanner';
+import { startContentRefresh } from './src/services/contentService';
 
 function ThemedApp() {
   const { colors, isDark } = useTheme();
@@ -73,6 +74,9 @@ function ThemedApp() {
 }
 
 export default function App() {
+  // Newer temple/place data from the website (cached; bundled data when offline).
+  useEffect(() => startContentRefresh(), []);
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>

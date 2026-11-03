@@ -25,7 +25,7 @@ import {
   GUTTER,
 } from '../../components/ui';
 import { ROUTES } from '../../navigation/routes';
-import templesData from '../../data/temples.json';
+import { usePlaces, useTemples } from '../../services/contentService';
 import { getTempleImage } from '../../utils/imageAssets';
 import { getTempleStatus } from '../../utils/templeHours';
 import { findPlaceItem, openPlaceDirections, bestTimeEn, visitLengthEn } from '../../utils/placeItems';
@@ -50,7 +50,7 @@ function DetailRow({ icon, label, value, colors }) {
 }
 
 // Temples whose town appears in this place's town (ghats list "Radha Kund, Govardhan" etc.).
-function templesNear(item) {
+function templesNear(item, templesData) {
   const town = String(item.townEn || '').toLowerCase();
   return templesData.filter((t) => t.city && town.includes(String(t.city).toLowerCase())).slice(0, 4);
 }
@@ -59,7 +59,9 @@ export default function PlaceDetailScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { isHindi } = useLanguage();
-  const item = useMemo(() => findPlaceItem(route?.params?.key), [route?.params?.key]);
+  const placeData = usePlaces();
+  const templesData = useTemples();
+  const item = useMemo(() => findPlaceItem(route?.params?.key, placeData), [route?.params?.key, placeData]);
 
   if (!item) {
     return (
@@ -74,7 +76,7 @@ export default function PlaceDetailScreen({ navigation, route }) {
   const altName = isHindi ? item.nameEn : item.nameHi;
   const town = isHindi ? item.townHi : item.townEn;
   const credit = getPhotoCredit(item.photoKey);
-  const nearby = templesNear(item);
+  const nearby = templesNear(item, templesData);
 
   const p = item.place;
   const longDesc = item.kind === 'place' && isHindi ? p.description : null;

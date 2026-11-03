@@ -33,7 +33,7 @@ import {
 } from '../../components/ui';
 import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
-import templesData from '../../data/temples.json';
+import { useTemples } from '../../services/contentService';
 import {
   getTempleStatus,
   getTodaysWindows,
@@ -50,13 +50,13 @@ function todayHours(temple) {
   return windows.map(([s, e]) => `${formatMinutes(s)}–${formatMinutes(e)}`).join(' · ');
 }
 
-const TOWNS = (() => {
+function townsOf(templesData) {
   const seen = new Map();
   templesData.forEach((t) => {
     if (!seen.has(t.city)) seen.set(t.city, { id: t.city, en: t.city, hi: t.cityHindi || t.city });
   });
   return [...seen.values()];
-})();
+}
 
 // Every typed word must appear in the temple's names, deity or town; Hindi spelling variants are folded.
 function matches(temple, terms) {
@@ -124,6 +124,8 @@ export default function TempleListScreen({ navigation, route }) {
   const [town, setTown] = useState('All');
   const [openOnly, setOpenOnly] = useState(false);
   const now = useNow(); // open/closed badges move on while the list stays open
+  const templesData = useTemples();
+  const towns = useMemo(() => townsOf(templesData), [templesData]);
 
   // A new search from Home reaches an already-open Temples screen too.
   useEffect(() => {
@@ -138,7 +140,7 @@ export default function TempleListScreen({ navigation, route }) {
         matches(t, q) &&
         (!openOnly || getTempleStatus(t, now).isOpen)
     );
-  }, [searchQuery, town, openOnly, now]);
+  }, [templesData, searchQuery, town, openOnly, now]);
 
   const openTemple = useCallback(
     (temple) => navigation.navigate(ROUTES.TEMPLE_DETAIL, { id: temple.id, temple }),
@@ -171,7 +173,7 @@ export default function TempleListScreen({ navigation, route }) {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip label={isHindi ? 'सभी' : 'All'} selected={town === 'All'} onPress={() => setTown('All')} />
-        {TOWNS.map((t) => (
+        {towns.map((t) => (
           <Chip key={t.id} label={isHindi ? t.hi : t.en} selected={town === t.id} onPress={() => setTown(t.id)} />
         ))}
       </ScrollView>

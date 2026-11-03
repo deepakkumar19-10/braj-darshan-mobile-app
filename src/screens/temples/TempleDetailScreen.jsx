@@ -29,7 +29,7 @@ import {
 import { ROUTES } from '../../navigation/routes';
 import { getPhotoCredit, creditLine } from '../../utils/photoCredits';
 import { useNow } from '../../hooks/useNow';
-import templesData from '../../data/temples.json';
+import { useTemples } from '../../services/contentService';
 import audioTracks from '../../data/audioTracks.json';
 import { isTrackPlayable } from '../../context/AudioContext';
 import { getTempleImage, isTempleImageRepresentative, templePhotoKey } from '../../utils/imageAssets';
@@ -69,9 +69,10 @@ export default function TempleDetailScreen({ navigation, route }) {
   const { isHindi } = useLanguage();
 
   const { id, temple: initialTemple } = route.params || {};
+  const templesData = useTemples();
   const temple = useMemo(
     () => templesData.find((t) => t.id === id) || initialTemple || null,
-    [id, initialTemple]
+    [templesData, id, initialTemple]
   );
   if (!temple) {
     return <TempleNotFound navigation={navigation} isHindi={isHindi} colors={colors} insets={insets} />;
@@ -96,6 +97,7 @@ function TempleNotFound({ navigation, isHindi, colors, insets }) {
 
 function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
   const { isFavorite, toggleFavorite } = useFavorites();
+  const templesData = useTemples();
 
   const [season, setSeason] = useState(isSummerNow() ? 'summer' : 'winter');
   const [showFullAbout, setShowFullAbout] = useState(false);
