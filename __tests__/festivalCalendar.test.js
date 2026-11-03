@@ -33,8 +33,8 @@ describe('festival calendar data', () => {
     }
   });
 
-  test('after Devutthana Ekadashi 2026 the next festival is Kartik Purnima', () => {
-    expect(getNextFestival(new Date('2026-11-21T03:00:00Z')).key).toBe('2026-11-24');
+  test('after Tulsi Vivah 2026 (21 Nov) the next festival is Kartik Purnima', () => {
+    expect(getNextFestival(new Date('2026-11-22T03:00:00Z')).key).toBe('2026-11-24');
   });
 });
 

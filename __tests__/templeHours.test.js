@@ -9,10 +9,12 @@ const daanGhati = temples.find((t) => t.id === 5);
 const at = (iso) => new Date(iso);
 
 describe('parseDarshanWindows', () => {
-  test('every temple timing in the data can be read', () => {
+  // Since Nov 2026 a temple with no sourced hours says "confirm with the temple" instead of showing times.
+  test('every temple timing is either readable or an explicit "not confirmed" note', () => {
     for (const temple of temples) {
-      expect(parseDarshanWindows(temple.timings.summer)).not.toBeNull();
-      expect(parseDarshanWindows(temple.timings.winter)).not.toBeNull();
+      for (const text of [temple.timings.summer, temple.timings.winter]) {
+        if (parseDarshanWindows(text) === null) expect(text).toMatch(/पुष्टि|नहीं मिला|झांकियाँ/);
+      }
     }
   });
 
@@ -60,15 +62,16 @@ describe('getTempleStatus (IST)', () => {
   });
 
   test('different temples can differ at the same moment', () => {
-    // 05:45 IST: Prem Mandir opens 05:30, Banke Bihari opens 07:00
-    const moment = at('2026-06-15T00:15:00Z');
-    expect(getTempleStatus(premMandir, moment).isOpen).toBe(true);
-    expect(getTempleStatus(bankeBihari, moment).isOpen).toBe(false);
+    // 07:30 IST in summer: Banke Bihari opened at 07:00, Prem Mandir opens at 08:30 (premmandir.org.in)
+    const moment = at('2026-06-15T02:00:00Z');
+    expect(getTempleStatus(bankeBihari, moment).isOpen).toBe(true);
+    expect(getTempleStatus(premMandir, moment).isOpen).toBe(false);
   });
 
-  test('continuous window: Daan Ghati open at 22:00 IST, closed at 23:30 IST', () => {
-    expect(getTempleStatus(daanGhati, at('2026-06-15T16:30:00Z')).isOpen).toBe(true);
-    expect(getTempleStatus(daanGhati, at('2026-06-15T18:00:00Z')).isOpen).toBe(false);
+  test('a temple without sourced hours (Daan Ghati) shows no open/closed guess', () => {
+    const status = getTempleStatus(daanGhati, at('2026-06-15T16:30:00Z'));
+    expect(status.isKnown).toBe(false);
+    expect(status.isOpen).toBe(false);
   });
 
   test('unknown timings give a neutral status', () => {

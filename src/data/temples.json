@@ -15,7 +15,7 @@
     "taglineHindi": "वृंदावन धाम का परम पावन अलौकिक मंदिर",
     "shortDescription": "Swami Haridas Ji द्वारा प्रकट विग्रह, जहाँ बिहारी जी के नयनों की मोहिनी छवि के लिए बार-बार पर्दा (झांकी दर्शन) किया जाता है।",
     "shortDescriptionEn": "Manifested by Swami Haridas Ji, where Jhanki Darshan (frequent curtaining) is performed to behold the mesmerizing eyes of Bihari Ji.",
-    "history": "यह मंदिर स्वामी हरिदास जी द्वारा निधिवन में प्रकट किए गए श्री बांके बिहारी जी के विग्रह को समर्पित है। 1864 में वर्तमान भव्य मंदिर का निर्माण गोस्वामी बंधुओं द्वारा कराया गया था। यहाँ कोई घंटी या शंख नहीं बजाया जाता, केवल मधुर नाम संकीर्तन होता है।",
+    "history": "मान्यता है कि श्री बांके बिहारी जी का विग्रह स्वामी हरिदास जी की साधना से निधिवन में प्रकट हुआ। मंदिर की आधिकारिक वेबसाइट के अनुसार वर्तमान मंदिर 1862 में बना। मंदिर में घंटियाँ नहीं लगाई जातीं।",
     "architecture": "पारंपरिक राजस्थानी हवेली स्थापत्य कला, जिसमें संगमरमर और मेहराबदार झरोखों का प्रयोग हुआ है।",
     "timings": {
       "summer": "प्रातः 07:00 से दोपहर 12:30, सायं 04:15 से रात्रि 09:30",
@@ -98,12 +98,12 @@
     "taglineHindi": "कंस का पावन कारागार जहाँ भगवान का प्राकट्य हुआ",
     "shortDescription": "कंस के कारागार का वह पवित्र गर्भगृह जहाँ द्वापर युग में भगवान श्री कृष्ण का अवतरण हुआ था।",
     "shortDescriptionEn": "The sacred sanctum of Kamsa's ancient prison cell where Lord Krishna incarnated in Dvapara Yuga.",
-    "history": "द्वापर युग में कंस के कारागार का मूल स्थान। सर्वप्रथम भगवान कृष्ण के प्रपौत्र वज्रनाभ द्वारा मंदिर का निर्माण कराया गया था। वर्तमान भव्य मंदिर परिसर में भागवत भवन, केशव देव मंदिर और पवित्र पोतरा कुंड स्थित हैं।",
+    "history": "मान्यता है कि यह द्वापर युग में कंस के कारागार का स्थान है और यहाँ पहला मंदिर श्रीकृष्ण के प्रपौत्र वज्रनाभ ने बनवाया। वर्तमान केशवदेव मंदिर 1957–58 में और भागवत भवन 1965–82 में बना। परिसर में पोतरा कुंड भी है।",
     "architecture": "भव्य नागर शैली एवं संगमरमर नक्काशी, दीवारों पर सम्पूर्ण श्रीमद्भागवत महापुराण के श्लोक अंकित हैं।",
     "timings": {
-      "summer": "प्रातः 05:00 से दोपहर 12:00, सायं 04:00 से रात्रि 09:30",
-      "winter": "प्रातः 05:30 से दोपहर 12:00, सायं 03:30 से रात्रि 09:00",
-      "aarti": "मंगला आरती: 05:30 AM, माखनभोग आरती: 08:00 AM, संध्या आरती: 06:30 PM"
+      "summer": "गर्मी का समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले संस्थान से पुष्टि करें।",
+      "winter": "प्रातः 06:30 से दोपहर 01:00, दोपहर 03:00 से रात्रि 08:30",
+      "aarti": "सर्दी (संस्थान की घोषणा, अमर उजाला 28 नवंबर 2023): गर्भगृह प्रातः 06:30 से रात्रि 08:30; भागवत भवन प्रातः 06:30–01:00 व दोपहर 03:00–रात्रि 08:30। आरती का समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।"
     },
     "location": "डीग गेट, मथुरा",
     "festivals": [
@@ -124,8 +124,8 @@
     "nearbyTempleIds": [
       6
     ],
-    "lastVerified": "अक्टूबर 2026",
-    "sourceAttribution": "श्री कृष्ण जन्मस्थान सेवा संस्थान, मथुरा",
+    "lastVerified": "नवंबर 2026 (स्रोतों से जाँचा गया)",
+    "sourceAttribution": "अमर उजाला (28 नवंबर 2023, सर्दी का समय); विकिपीडिया (इतिहास)",
     "guidelines": [
       {
         "icon": "👗",
@@ -152,33 +152,9 @@
         "descHi": "प्रवेश द्वार संख्या 1 व 3 के बाहर क्लॉक रूम उपलब्ध है।"
       }
     ],
-    "aartiSchedule": [
-      {
-        "id": "mangala",
-        "nameHi": "मंगला आरती",
-        "nameEn": "Mangala Aarti",
-        "timeSummer": "05:30 AM",
-        "timeWinter": "05:30 AM",
-        "significanceHi": "ब्रह्म मुहूर्त में भगवान का पावन जागरण एवं मंगला स्तुति।"
-      },
-      {
-        "id": "makhanbhog",
-        "nameHi": "माखनभोग आरती",
-        "nameEn": "Makhanbhog Aarti",
-        "timeSummer": "08:00 AM",
-        "timeWinter": "08:00 AM",
-        "significanceHi": "बाल कृष्ण को ताजे माखन-मिश्री भोग अर्पण की आरती।"
-      },
-      {
-        "id": "sandhya",
-        "nameHi": "संध्या आरती",
-        "nameEn": "Sandhya Aarti",
-        "timeSummer": "06:30 PM",
-        "timeWinter": "06:00 PM",
-        "significanceHi": "भागवत भवन में दीप प्रज्वलन व सामूहिक संकीर्तन आरती।"
-      }
-    ],
-    "imageIsRepresentative": true
+    "aartiSchedule": [],
+    "imageIsRepresentative": true,
+    "timingsSourceUrl": "https://www.amarujala.com/uttar-pradesh/mathura/timings-for-visiting-shri-krishnas-birthplace-will-change-from-today-mathura-news-c-369-1-mt11003-4469-2023-11-28"
   },
   {
     "id": 3,
@@ -196,12 +172,12 @@
     "taglineHindi": "दिव्य प्रेम और संगमरमरी प्रकाश का भव्य स्मारक",
     "shortDescription": "इटैलियन करारा संगमरमर से निर्मित भव्य मंदिर, जहाँ भगवान कृष्ण की बाल लीलाओं और संध्या कालीन म्यूजिकल लाइट शो का अद्भुत संगम है।",
     "shortDescriptionEn": "A breathtaking temple sculpted from Italian Carrara marble, featuring life-size dioramas of Krishna's pastimes and musical fountain shows.",
-    "history": "जगद्गुरु कृपालु जी महाराज द्वारा स्थापित। इस मंदिर की आधारशिला 2001 में रखी गई और 2012 में इसका भव्य लोकार्पण हुआ। यहाँ 30,000 टन शुद्ध इटैलियन मार्बल का उपयोग हुआ है।",
+    "history": "जगद्गुरु कृपालु जी महाराज द्वारा स्थापित। इस मंदिर की आधारशिला 2001 में रखी गई और 2012 में इसका लोकार्पण हुआ।",
     "architecture": "आधुनिक एवं प्राचीन नागर शैली का फ्यूजन, 125 फीट ऊंचा, 122 फीट चौड़ा और 115 फीट लंबा शुद्ध सफेद मार्बल स्ट्रक्चर।",
     "timings": {
-      "summer": "प्रातः 05:30 से 12:00, सायं 04:30 से रात्रि 08:30",
-      "winter": "प्रातः 05:30 से 12:00, सायं 04:30 से रात्रि 08:30",
-      "aarti": "आरती: 05:30 AM, 12:00 PM, 04:30 PM, 08:15 PM | म्यूजिकल फाउंटेन शो: 07:30 PM - 08:00 PM"
+      "summer": "प्रातः 08:30 से दोपहर 12:00, सायं 04:30 से रात्रि 08:30",
+      "winter": "प्रातः 08:30 से दोपहर 12:00, सायं 04:30 से रात्रि 08:30",
+      "aarti": "दर्शन व आरती 08:30 AM · भोग 11:30 AM · शयन आरती 12:00 PM · आरती 04:30 PM · भोग 05:30 PM · परिक्रमा 07:00 PM · शयन आरती 08:10 PM | म्यूज़िकल फाउंटेन: गर्मी (1 अप्रैल–30 सितंबर) 07:30–08:00 PM, सर्दी (1 अक्टूबर–31 मार्च) 07:00–07:30 PM"
     },
     "location": "छटीकरा रोड, रमन रेती, वृंदावन",
     "festivals": [
@@ -222,8 +198,8 @@
     "nearbyTempleIds": [
       1
     ],
-    "lastVerified": "अक्टूबर 2026",
-    "sourceAttribution": "जगद्गुरु कृपालु परिषत् (JKP ट्रस्ट)",
+    "lastVerified": "नवंबर 2026 (स्रोतों से जाँचा गया)",
+    "sourceAttribution": "जगद्गुरु कृपालु परिषत् — premmandir.org.in (3 नवंबर 2026 को पढ़ा)",
     "guidelines": [
       {
         "icon": "👗",
@@ -252,30 +228,39 @@
     ],
     "aartiSchedule": [
       {
-        "id": "mangala",
-        "nameHi": "मंगला आरती",
-        "nameEn": "Mangala Aarti",
-        "timeSummer": "05:30 AM",
-        "timeWinter": "05:30 AM",
-        "significanceHi": "प्रातःकालीन दिव्य मंगला दर्शन।"
+        "id": "morning",
+        "nameHi": "प्रातः आरती",
+        "nameEn": "Morning Aarti",
+        "timeSummer": "08:30 AM",
+        "timeWinter": "08:30 AM",
+        "significanceHi": "मंदिर खुलने पर दर्शन व आरती।"
       },
       {
-        "id": "bhog",
-        "nameHi": "भोग आरती",
-        "nameEn": "Bhog Aarti",
+        "id": "shayan-noon",
+        "nameHi": "शयन आरती (दोपहर)",
+        "nameEn": "Shayan Aarti (noon)",
         "timeSummer": "12:00 PM",
         "timeWinter": "12:00 PM",
-        "significanceHi": "दोपहर भोग अर्पण आरती।"
+        "significanceHi": "दोपहर का शयन; इसके बाद पट बंद।"
+      },
+      {
+        "id": "evening",
+        "nameHi": "सायं आरती",
+        "nameEn": "Evening Aarti",
+        "timeSummer": "04:30 PM",
+        "timeWinter": "04:30 PM",
+        "significanceHi": "शाम को पट खुलने पर आरती व दर्शन।"
       },
       {
         "id": "shayan",
         "nameHi": "शयन आरती",
         "nameEn": "Shayan Aarti",
-        "timeSummer": "08:15 PM",
-        "timeWinter": "08:15 PM",
-        "significanceHi": "संध्या दर्शन के उपरांत रात्रि विश्राम आरती।"
+        "timeSummer": "08:10 PM",
+        "timeWinter": "08:10 PM",
+        "significanceHi": "रात्रि शयन आरती; 08:30 PM पर पट बंद।"
       }
-    ]
+    ],
+    "timingsSourceUrl": "https://premmandir.org.in/"
   },
   {
     "id": 4,
@@ -293,12 +278,12 @@
     "taglineHindi": "भानुगढ़ पर्वत पर विराजित वृषभानु दुलारी का पावन महल",
     "shortDescription": "भानुगढ़ पर्वत पर स्थित लाड़ली जी का महल, जहाँ प्रसिद्ध बरसाने की लठमार होली का आयोजन होता है।",
     "shortDescriptionEn": "The palace of Laadli Ji atop Bhanugarh hill, famous worldwide for the historic Lathmar Holi celebration.",
-    "history": "भानुगढ़ पहाड़ी पर स्थित यह महल राजा वृषभानु और श्री राधा रानी का निवास स्थान रहा है। वर्तमान मंदिर का जीर्णोद्धार 1675 ईस्वी में राजा वीर सिंह देव ने करवाया था।",
+    "history": "मान्यता है कि भानुगढ़ (ब्रह्मांचल) पहाड़ी पर राजा वृषभानु और श्री राधा रानी का निवास था। वर्तमान मंदिर किसने बनवाया, इस पर स्रोतों में मतभेद है — कुछ स्रोत इसे नारायण भट्ट से जोड़ते हैं।",
     "architecture": "लाल और पीले बलुआ पत्थर (Red Sandstone) से निर्मित मध्यकालीन राजस्थानी महल शैली।",
     "timings": {
       "summer": "प्रातः 05:00 से दोपहर 02:00, सायं 05:00 से रात्रि 09:00",
       "winter": "प्रातः 05:30 से दोपहर 02:00, सायं 04:30 से रात्रि 08:30",
-      "aarti": "मंगला: 05:30 AM, भोग: 12:00 PM, संध्या: 07:00 PM"
+      "aarti": "ऊपर का समय किसी आधिकारिक स्रोत से पुष्ट नहीं है और स्रोतों में अंतर है। आरती का समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।"
     },
     "location": "भानुगढ़ पर्वत, बरसाना",
     "festivals": [
@@ -318,7 +303,7 @@
     "nearbyTempleIds": [
       5
     ],
-    "lastVerified": "अक्टूबर 2026",
+    "lastVerified": "नवंबर 2026 (समय की पुष्टि बाकी)",
     "sourceAttribution": "श्री लाड़ली जी मंदिर सेवायत गोस्वामियों की परंपरा",
     "guidelines": [
       {
@@ -346,32 +331,7 @@
         "descHi": "भानुगढ़ शिखर से ब्रज का विहंगम दृश्य सूर्योदय पर अत्यंत मनोहर दिखता है।"
       }
     ],
-    "aartiSchedule": [
-      {
-        "id": "mangala",
-        "nameHi": "मंगला आरती",
-        "nameEn": "Mangala Aarti",
-        "timeSummer": "05:30 AM",
-        "timeWinter": "06:00 AM",
-        "significanceHi": "किशोरी जी की प्रातःकालीन मंगला स्तुति।"
-      },
-      {
-        "id": "bhog",
-        "nameHi": "राजभोग आरती",
-        "nameEn": "Rajbhog Aarti",
-        "timeSummer": "12:00 PM",
-        "timeWinter": "12:00 PM",
-        "significanceHi": "लाड़ली जी को दिव्य व्यंजनों का भोग।"
-      },
-      {
-        "id": "sandhya",
-        "nameHi": "संध्या आरती",
-        "nameEn": "Sandhya Aarti",
-        "timeSummer": "07:00 PM",
-        "timeWinter": "06:30 PM",
-        "significanceHi": "संध्या दीपदान एवं लाड़ली जी का पावन गान।"
-      }
-    ],
+    "aartiSchedule": [],
     "imageIsRepresentative": true
   },
   {
@@ -390,12 +350,12 @@
     "taglineHindi": "21 किलोमीटर सप्तकोसीय गिरिराज परिक्रमा का प्रमुख केंद्र",
     "shortDescription": "जहाँ बाल कृष्ण गोपियों से दान (माखन) मांगा करते थे; 21 किलोमीटर गिरिराज परिक्रमा का प्रमुख आरंभ स्थल।",
     "shortDescriptionEn": "The place where young Krishna playfully demanded tax from Gopis; key starting point for 21 km Govardhan Parikrama.",
-    "history": "यह वह स्थान है जहाँ भगवान कृष्ण ने इंद्र का मानमर्दन करने के लिए 7 दिनों तक गोवर्धन पर्वत को अपनी कनिष्ठिका (छोटी उंगली) पर धारण किया था।",
+    "history": "मान्यता है कि यहीं श्रीकृष्ण ने गोपियों से दान (कर) लेने की लीला की थी, इसलिए इसका नाम दानघाटी पड़ा। यहाँ से गोवर्धन परिक्रमा प्रारंभ होती है।",
     "architecture": "प्राकृतिक गिरिराज शिला विग्रह रूप, दूध और गंगाजल अभिषेक की विशेष संरचना।",
     "timings": {
-      "summer": "प्रातः 05:00 से रात्रि 11:00 (अविरल दर्शन)",
-      "winter": "प्रातः 05:30 से रात्रि 10:30",
-      "aarti": "मंगला आरती: 05:30 AM, दुग्धाभिषेक: दिनभर, शयन आरती: 10:00 PM"
+      "summer": "दर्शन समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।",
+      "winter": "दर्शन समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।",
+      "aarti": "आरती का समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।"
     },
     "location": "परिक्रमा मार्ग, गोवर्धन, मथुरा",
     "festivals": [
@@ -416,7 +376,7 @@
       4,
       1
     ],
-    "lastVerified": "अक्टूबर 2026",
+    "lastVerified": "नवंबर 2026 (समय की पुष्टि बाकी)",
     "sourceAttribution": "दानघाटी मंदिर समिति, गोवर्धन",
     "guidelines": [
       {
@@ -444,24 +404,7 @@
         "descHi": "मार्ग में निःशुल्क शीतल पेयजल की व्यवस्था है।"
       }
     ],
-    "aartiSchedule": [
-      {
-        "id": "mangala",
-        "nameHi": "मंगला आरती",
-        "nameEn": "Mangala Aarti",
-        "timeSummer": "05:30 AM",
-        "timeWinter": "06:00 AM",
-        "significanceHi": "गिरिराज धरण की प्रातःकालीन प्रथम आरती।"
-      },
-      {
-        "id": "shayan",
-        "nameHi": "शयन आरती",
-        "nameEn": "Shayan Aarti",
-        "timeSummer": "10:00 PM",
-        "timeWinter": "09:30 PM",
-        "significanceHi": "रात्रि शयन से पूर्व अंतिम भव्य महाआरती।"
-      }
-    ],
+    "aartiSchedule": [],
     "imageIsRepresentative": true
   },
   {
@@ -470,8 +413,8 @@
     "nameHindi": "श्री द्वारिकाधीश मंदिर",
     "city": "Mathura",
     "cityHindi": "मथुरा",
-    "deity": "Lord Krishna as Dwarkanath & Rukmini Devi",
-    "deityHindi": "द्वारिकानाथ रूप में श्री कृष्ण एवं रुक्मिणी जी",
+    "deity": "Lord Krishna as Dwarkadhish & Shri Radharani",
+    "deityHindi": "श्री द्वारिकाधीश (श्री कृष्ण) एवं श्री राधारानी",
     "image": "/images/temples/default-temple.svg",
     "latitude": 27.5029,
     "longitude": 77.6841,
@@ -483,9 +426,9 @@
     "history": "1814 में ग्वालियर रियासत के कोषाध्यक्ष सेठ गोकुलदास पारिख द्वारा निर्मित। यह मंदिर पुष्टिमार्गीय (वल्लभ कुल) परंपरा का पालन करता है।",
     "architecture": "विशाल आंगन, नक्काशीदार खंभे और छत पर चित्रित राजस्थानी कृष्ण लीला भित्तिचित्र।",
     "timings": {
-      "summer": "प्रातः 06:30 से 10:30, सायं 04:00 से 07:00",
-      "winter": "प्रातः 07:00 से 11:00, सायं 03:30 से 06:30",
-      "aarti": "मंगला: 06:30 AM, श्रृंगार: 07:30 AM, राजभोग: 10:00 AM, संध्या: 06:00 PM"
+      "summer": "सायं झांकियाँ (राम नवमी से देवप्रबोधिनी एकादशी 2026): उत्थापन 04:00–04:20, भोग 04:45–05:05, संध्या आरती 05:20–05:40, शयन 06:30–07:30। प्रातः का समय किसी स्रोत में नहीं मिला।",
+      "winter": "सर्दी का समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।",
+      "aarti": "पुष्टिमार्गीय मंदिर में दर्शन झांकियों के रूप में होते हैं, लगातार नहीं।"
     },
     "location": "विश्राम घाट के पास, नया बाजार, मथुरा",
     "festivals": [
@@ -505,8 +448,8 @@
     "nearbyTempleIds": [
       2
     ],
-    "lastVerified": "अक्टूबर 2026",
-    "sourceAttribution": "पुष्टिमार्गीय वल्लभ कुल संप्रदाय ट्रस्ट",
+    "lastVerified": "नवंबर 2026 (स्रोतों से जाँचा गया)",
+    "sourceAttribution": "अमर उजाला (27 मार्च 2026, सायं झांकियाँ); विकिपीडिया (देवता)",
     "guidelines": [
       {
         "icon": "👗",
@@ -535,39 +478,16 @@
     ],
     "aartiSchedule": [
       {
-        "id": "mangala",
-        "nameHi": "मंगला आरती",
-        "nameEn": "Mangala Aarti",
-        "timeSummer": "06:30 AM",
-        "timeWinter": "07:00 AM",
-        "significanceHi": "राजाधिराज द्वारिकाधीश का प्रातः जागरण।"
-      },
-      {
-        "id": "shringar",
-        "nameHi": "शृंगार आरती",
-        "nameEn": "Shringar Aarti",
-        "timeSummer": "07:30 AM",
-        "timeWinter": "08:00 AM",
-        "significanceHi": "दिव्य राजसी वस्त्र व आभूषण दर्शन।"
-      },
-      {
-        "id": "rajbhog",
-        "nameHi": "राजभोग आरती",
-        "nameEn": "Rajbhog Aarti",
-        "timeSummer": "10:00 AM",
-        "timeWinter": "10:30 AM",
-        "significanceHi": "दोपहर महाभोग दर्शन।"
-      },
-      {
         "id": "sandhya",
         "nameHi": "संध्या आरती",
         "nameEn": "Sandhya Aarti",
-        "timeSummer": "06:00 PM",
-        "timeWinter": "05:30 PM",
-        "significanceHi": "सायंकालीन दीप व चंवर सेवा आरती।"
+        "timeSummer": "05:20 PM",
+        "timeWinter": "पुष्टि बाकी",
+        "significanceHi": "राम नवमी से देवप्रबोधिनी एकादशी 2026 तक का समय (अमर उजाला)।"
       }
     ],
-    "imageIsRepresentative": true
+    "imageIsRepresentative": true,
+    "timingsSourceUrl": "https://www.amarujala.com/uttar-pradesh/mathura/darshan-timings-at-dwarkadhish-temple-to-change-starting-ram-navami-mathura-news-c-369-1-mt11002-144220-2026-03-27"
   },
   {
     "id": 7,
@@ -575,8 +495,8 @@
     "nameHindi": "रमण रेती",
     "city": "Gokul",
     "cityHindi": "गोकुल",
-    "deity": "Lord Krishna & Radha",
-    "deityHindi": "बाल कृष्ण एवं श्री राधा",
+    "deity": "Shri Raman Bihari ji (Karshni Ashram)",
+    "deityHindi": "श्री रमण बिहारी जी (कार्ष्णि आश्रम)",
     "image": "/images/temples/raman-reti.webp",
     "latitude": 27.4379,
     "longitude": 77.7214,
@@ -588,9 +508,9 @@
     "history": "रमण रेती ब्रज की प्राचीन धार्मिक परंपराओं से जुड़ा स्थल है। मान्यता है कि भगवान श्रीकृष्ण और उनके सखा यहाँ खेला करते थे तथा यह स्थान उनकी बाल लीलाओं की स्मृतियों से जुड़ा हुआ है।",
     "architecture": "यह स्थल अपने प्राकृतिक वातावरण, पवित्र रेत और आसपास स्थित धार्मिक मंदिरों एवं आश्रमों के कारण विशेष आकर्षण रखता है।",
     "timings": {
-      "summer": "प्रातः 06:00 से 12:00, सायं 04:00 से 08:00",
-      "winter": "प्रातः 06:30 से 12:00, सायं 03:30 से 07:30",
-      "aarti": "प्रातः एवं सायंकालीन आरती"
+      "summer": "दर्शन समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।",
+      "winter": "दर्शन समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।",
+      "aarti": "आरती का समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।"
     },
     "location": "रमण रेती, गोकुल, मथुरा",
     "festivals": [
@@ -612,8 +532,8 @@
       8,
       2
     ],
-    "lastVerified": "अक्टूबर 2026",
-    "sourceAttribution": "रमण रेती आश्रम सेवा ट्रस्ट, गोकुल",
+    "lastVerified": "नवंबर 2026 (समय की पुष्टि बाकी)",
+    "sourceAttribution": "जिला प्रशासन मथुरा (mathura.nic.in)",
     "guidelines": [
       {
         "icon": "🏖️",
@@ -640,25 +560,9 @@
         "descHi": "रेती में प्रवेश से पूर्व जूते निश्चित स्थान पर रखें।"
       }
     ],
-    "aartiSchedule": [
-      {
-        "id": "pratah",
-        "nameHi": "प्रातःकालीन आरती",
-        "nameEn": "Morning Aarti",
-        "timeSummer": "06:30 AM",
-        "timeWinter": "07:00 AM",
-        "significanceHi": "बाल गोपाल की पावन प्रभाती आरती।"
-      },
-      {
-        "id": "sandhya",
-        "nameHi": "सायंकालीन आरती",
-        "nameEn": "Evening Aarti",
-        "timeSummer": "07:00 PM",
-        "timeWinter": "06:30 PM",
-        "significanceHi": "गौधूलि वेला में भजन व दीपदान आरती।"
-      }
-    ],
-    "imageIsRepresentative": true
+    "aartiSchedule": [],
+    "imageIsRepresentative": true,
+    "timingsSourceUrl": "https://mathura.nic.in/tourist-place/raman-reti-gokul/"
   },
   {
     "id": 8,
@@ -681,7 +585,7 @@
     "timings": {
       "summer": "प्रातः 06:00 से 12:00, सायं 04:00 से 09:00",
       "winter": "प्रातः 06:30 से 12:00, सायं 03:30 से 08:30",
-      "aarti": "मंगला आरती, राजभोग एवं संध्या आरती"
+      "aarti": "ऊपर का समय किसी आधिकारिक स्रोत से पुष्ट नहीं है; एक ब्लॉग (2023) में अलग समय है। आरती का समय किसी आधिकारिक स्रोत में नहीं मिला — जाने से पहले मंदिर से पुष्टि करें।"
     },
     "location": "बलदेव नगर, मथुरा",
     "festivals": [
@@ -703,7 +607,7 @@
       7,
       2
     ],
-    "lastVerified": "अक्टूबर 2026",
+    "lastVerified": "नवंबर 2026 (समय की पुष्टि बाकी)",
     "sourceAttribution": "श्री दाऊजी मंदिर सेवा समिति, बलदेव",
     "guidelines": [
       {
@@ -731,32 +635,7 @@
         "descHi": "दाऊजी महाराज का प्रसिद्ध माखन-मिश्री प्रसाद अवश्य लें।"
       }
     ],
-    "aartiSchedule": [
-      {
-        "id": "mangala",
-        "nameHi": "मंगला आरती",
-        "nameEn": "Mangala Aarti",
-        "timeSummer": "06:00 AM",
-        "timeWinter": "06:30 AM",
-        "significanceHi": "दाऊदयाल जी का प्रातः जागरण।"
-      },
-      {
-        "id": "rajbhog",
-        "nameHi": "राजभोग आरती",
-        "nameEn": "Rajbhog Aarti",
-        "timeSummer": "11:30 AM",
-        "timeWinter": "12:00 PM",
-        "significanceHi": "दोपहर भोग अर्पण व विश्राम।"
-      },
-      {
-        "id": "sandhya",
-        "nameHi": "संध्या आरती",
-        "nameEn": "Sandhya Aarti",
-        "timeSummer": "07:30 PM",
-        "timeWinter": "07:00 PM",
-        "significanceHi": "सायंकालीन महाआरती।"
-      }
-    ],
+    "aartiSchedule": [],
     "imageIsRepresentative": true
   }
 ]
