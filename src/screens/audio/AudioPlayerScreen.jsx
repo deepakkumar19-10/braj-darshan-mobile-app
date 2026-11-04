@@ -1,28 +1,21 @@
 /**
  * Braj Darshan - Bhakti audio
- * Layout from the redesign (design-input/figma "Light · Bhakti audio" and
- * "Light · Full audio player").
  *
- * Honesty rules:
- * - Only tracks that isTrackPlayable() allows (an audio URL AND a recorded
- *   licence) are listed or played. Tracks without one are hidden, never shown
- *   as "coming soon" rows.
- * - The player (artwork, transport, track list, lyrics) only appears when at
- *   least one track is playable, and the progress bar and ±10 s skips only
- *   while a track is actually loaded (playing or paused). No fake progress.
- * - Previous / Next step through the playable tracks only (the context's
- *   nextTrack/previousTrack walk the whole list, licensed or not).
- * - Naam jap is spoken by the phone's own text-to-speech voice through the
- *   native DevotionalAudio module (Android). If the voice cannot start, the
- *   screen says so instead of pretending.
+ * Every bhajan, aarti, path, pravachan, kirtan and live channel here is the OFFICIAL YouTube upload or
+ * channel of whoever owns it (label, artist, temple, ashram). Tapping one opens it in the YouTube app
+ * (or the browser), so the views and any revenue go to the owner; the app streams nothing itself.
+ * The list is the same catalogue as the website (src/data/bhakti.json, from packages/data).
+ *
+ * Naam jap is spoken by the phone's own text-to-speech voice (expo-speech). If the voice cannot
+ * start, the screen says so instead of pretending.
  */
 
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Speech from 'expo-speech';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useAudio, isTrackPlayable } from '../../context/AudioContext';
 import { AppText } from '../../components/common/AppText';
 import { Icon } from '../../components/common/Icon';
 import {
@@ -30,15 +23,21 @@ import {
   LanguageToggle,
   Card,
   Chip,
-  Button,
   InfoNote,
   SectionHeader,
   GUTTER,
   useBottomInset,
 } from '../../components/ui';
 import { usePressGuard } from '../../hooks/usePressGuard';
-
-const SKIP_MS = 10000;
+import {
+  BHAKTI_CATEGORIES,
+  BHAKTI_PLAYLISTS,
+  findBhaktiTrack,
+  itemsInCategory,
+  playlistsInCategory,
+  performerOf,
+  openOnYouTube,
+} from '../../services/bhaktiCatalog';
 
 // `text` is exactly what the phone's voice speaks.
 const CHANTS = [
@@ -51,14 +50,6 @@ const CHANTS = [
     en: 'Hare Krishna mahamantra',
   },
 ];
-
-function formatTime(ms) {
-  if (!ms || isNaN(ms)) return '0:00';
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-}
 
 /* ------------------------------------------------------------- Naam jap */
 
@@ -98,19 +89,21 @@ function ChantRow({ chant, onSpeak, isHindi, colors }) {
   );
 }
 
-function ChantSection({ speakChant, isHindi, colors }) {
+function ChantSection({ isHindi, colors }) {
   const [voiceFailed, setVoiceFailed] = useState(false);
 
-  // audioService.speakChant resolves to null when the native voice is missing
-  // or not ready, and to { success: true } when speech started.
-  const speak = async (text) => {
-    let started = false;
+  const speak = (text) => {
     try {
-      started = Boolean(await speakChant(text));
+      Speech.stop();
+      Speech.speak(text, {
+        language: 'hi-IN',
+        rate: 0.9,
+        onStart: () => setVoiceFailed(false),
+        onError: () => setVoiceFailed(true),
+      });
     } catch (e) {
-      started = false;
+      setVoiceFailed(true);
     }
-    setVoiceFailed(!started);
   };
 
   return (
@@ -146,346 +139,109 @@ function ChantSection({ speakChant, isHindi, colors }) {
   );
 }
 
-/* --------------------------------------------------------------- Player */
+/* ---------------------------------------------------------------- Cards */
 
-function TransportButton({ icon, label, onPress, colors }) {
-  const guarded = usePressGuard(onPress, 400);
-  return (
-    <View style={styles.transportItem}>
-      <Pressable
-        onPress={guarded}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={({ pressed }) => [
-          styles.transportBtn,
-          { backgroundColor: colors.surfaceContainer, opacity: pressed ? 0.7 : 1 },
-        ]}
-      >
-        <Icon name={icon} size={26} color={colors.navy} />
-      </Pressable>
-      <AppText variant="small" color={colors.muted} align="center">
-        {label}
-      </AppText>
-    </View>
-  );
-}
+function TrackCard({ item, highlighted, onOpen, isHindi, colors }) {
+  const [showText, setShowText] = useState(false);
+  const title = isHindi ? item.titleHi : item.titleEn;
+  const isLive = item.kind === 'live';
+  const isPlaylist = item.kind === 'playlist';
+  const hasText = Boolean(item.lyrics?.length || item.significance);
+  const actionText = isLive
+    ? isHindi ? 'YouTube पर लाइव देखें' : 'Watch live on YouTube'
+    : isPlaylist
+      ? isHindi ? 'YouTube पर पूरी प्लेलिस्ट' : 'Whole playlist on YouTube'
+      : isHindi ? 'YouTube पर सुनें' : 'Listen on YouTube';
 
-function TrackRow({ track, index, isCurrent, isPlaying, onPress, isHindi, colors }) {
-  const title = isHindi ? track.titleHindi : track.titleEn;
-  const playingNow = isCurrent && isPlaying;
   return (
     <Card
-      onPress={onPress}
-      accessibilityLabel={isHindi ? `${title} चलाएँ` : `Play ${title}`}
-      style={isCurrent ? { borderColor: colors.primary, backgroundColor: colors.primaryLight } : null}
+      onPress={() => onOpen(item)}
+      accessibilityLabel={`${title}. ${actionText}`}
+      style={highlighted ? { borderColor: colors.primary, backgroundColor: colors.primaryLight } : null}
     >
       <View style={styles.trackRow}>
-        <View
-          style={[
-            styles.trackIcon,
-            { backgroundColor: isCurrent ? colors.surface : colors.surfaceContainer },
-          ]}
-        >
-          <Icon name={playingNow ? 'music' : 'play'} size={22} color={colors.primary} />
-        </View>
+        {item.artworkUrl ? (
+          <Image
+            source={{ uri: item.artworkUrl }}
+            style={[styles.thumb, { backgroundColor: colors.surfaceContainer }]}
+            resizeMode="cover"
+            accessible={false}
+          />
+        ) : (
+          <View style={[styles.thumb, styles.thumbIcon, { backgroundColor: colors.surfaceContainer }]}>
+            <Icon name={isLive ? 'aarti' : isPlaylist ? 'list' : 'music'} size={28} color={colors.primary} />
+          </View>
+        )}
         <View style={styles.flex}>
-          <AppText variant="bodyBold" color={colors.navy}>
+          {isLive ? (
+            <View style={styles.inline}>
+              <View style={[styles.liveDot, { backgroundColor: colors.error }]} />
+              <AppText variant="small" weight="700" color={colors.error}>
+                {isHindi ? 'लाइव' : 'LIVE'}
+              </AppText>
+            </View>
+          ) : null}
+          <AppText variant="bodyBold" color={colors.navy} numberOfLines={3}>
             {title}
           </AppText>
-          <AppText variant="caption" color={colors.textSecondary}>
-            {track.deity}
-          </AppText>
-          <AppText variant="small" color={colors.muted}>
-            {isCurrent
-              ? playingNow
-                ? isHindi ? 'अभी बज रहा है' : 'Now playing'
-                : isHindi ? 'चुना हुआ' : 'Selected'
-              : `${isHindi ? 'ट्रैक' : 'Track'} ${index + 1}`}
-            {track.durationDisplay
-              ? ` · ${isHindi ? 'लगभग' : 'about'} ${track.durationDisplay}`
-              : ''}
-          </AppText>
-        </View>
-      </View>
-    </Card>
-  );
-}
-
-function Player({ playable, requestedId, isHindi, colors }) {
-  const {
-    tracks,
-    currentTrack,
-    isPlaying,
-    isPaused,
-    position,
-    duration,
-    playTrack,
-    pauseTrack,
-    resumeTrack,
-    seekTo,
-    playError,
-  } = useAudio();
-
-  const [activeTab, setActiveTab] = useState('tracks'); // 'tracks' | 'lyrics'
-  const [barWidth, setBarWidth] = useState(0);
-
-  const currentIsPlayable = isTrackPlayable(currentTrack);
-  // A track is "loaded" only while the native player really has it.
-  const loaded = currentIsPlayable && (isPlaying || isPaused) ? currentTrack : null;
-  const requested = playable.find((t) => t.id === requestedId) || null;
-  const shown = loaded || requested || (currentIsPlayable ? currentTrack : null) || playable[0];
-  const shownIsLoaded = Boolean(loaded && loaded.id === shown.id);
-  const showProgress = shownIsLoaded && duration > 0;
-
-  const progress = showProgress ? Math.min(1, Math.max(0, position / duration)) : 0;
-  const progressPct = `${progress * 100}%`;
-
-  // playTrack wants the index in the full list (audioService keeps that index).
-  const start = (track) => {
-    const idx = tracks.findIndex((t) => t.id === track.id);
-    playTrack(track, idx >= 0 ? idx : null);
-  };
-
-  const togglePlay = () => {
-    if (shownIsLoaded && isPlaying) {
-      pauseTrack();
-    } else if (shownIsLoaded && isPaused) {
-      resumeTrack();
-    } else {
-      start(shown);
-    }
-  };
-  const guardedToggle = usePressGuard(togglePlay, 400);
-
-  // Previous / Next only ever land on a playable track.
-  const step = (dir) => {
-    const n = playable.length;
-    if (n < 2) return;
-    const i = playable.findIndex((t) => t.id === shown.id);
-    const next = playable[(((i < 0 ? 0 : i + dir) % n) + n) % n];
-    start(next);
-  };
-
-  const skipBy = (deltaMs) => {
-    if (!showProgress) return;
-    seekTo(Math.min(duration, Math.max(0, position + deltaMs)));
-  };
-
-  const handleSeek = (event) => {
-    if (!barWidth || !showProgress) return;
-    const ratio = Math.max(0, Math.min(1, event.nativeEvent.locationX / barWidth));
-    seekTo(ratio * duration);
-  };
-
-  const title = isHindi ? shown.titleHindi : shown.titleEn;
-  const altTitle = isHindi ? shown.titleEn : shown.titleHindi;
-  const status = shownIsLoaded && isPlaying
-    ? { icon: 'music', text: isHindi ? 'अभी बज रहा है' : 'Now playing' }
-    : shownIsLoaded && isPaused
-      ? { icon: 'pause', text: isHindi ? 'रुका हुआ' : 'Paused' }
-      : { icon: 'info', text: isHindi ? 'अभी नहीं बज रहा' : 'Not playing' };
-  const playingShown = shownIsLoaded && isPlaying;
-
-  return (
-    <>
-      {/* Artwork */}
-      <View
-        style={[styles.artwork, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}
-        accessible={false}
-      >
-        <View style={[styles.artworkInner, { backgroundColor: colors.surface }]}>
-          <Icon name="music" size={64} color={colors.primary} />
-        </View>
-      </View>
-
-      {/* Now playing */}
-      <View style={styles.meta}>
-        <AppText variant="h2" weight="700" color={colors.navy} align="center">
-          {title}
-        </AppText>
-        <AppText variant="caption" color={colors.muted} align="center">
-          {altTitle}
-        </AppText>
-        <AppText variant="body" color={colors.textSecondary} align="center">
-          {shown.deity}
-        </AppText>
-        {shown.temple ? (
-          <View style={styles.inline}>
-            <Icon name="location" size={16} color={colors.primary} />
-            <AppText variant="caption" color={colors.textSecondary}>
-              {shown.temple}
+          {!isLive && !isPlaylist ? (
+            <AppText variant="caption" color={colors.textSecondary} numberOfLines={2}>
+              {performerOf(item, isHindi)}
             </AppText>
-          </View>
-        ) : null}
+          ) : null}
+          <AppText variant="small" color={colors.muted} numberOfLines={2}>
+            {isHindi ? 'आधिकारिक चैनल: ' : 'Official channel: '}
+            {item.channel}
+          </AppText>
+        </View>
+      </View>
+
+      <View style={styles.cardFooter}>
         <View style={styles.inline}>
-          <Icon name={status.icon} size={16} color={colors.muted} />
-          <AppText variant="caption" weight="600" color={colors.muted}>
-            {status.text}
+          <Icon name="externalLink" size={16} color={colors.primary} />
+          <AppText variant="caption" weight="700" color={colors.primary}>
+            {actionText}
           </AppText>
         </View>
-      </View>
-
-      {/* Progress: only while this track is really loaded in the player */}
-      {showProgress ? (
-        <View>
+        {hasText ? (
           <Pressable
-            onPress={handleSeek}
-            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
-            style={styles.progressHit}
-            accessibilityRole="adjustable"
-            accessibilityLabel={isHindi ? 'ट्रैक की प्रगति' : 'Track progress'}
-            accessibilityValue={{ text: `${formatTime(position)} / ${formatTime(duration)}` }}
-            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-            onAccessibilityAction={(e) =>
-              skipBy(e.nativeEvent.actionName === 'increment' ? SKIP_MS : -SKIP_MS)
-            }
-          >
-            <View
-              pointerEvents="none"
-              style={[styles.progressTrack, { backgroundColor: colors.surfaceContainerHigh }]}
-            >
-              <View style={[styles.progressFill, { width: progressPct, backgroundColor: colors.primary }]} />
-            </View>
-            <View
-              pointerEvents="none"
-              style={[
-                styles.progressThumb,
-                { left: progressPct, backgroundColor: colors.primary, borderColor: colors.surface },
-              ]}
-            />
-          </Pressable>
-          <View style={styles.timeRow}>
-            <AppText variant="small" color={colors.muted}>
-              {formatTime(position)}
-            </AppText>
-            <AppText variant="small" color={colors.muted}>
-              {formatTime(duration)}
-            </AppText>
-          </View>
-        </View>
-      ) : null}
-
-      {/* Transport */}
-      <View style={styles.transport}>
-        {playable.length > 1 ? (
-          <TransportButton
-            icon="previous"
-            label={isHindi ? 'पिछला' : 'Previous'}
-            onPress={() => step(-1)}
-            colors={colors}
-          />
-        ) : null}
-        <View style={styles.transportItem}>
-          <Pressable
-            onPress={guardedToggle}
+            onPress={() => setShowText((v) => !v)}
+            hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={playingShown ? (isHindi ? 'रोकें' : 'Pause') : isHindi ? 'चलाएँ' : 'Play'}
-            style={({ pressed }) => [
-              styles.playBtn,
-              { backgroundColor: pressed ? colors.primaryDark : colors.primary },
-            ]}
+            accessibilityState={{ expanded: showText }}
           >
-            <Icon name={playingShown ? 'pause' : 'play'} size={34} color="#FFFFFF" />
+            <AppText variant="caption" weight="700" color={colors.navy}>
+              {showText ? (isHindi ? 'पाठ छुपाएँ' : 'Hide text') : isHindi ? 'पावन पाठ' : 'Text'}
+            </AppText>
           </Pressable>
-          <AppText variant="small" weight="700" color={colors.navy} align="center">
-            {playingShown ? (isHindi ? 'रोकें' : 'Pause') : isHindi ? 'चलाएँ' : 'Play'}
-          </AppText>
-        </View>
-        {playable.length > 1 ? (
-          <TransportButton
-            icon="next"
-            label={isHindi ? 'अगला' : 'Next'}
-            onPress={() => step(1)}
-            colors={colors}
-          />
         ) : null}
       </View>
 
-      {showProgress ? (
-        <View style={styles.skipRow}>
-          <Button
-            variant="secondary"
-            title={isHindi ? '10 सेकंड पीछे' : 'Back 10 sec'}
-            onPress={() => skipBy(-SKIP_MS)}
-            style={styles.flex}
-          />
-          <Button
-            variant="secondary"
-            title={isHindi ? '10 सेकंड आगे' : 'Ahead 10 sec'}
-            onPress={() => skipBy(SKIP_MS)}
-            style={styles.flex}
-          />
-        </View>
-      ) : null}
-
-      <InfoNote icon="offline">
-        {playError === 'failed'
-          ? isHindi
-            ? 'ट्रैक शुरू नहीं हो सका। इंटरनेट जाँचकर फिर कोशिश करें।'
-            : 'The track could not start. Check your internet and try again.'
-          : isHindi
-            ? 'ऑडियो इंटरनेट से चलता है। ट्रैक शुरू न हो तो कनेक्शन जाँचकर फिर कोशिश करें।'
-            : 'Audio streams over the internet. If a track does not start, check your connection and try again.'}
-      </InfoNote>
-
-      {/* Tracks / lyrics */}
-      <View style={styles.tabs}>
-        <Chip
-          icon="list"
-          label={isHindi ? `भजन व आरती (${playable.length})` : `Tracks (${playable.length})`}
-          selected={activeTab === 'tracks'}
-          onPress={() => setActiveTab('tracks')}
-        />
-        <Chip
-          icon="book"
-          label={isHindi ? 'पावन पाठ' : 'Lyrics'}
-          selected={activeTab === 'lyrics'}
-          onPress={() => setActiveTab('lyrics')}
-        />
-      </View>
-
-      {activeTab === 'tracks' ? (
-        <View style={styles.list}>
-          {playable.map((item, index) => (
-            <TrackRow
-              key={item.id}
-              track={item}
-              index={index}
-              isCurrent={item.id === shown.id}
-              isPlaying={shownIsLoaded && isPlaying}
-              onPress={() => start(item)}
-              isHindi={isHindi}
-              colors={colors}
-            />
-          ))}
-        </View>
-      ) : (
-        <Card>
-          {shown.significance ? (
+      {showText ? (
+        <View style={styles.textBox}>
+          {item.significance ? (
             <View style={[styles.significance, { backgroundColor: colors.primaryLight }]}>
               <AppText variant="bodyBold" color={colors.navy}>
                 {isHindi ? 'महत्व' : 'Significance'}
               </AppText>
               <AppText variant="body" color={colors.text}>
-                {shown.significance}
+                {item.significance}
               </AppText>
             </View>
           ) : null}
           {!isHindi ? (
-            <AppText variant="small" color={colors.muted} style={styles.lyricsNote}>
-              Lyrics are in Hindi / Sanskrit.
+            <AppText variant="small" color={colors.muted}>
+              The text is in Hindi / Sanskrit.
             </AppText>
           ) : null}
-          <View style={styles.lyrics}>
-            {(shown.lyrics || []).map((verse, i) => (
-              <AppText key={`${shown.id}-${i}`} variant="bodyLarge" color={colors.navy}>
-                {verse}
-              </AppText>
-            ))}
-          </View>
-        </Card>
-      )}
-    </>
+          {(item.lyrics || []).map((verse, i) => (
+            <AppText key={`${item.id}-${i}`} variant="bodyLarge" color={colors.navy}>
+              {verse}
+            </AppText>
+          ))}
+        </View>
+      ) : null}
+    </Card>
   );
 }
 
@@ -496,11 +252,29 @@ export default function AudioPlayerScreen({ navigation, route }) {
   const bottomInset = useBottomInset();
   const { colors } = useTheme();
   const { isHindi } = useLanguage();
-  const { tracks, speakChant } = useAudio();
 
-  // Tracks without a recorded licence are not listed at all.
-  const playable = useMemo(() => (tracks || []).filter(isTrackPlayable), [tracks]);
-  const hasTracks = playable.length > 0;
+  // A temple page can ask for its aarti: open that track's category and show it first.
+  const requested = findBhaktiTrack(route?.params?.trackId);
+  const categories = useMemo(
+    () =>
+      BHAKTI_CATEGORIES.filter(
+        (c) => itemsInCategory(c.id).length > 0 || BHAKTI_PLAYLISTS.some((p) => p.category === c.id)
+      ),
+    []
+  );
+  const [category, setCategory] = useState(requested?.category || categories[0]?.id || 'aarti_bhajan');
+  const [openFailed, setOpenFailed] = useState(false);
+
+  const items = useMemo(() => {
+    const list = itemsInCategory(category);
+    if (!requested || requested.category !== category) return list;
+    return [requested, ...list.filter((t) => t.id !== requested.id)];
+  }, [category, requested]);
+  const playlists = playlistsInCategory(category);
+
+  const open = async (item) => {
+    setOpenFailed(!(await openOnYouTube(item)));
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -510,34 +284,62 @@ export default function AudioPlayerScreen({ navigation, route }) {
       >
         <TopBar
           title={isHindi ? 'भक्ति संगीत' : 'Bhakti audio'}
-          subtitle={
-            hasTracks
-              ? isHindi ? 'आरती, भजन और नाम जप' : 'Aarti, bhajans and naam jap'
-              : isHindi ? 'फ़ोन की आवाज़ में नाम जप' : "Naam jap in your phone's voice"
-          }
+          subtitle={isHindi ? 'आधिकारिक YouTube चैनलों से' : 'From official YouTube channels'}
           onBack={() => navigation.goBack()}
           right={<LanguageToggle />}
         />
 
         <View style={styles.content}>
-          {hasTracks ? (
-            <Player
-              playable={playable}
-              requestedId={route?.params?.trackId}
-              isHindi={isHindi}
-              colors={colors}
-            />
-          ) : null}
+          <InfoNote icon="music">
+            {isHindi
+              ? 'हर भजन उसके असली मालिक (लेबल, कलाकार, मंदिर या आश्रम) के आधिकारिक YouTube चैनल पर खुलता है, ताकि व्यूज़ और कमाई उन्हीं को मिले। YouTube ऐप न हो तो ब्राउज़र में खुलेगा।'
+              : 'Each bhajan opens on the official YouTube channel of its owner (label, artist, temple or ashram), so the views and revenue go to them. Without the YouTube app it opens in the browser.'}
+          </InfoNote>
 
-          <ChantSection speakChant={speakChant} isHindi={isHindi} colors={colors} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+            {categories.map((c) => (
+              <Chip
+                key={c.id}
+                label={`${c.icon} ${isHindi ? c.titleHi : c.titleEn} (${itemsInCategory(c.id).length})`}
+                selected={category === c.id}
+                onPress={() => setCategory(c.id)}
+              />
+            ))}
+          </ScrollView>
 
-          {!hasTracks ? (
-            <InfoNote icon="music">
+          {openFailed ? (
+            <InfoNote icon="offline">
               {isHindi
-                ? 'रिकॉर्ड किए गए भजन और आरती, उन्हें साझा करने की अनुमति मिलने के बाद यहाँ जोड़े जाएँगे।'
-                : 'Recorded bhajans and aartis will be added here once we have permission to share them.'}
+                ? 'YouTube नहीं खुल सका। इंटरनेट जाँचकर फिर कोशिश करें।'
+                : 'YouTube could not open. Check your internet and try again.'}
             </InfoNote>
           ) : null}
+
+          {category === 'live' ? (
+            <AppText variant="caption" color={colors.muted}>
+              {isHindi
+                ? 'ये चैनल आरती, दर्शन या कथा के समय लाइव आते हैं। उस समय लाइव न हो तो YouTube पर चैनल के पिछले वीडियो दिखेंगे।'
+                : 'These channels go live for aarti, darshan or katha. If nothing is live right now, YouTube shows the channel instead.'}
+            </AppText>
+          ) : null}
+
+          <View style={styles.list}>
+            {items.map((item) => (
+              <TrackCard
+                key={item.id}
+                item={item}
+                highlighted={item.id === requested?.id}
+                onOpen={open}
+                isHindi={isHindi}
+                colors={colors}
+              />
+            ))}
+            {playlists.map((p) => (
+              <TrackCard key={p.id} item={p} highlighted={false} onOpen={open} isHindi={isHindi} colors={colors} />
+            ))}
+          </View>
+
+          <ChantSection isHindi={isHindi} colors={colors} />
         </View>
       </ScrollView>
     </View>
@@ -548,53 +350,23 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 20 },
-  artwork: {
-    height: 220,
-    borderRadius: 24,
-    borderWidth: 1,
+  inline: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  tabs: { flexDirection: 'row', gap: 8 },
+  list: { gap: 12 },
+  trackRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  // YouTube thumbnails are 16:9.
+  thumb: { width: 128, height: 72, borderRadius: 10 },
+  thumbIcon: { alignItems: 'center', justifyContent: 'center' },
+  liveDot: { width: 8, height: 8, borderRadius: 4 },
+  cardFooter: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    gap: 12,
   },
-  artworkInner: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  meta: { alignItems: 'center', gap: 4 },
-  inline: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' },
-  progressHit: { height: 48, justifyContent: 'center' },
-  progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: 6 },
-  progressThumb: {
-    position: 'absolute',
-    top: 24 - 9,
-    width: 18,
-    height: 18,
-    marginLeft: -9,
-    borderRadius: 9,
-    borderWidth: 2,
-  },
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -6 },
-  transport: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-around' },
-  transportItem: { alignItems: 'center', gap: 6, minWidth: 80 },
-  transportBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  playBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  skipRow: { flexDirection: 'row', gap: 12 },
+  textBox: { gap: 10, marginTop: 14 },
+  significance: { borderRadius: 14, padding: 14, gap: 4 },
   section: { gap: 10 },
   sectionHeader: { marginBottom: 0 },
   chantRow: {
@@ -615,11 +387,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowDivider: { height: StyleSheet.hairlineWidth, marginLeft: 68 },
-  tabs: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  list: { gap: 12 },
-  trackRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  trackIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  significance: { borderRadius: 14, padding: 14, gap: 4 },
-  lyricsNote: { marginTop: 12 },
-  lyrics: { gap: 10, marginTop: 16 },
 });

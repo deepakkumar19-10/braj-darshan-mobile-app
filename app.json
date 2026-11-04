@@ -1,8 +1,44 @@
 {
-  "name": "BrajDarshan",
-  "displayName": "BrajDarshan",
   "expo": {
-    "name": "BrajDarshan",
-    "slug": "brajdarshan"
+    "name": "Braj Darshan",
+    "slug": "brajdarshan",
+    "version": "1.0",
+    "scheme": "brajdarshan",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "android": {
+      "package": "com.brajdarshan.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFF9ED"
+      },
+      "allowBackup": false,
+      "permissions": [
+        "android.permission.INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.brajdarshan.app",
+      "supportsTablet": false
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF9ED",
+          "dark": {
+            "backgroundColor": "#121212"
+          }
+        }
+      ],
+      "./plugins/withCmakeDefaultObjectPaths"
+    ]
   }
 }

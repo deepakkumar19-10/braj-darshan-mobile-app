@@ -6,7 +6,6 @@ import { ROUTES } from './routes';
 import { useTheme } from '../context/ThemeContext';
 import CustomDrawer from '../components/navigation/CustomDrawer';
 import StitchTabBar from '../components/navigation/StitchTabBar';
-import MiniAudioPlayer from '../components/audio/MiniAudioPlayer';
 
 // Primary Destinations
 import HomeScreen from '../screens/home/HomeScreen';
@@ -157,9 +156,6 @@ export function RootNavigator() {
           options={{ animation: 'slide_from_bottom' }}
         />
       </Stack.Navigator>
-
-      {/* Sticky Devotional Mini Player */}
-      <MiniAudioPlayer />
 
       {/* Stitch 5-Item Tab Bar on Primary Screens */}
       {isTabScreen && (

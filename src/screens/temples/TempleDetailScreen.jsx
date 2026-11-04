@@ -30,8 +30,7 @@ import { ROUTES } from '../../navigation/routes';
 import { getPhotoCredit, creditLine } from '../../utils/photoCredits';
 import { useNow } from '../../hooks/useNow';
 import { useTemples } from '../../services/contentService';
-import audioTracks from '../../data/audioTracks.json';
-import { isTrackPlayable } from '../../context/AudioContext';
+import { findBhaktiTrack } from '../../services/bhaktiCatalog';
 import { getTempleImage, isTempleImageRepresentative, templePhotoKey } from '../../utils/imageAssets';
 import {
   getTempleStatus,
@@ -263,7 +262,7 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
                   </View>
                 </View>
               ))}
-              {isTrackPlayable(audioTracks.find((t) => t.id === temple.audioTrackId)) ? (
+              {findBhaktiTrack(temple.audioTrackId) ? (
                 <Button
                   title={isHindi ? 'आरती सुनें' : 'Listen to aarti'}
                   icon="music"

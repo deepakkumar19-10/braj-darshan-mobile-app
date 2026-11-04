@@ -1,13 +1,5 @@
-[
-  {
-    "id": "banke_bihari_aarti",
-    "titleHindi": "श्री बांके बिहारी जी की आरती",
-    "titleEn": "Shri Banke Bihari Aarti",
-    "deity": "श्री बांके बिहारी जी",
-    "temple": "बांके बिहारी मंदिर, वृंदावन",
-    "durationDisplay": "4:15",
-    "approxSeconds": 255,
-    "audioUrl": "https://ia800301.us.archive.org/15/items/ShreeKrishnaBhajan/BankeBihariTeriAarti.mp3",
+{
+  "banke_bihari_aarti": {
     "significance": "वृंदावन के ठाकुर श्री बांके बिहारी जी की पावन शृंगार व शयन आरती। इस आरती के श्रवण व गान से जीवन के समस्त क्लेश दूर होकर भगवत्प्रेम की प्राप्ति होती है।",
     "lyrics": [
       "आरती कुंजबिहारी की, श्री गिरिधर कृष्ण मुरारी की ॥",
@@ -25,15 +17,7 @@
       "श्री राधावर कुंजबिहारी की, आरती श्री गिरिधर मुरारी की ॥"
     ]
   },
-  {
-    "id": "yamunashtakam",
-    "titleHindi": "श्री यमुनाष्टकम् स्तोत्र",
-    "titleEn": "Shri Yamunashtakam Stotram",
-    "deity": "श्री यमुना महारानी",
-    "temple": "विश्राम घाट, मथुरा व केशी घाट, वृंदावन",
-    "durationDisplay": "5:30",
-    "approxSeconds": 330,
-    "audioUrl": "https://ia800301.us.archive.org/15/items/ShreeKrishnaBhajan/Yamunashtakam.mp3",
+  "yamunashtakam": {
     "significance": "जगद्गुरु श्रीमद् वल्लभाचार्य महाप्रभु द्वारा रचित दिव्य अष्टक। श्री यमुना जी के नित्य स्मरण व पाठ से भगवान श्रीकृष्ण के चरणों में अनन्य प्रीति प्राप्त होती है।",
     "lyrics": [
       "नमामि यमुनामहं सकल सिद्धि हेतुं मुदा,",
@@ -50,15 +34,7 @@
       "नमामि मुद धारिणीं शरणमाश्रये श्रीयमुनाम् ॥ ३ ॥"
     ]
   },
-  {
-    "id": "radha_kripa_kataksha",
-    "titleHindi": "श्री राधा कृपा कटाक्ष स्तोत्र",
-    "titleEn": "Shri Radha Kripa Kataksha Stotram",
-    "deity": "श्री राधा रानी",
-    "temple": "राधा रानी मंदिर (श्रीजी), बरसाना",
-    "durationDisplay": "6:10",
-    "approxSeconds": 370,
-    "audioUrl": "https://ia800301.us.archive.org/15/items/ShreeKrishnaBhajan/RadhaKripaKataksha.mp3",
+  "radha_kripa_kataksha": {
     "significance": "स्कन्द पुराणोक्त उमा-महेश्वर संवाद से उद्धृत अति पावन स्तोत्र। इसके नित्य गान से श्री किशोरी जी की परम कृपा व कृपा कटाक्ष की प्राप्ति होती है।",
     "lyrics": [
       "मुनीन्द्रवृन्दवन्दिते त्रिलोकशोकहारिणी,",
@@ -75,15 +51,7 @@
       "कदा करिष्यसीह मां कृपाकटाक्षभाजनम् ॥ ३ ॥"
     ]
   },
-  {
-    "id": "govind_hare_murari",
-    "titleHindi": "श्री कृष्ण गोविंद हरे मुरारी",
-    "titleEn": "Shri Krishna Govind Hare Murari",
-    "deity": "श्री राधा कृष्ण",
-    "temple": "रमण रेती व गोकुल धाम",
-    "durationDisplay": "4:45",
-    "approxSeconds": 285,
-    "audioUrl": "https://ia800301.us.archive.org/15/items/ShreeKrishnaBhajan/KrishnaGovindHareMurari.mp3",
+  "govind_hare_murari": {
     "significance": "परम शांत व करुणामयी भगवन्नाम संकीर्तन। मन की व्यग्रता को शांत कर ब्रज रज का अलौकिक अनुभव कराता है।",
     "lyrics": [
       "श्री कृष्ण गोविंद हरे मुरारी, हे नाथ नारायण वासुदेवा ॥",
@@ -94,15 +62,7 @@
       "आएंगे बिहारी चले आएंगे बिहारी ॥"
     ]
   },
-  {
-    "id": "govardhan_aarti",
-    "titleHindi": "श्री गोवर्धन महाराज की आरती",
-    "titleEn": "Shri Govardhan Maharaj Aarti",
-    "deity": "गिरिराज धरण (श्री गोवर्धन)",
-    "temple": "दानघाटी मंदिर, गोवर्धन",
-    "durationDisplay": "3:50",
-    "approxSeconds": 230,
-    "audioUrl": "https://ia800301.us.archive.org/15/items/ShreeKrishnaBhajan/GovardhanAarti.mp3",
+  "govardhan_aarti": {
     "significance": "गिरिराज महाराज जी की परिक्रमा व दर्शन के समय की जाने वाली पावन आरती।",
     "lyrics": [
       "तेरे माथे मुकुट विराज रह्यौ, तोपे पान चढ़े तोपे फूल चढ़े,",
@@ -113,15 +73,7 @@
       "राधाकुण्ड में अमृत धार, गोवर्धन महाराज ॥"
     ]
   },
-  {
-    "id": "hare_krishna_mahamantra",
-    "titleHindi": "पावन महामंत्र संकीर्तन",
-    "titleEn": "Hare Krishna Mahamantra",
-    "deity": "श्री चैतन्य महाप्रभु व राधा कृष्ण",
-    "temple": "इस्कॉन कृष्ण-बलराम मंदिर, वृंदावन",
-    "durationDisplay": "5:15",
-    "approxSeconds": 315,
-    "audioUrl": "https://ia800301.us.archive.org/15/items/ShreeKrishnaBhajan/HareKrishnaMahamantra.mp3",
+  "hare_krishna_mahamantra": {
     "significance": "कलिसंतरण उपनिषद् का परम तारक महामंत्र। इसके नाम स्मरण मात्र से अंतःकरण का समस्त मैल धुल जाता है।",
     "lyrics": [
       "हरे कृष्ण हरे कृष्ण, कृष्ण कृष्ण हरे हरे।",
@@ -130,4 +82,4 @@
       "नित्य गावत शुद्ध चित्ते, प्रेम भक्ति प्रदायकम् ॥"
     ]
   }
-]
+}

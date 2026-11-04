@@ -15,7 +15,6 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { FavoritesProvider } from './src/context/FavoritesContext';
-import { AudioProvider } from './src/context/AudioContext';
 import { DrawerProvider } from './src/context/DrawerContext';
 import { RootNavigator, navigationRef, routeSync } from './src/navigation/RootNavigator';
 import { linking } from './src/navigation/linking';
@@ -82,11 +81,9 @@ export default function App() {
           <AppErrorBoundary>
             <AuthProvider>
               <FavoritesProvider>
-                <AudioProvider>
-                  <DrawerProvider>
-                    <ThemedApp />
-                  </DrawerProvider>
-                </AudioProvider>
+                <DrawerProvider>
+                  <ThemedApp />
+                </DrawerProvider>
               </FavoritesProvider>
             </AuthProvider>
           </AppErrorBoundary>

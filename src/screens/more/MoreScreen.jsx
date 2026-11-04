@@ -83,8 +83,8 @@ export const MORE_SECTIONS = [
     route: ROUTES.AUDIO_PLAYER,
     hi: 'भक्ति ऑडियो',
     en: 'Bhakti audio',
-    subHi: 'नाम जप · फ़ोन की आवाज़ में',
-    subEn: "Naam jap · in your phone's voice",
+    subHi: 'आरती, भजन, कीर्तन · YouTube से',
+    subEn: 'Aarti, bhajans, kirtan · on YouTube',
   },
   {
     id: 'help',

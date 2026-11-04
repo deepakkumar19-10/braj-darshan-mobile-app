@@ -1,3 +1,4 @@
+// Expo's Babel preset (it builds on React Native's own preset).
 module.exports = {
-  presets: ['module:@react-native/babel-preset'],
+  presets: ['babel-preset-expo'],
 };
