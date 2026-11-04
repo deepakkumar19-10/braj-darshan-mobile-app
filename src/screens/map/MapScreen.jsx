@@ -1,9 +1,10 @@
 /**
  * Braj Darshan - Map
+ * Design: Claude Design canvas "Braj Darshan app redesign", artboard Map (Nov 2026).
  * An illustrative, offline vector map of Braj drawn from each temple's real
  * latitude/longitude (no map SDK, no API key, works without internet).
  * It is not to scale for navigation: "Directions" hands off to Google Maps.
- * Temples closer than a pin's width are grouped into one numbered pin.
+ * Temples are grouped into one numbered pin per town; tapping a town lists its temples.
  * A faint photo of Vrindavan sits behind the drawing for atmosphere only.
  */
 
@@ -16,7 +17,6 @@ import {
   Linking,
   useWindowDimensions,
   Image,
-  Platform,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +33,7 @@ import {
   Card,
   Photo,
   InfoNote,
+  SectionHeader,
   GUTTER,
   useBottomInset,
 } from '../../components/ui';
@@ -70,8 +71,28 @@ const ROADS = [
 // The website's own photo of Vrindavan, shown faintly behind the drawn map.
 const MAP_BACKDROP = require('../../assets/images/places/vrindavan.jpg');
 
+// Colours of the drawing itself (river, roads, wash over the photo), one set per theme.
+const MAP_ART = {
+  light: {
+    wash: 'rgba(243, 237, 225, 0.62)',
+    river: '#A9CBD0',
+    riverCore: '#CFE3E5',
+    road: '#D9C7A6',
+    townDot: '#A85A06',
+    photoOpacity: 0.22,
+  },
+  dark: {
+    wash: 'rgba(35, 32, 29, 0.6)',
+    river: '#1F4A4F',
+    riverCore: '#2B6066',
+    road: '#4A4036',
+    townDot: '#B8A99A',
+    photoOpacity: 0.16,
+  },
+};
+
 const BOUNDS = { minLat: 27.39, maxLat: 27.67, minLon: 77.355, maxLon: 77.84 };
-const PIN = 44;
+const PIN = 44; // touch target; the drawn circle inside is smaller
 const LON_SCALE = Math.cos((27.5 * Math.PI) / 180);
 
 function makeProjector(width, height, pad) {
@@ -107,8 +128,8 @@ function clusterPins(temples, project) {
   });
 }
 
-function todayLine(temple, isHindi) {
-  const windows = getTodaysWindows(temple, getIndianStandardTime(new Date()));
+function todayLine(temple, isHindi, now) {
+  const windows = getTodaysWindows(temple, getIndianStandardTime(now));
   if (!windows) return isHindi ? 'दर्शन समय मंदिर से पुष्टि करें' : 'Confirm timings at the temple';
   return windows.map(([s, e]) => `${formatMinutes(s)} – ${formatMinutes(e)}`).join(' · ');
 }
@@ -129,7 +150,7 @@ function clusterTownLabel(cluster, isHindi) {
 
 function MapPin({ cluster, selected, onPress, colors, isDark, isHindi }) {
   const guarded = usePressGuard(onPress, 300);
-  const glyph = isDark && !selected ? '#1E1B18' : '#FFFFFF';
+  const onFill = isDark ? '#1E1B18' : '#FFFFFF';
   const count = cluster.temples.length;
   const label = count > 1
     ? isHindi ? `${count} मंदिर` : `${count} temples`
@@ -138,25 +159,22 @@ function MapPin({ cluster, selected, onPress, colors, isDark, isHindi }) {
     <Pressable
       onPress={guarded}
       accessibilityRole="button"
-      accessibilityLabel={label}
-      style={[
-        styles.pin,
-        {
-          left: cluster.x - PIN / 2,
-          top: cluster.y - PIN / 2,
-          backgroundColor: selected ? colors.navy : colors.primary,
-          borderColor: colors.surface,
-        },
-        selected && styles.pinSelected,
-      ]}
+      accessibilityState={{ selected }}
+      accessibilityLabel={`${clusterTownLabel(cluster, isHindi)}: ${label}`}
+      style={[styles.pin, { left: cluster.x - PIN / 2, top: cluster.y - PIN / 2 }]}
     >
-      {count > 1 ? (
-        <AppText variant="caption" weight="700" color={glyph}>
+      <View
+        style={[
+          styles.pinDot,
+          selected
+            ? [styles.pinDotSelected, { backgroundColor: colors.primary, borderColor: colors.surface }]
+            : { backgroundColor: colors.surface, borderColor: colors.primary },
+        ]}
+      >
+        <AppText variant="caption" weight="700" color={selected ? onFill : colors.primary} maxFontSizeMultiplier={1.15}>
           {count}
         </AppText>
-      ) : (
-        <Icon name="temple" size={22} color={glyph} />
-      )}
+      </View>
       <View
         pointerEvents="none"
         style={[
@@ -166,8 +184,8 @@ function MapPin({ cluster, selected, onPress, colors, isDark, isHindi }) {
         ]}
       >
         <AppText
-          variant="badge"
-          weight="600"
+          variant="small"
+          weight={selected ? '700' : '600'}
           color={colors.navy}
           numberOfLines={1}
           maxFontSizeMultiplier={1.15}
@@ -180,29 +198,49 @@ function MapPin({ cluster, selected, onPress, colors, isDark, isHindi }) {
   );
 }
 
-function TempleSheetRow({ temple, onOpen, isHindi, colors }) {
-  const status = getTempleStatus(temple);
+function TempleRow({ temple, onOpen, showCity, isHindi, colors, isDark, now }) {
+  const status = getTempleStatus(temple, now);
+  const name = isHindi ? temple.nameHindi : temple.name;
+  const open = usePressGuard(onOpen);
+  const go = usePressGuard(() => openDirections(temple));
   return (
-    <Card onPress={onOpen} style={styles.sheetRow} accessibilityLabel={temple.name}>
-      <View style={styles.sheetRowInner}>
+    <Card style={styles.row}>
+      <View style={styles.rowInner}>
         <Photo
           source={getTempleImage(temple)}
           representative={false}
           style={styles.thumb}
           accessibilityLabel={temple.name}
         />
-        <View style={styles.flex}>
-          <AppText variant="body" weight="700" color={colors.navy} numberOfLines={2}>
-            {isHindi ? temple.nameHindi : temple.name}
+        <View style={[styles.flex, styles.rowText]}>
+          <AppText variant="body" weight="600" color={colors.navy} numberOfLines={2}>
+            {name}
           </AppText>
-          <AppText variant="small" color={colors.muted}>
-            {isHindi ? temple.cityHindi : temple.city}
-          </AppText>
-          <View style={styles.gapTop}>
-            <StatusBadge status={status} size="sm" />
-          </View>
+          {showCity ? (
+            <AppText variant="small" color={colors.muted}>
+              {isHindi ? temple.cityHindi : temple.city}
+            </AppText>
+          ) : null}
+          <StatusBadge status={status} size="sm" />
         </View>
-        <Icon name="chevronRight" size={20} color={colors.muted} />
+        <Pressable
+          onPress={open}
+          accessibilityRole="button"
+          accessibilityLabel={isHindi ? `विवरण — ${name}` : `Details — ${name}`}
+          style={({ pressed }) => [styles.detailsBtn, { backgroundColor: colors.primaryLight }, pressed && styles.pressed]}
+        >
+          <AppText variant="caption" weight="600" color={colors.primary}>
+            {isHindi ? 'विवरण' : 'Details'}
+          </AppText>
+        </Pressable>
+        <Pressable
+          onPress={go}
+          accessibilityRole="button"
+          accessibilityLabel={isHindi ? `रास्ता देखें — ${name}` : `Directions — ${name}`}
+          style={({ pressed }) => [styles.goBtn, { backgroundColor: pressed ? colors.primaryDark : colors.primary }]}
+        >
+          <Icon name="directions" size={22} color={isDark ? '#1E1B18' : '#FFFFFF'} />
+        </Pressable>
       </View>
     </Card>
   );
@@ -215,6 +253,7 @@ export default function MapScreen({ navigation }) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
+  const art = isDark ? MAP_ART.dark : MAP_ART.light;
 
   const [openOnly, setOpenOnly] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -260,7 +299,6 @@ export default function MapScreen({ navigation }) {
 
   const sheetTemples = selected ? selected.temples : temples;
   const single = selected && selected.temples.length === 1 ? selected.temples[0] : null;
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScrollView
@@ -269,14 +307,13 @@ export default function MapScreen({ navigation }) {
       >
         <TopBar
           title={isHindi ? 'ब्रज का नक्शा' : 'Braj map'}
-          subtitle={isHindi ? 'मंदिर पर टैप करें — दिशा Google Maps में खुलेगी' : 'Tap a temple — directions open in Google Maps'}
+          subtitle={isHindi ? 'नगर पर टैप करें, फिर मंदिर चुनें' : 'Tap a town, then pick a temple'}
           right={<LanguageToggle />}
         />
 
         <View style={styles.chips}>
           <Chip
             label={isHindi ? 'सभी मंदिर' : 'All temples'}
-            icon="temple"
             selected={!openOnly}
             onPress={() => setOpenOnly(false)}
           />
@@ -294,37 +331,35 @@ export default function MapScreen({ navigation }) {
         <View
           style={[
             styles.mapBox,
-            { width: mapWidth, height: mapHeight, backgroundColor: isDark ? '#1F1C18' : '#F6EEE2', borderColor: colors.borderGold },
+            { width: mapWidth, height: mapHeight, backgroundColor: colors.surfaceContainer, borderColor: colors.border },
           ]}
           accessibilityLabel={isHindi ? 'ब्रज का चित्रात्मक नक्शा' : 'Illustrative map of Braj'}
         >
           {/* Faint photo for atmosphere, then a warm wash so roads, river and pins stay clear. */}
           <Image
             source={MAP_BACKDROP}
-            style={[styles.mapBackdrop, { opacity: isDark ? 0.2 : 0.3 }]}
+            style={[styles.mapBackdrop, { opacity: art.photoOpacity }]}
             resizeMode="cover"
             fadeDuration={0}
             accessible={false}
           />
-          <View
-            pointerEvents="none"
-            style={[styles.mapWash, { backgroundColor: isDark ? 'rgba(18,18,18,0.55)' : 'rgba(255,249,237,0.55)' }]}
-          />
+          <View pointerEvents="none" style={[styles.mapWash, { backgroundColor: art.wash }]} />
           <Svg width={mapWidth} height={mapHeight} style={StyleSheet.absoluteFill} pointerEvents="none">
             {roads.map((d) => (
               <Path
                 key={d}
                 d={d}
-                stroke={isDark ? '#4A4036' : '#D9C3A0'}
-                strokeWidth={5}
-                strokeDasharray="10 6"
+                stroke={art.road}
+                strokeWidth={2.5}
+                strokeDasharray="5 6"
                 strokeLinecap="round"
                 fill="none"
               />
             ))}
-            <Path d={river} stroke={isDark ? '#1F4A4F' : '#9FCBCA'} strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <Path d={river} stroke={art.river} strokeWidth={16} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <Path d={river} stroke={art.riverCore} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
             {townDots.map((t) => (
-              <Circle key={t.id} cx={t.x} cy={t.y} r={5} fill={isDark ? '#B8A99A' : '#A85A06'} opacity={0.5} />
+              <Circle key={t.id} cx={t.x} cy={t.y} r={5} fill={art.townDot} opacity={0.5} />
             ))}
           </Svg>
 
@@ -346,34 +381,18 @@ export default function MapScreen({ navigation }) {
               {isHindi ? 'यमुना' : 'Yamuna'}
             </AppText>
           </View>
-          <View style={[styles.scaleTag, { backgroundColor: colors.surface }]} pointerEvents="none">
-            <AppText variant="badge" color={colors.muted} weight="600">
-              {isHindi ? 'चित्रात्मक · पैमाने पर नहीं' : 'Illustrative · not to scale'}
-            </AppText>
-          </View>
-        </View>
-
-        {/* Legend */}
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendPin, { backgroundColor: colors.primary }]}>
-              <Icon name="temple" size={12} color={isDark ? '#1E1B18' : '#FFFFFF'} />
-            </View>
-            <AppText variant="small" color={colors.textSecondary}>
-              {isHindi ? 'मंदिर (अंक = नगर में मंदिर)' : 'Temples (number = temples in town)'}
-            </AppText>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendLine, { backgroundColor: isDark ? '#1F4A4F' : '#9FCBCA' }]} />
-            <AppText variant="small" color={colors.textSecondary}>
-              {isHindi ? 'यमुना' : 'Yamuna'}
+          <View style={[styles.scaleTag, { backgroundColor: colors.surface, maxWidth: mapWidth - 24 }]} pointerEvents="none">
+            <AppText variant="badge" color={colors.muted} weight="500">
+              {isHindi
+                ? 'चित्रात्मक · पैमाने पर नहीं · अंक = नगर में मंदिर'
+                : 'Illustrative · not to scale · number = temples in town'}
             </AppText>
           </View>
         </View>
 
         <View style={styles.body}>
           {single ? (
-            <Card padded={false}>
+            <Card padded={false} style={styles.singleCard}>
               <Photo
                 source={getTempleImage(single)}
                 representative={isTempleImageRepresentative(single)}
@@ -387,62 +406,72 @@ export default function MapScreen({ navigation }) {
                 <AppText variant="caption" color={colors.muted}>
                   {isHindi ? single.cityHindi : single.city}
                 </AppText>
-                <StatusBadge status={getTempleStatus(single)} />
+                <StatusBadge status={getTempleStatus(single, now)} />
                 <View style={styles.timeLine}>
                   <Icon name="clock" size={18} color={colors.muted} />
                   <AppText variant="caption" color={colors.text} style={styles.flex}>
-                    {todayLine(single, isHindi)}
+                    {todayLine(single, isHindi, now)}
                   </AppText>
                 </View>
                 <View style={styles.actions}>
-                  <Button
-                    title={isHindi ? 'रास्ता देखें' : 'Directions'}
-                    icon="directions"
-                    onPress={() => openDirections(single)}
-                    style={styles.flex}
-                  />
                   <Button
                     title={isHindi ? 'विवरण' : 'Details'}
                     variant="secondary"
                     onPress={() => openTemple(single)}
                     style={styles.flex}
                   />
+                  <Button
+                    title={isHindi ? 'रास्ता देखें' : 'Directions'}
+                    icon="directions"
+                    onPress={() => openDirections(single)}
+                    style={styles.flexWide}
+                  />
                 </View>
               </View>
             </Card>
           ) : (
-            <>
-              <AppText variant="h3" weight="700" color={colors.navy} style={styles.listTitle}>
-                {selected
-                  ? isHindi
-                    ? `यहाँ ${selected.temples.length} मंदिर`
-                    : `${selected.temples.length} temples here`
-                  : isHindi
-                    ? `${temples.length} मंदिर`
-                    : `${temples.length} temples`}
-              </AppText>
-              {sheetTemples.map((temple) => (
-                <TempleSheetRow
-                  key={temple.id}
-                  temple={temple}
-                  onOpen={() => openTemple(temple)}
-                  isHindi={isHindi}
-                  colors={colors}
-                />
-              ))}
+            <View>
+              <SectionHeader
+                title={
+                  selected
+                    ? isHindi
+                      ? `${clusterTownLabel(selected, true)} के मंदिर`
+                      : `Temples in ${clusterTownLabel(selected, false)}`
+                    : isHindi
+                      ? `${temples.length} मंदिर`
+                      : `${temples.length} temples`
+                }
+                actionLabel={selected ? (isHindi ? 'सभी मंदिर' : 'All temples') : undefined}
+                onAction={selected ? () => setSelectedId(null) : undefined}
+                style={styles.listHeader}
+              />
+              <View style={styles.list}>
+                {sheetTemples.map((temple) => (
+                  <TempleRow
+                    key={temple.id}
+                    temple={temple}
+                    onOpen={() => openTemple(temple)}
+                    showCity={!selected}
+                    isHindi={isHindi}
+                    colors={colors}
+                    isDark={isDark}
+                    now={now}
+                  />
+                ))}
+              </View>
               {sheetTemples.length === 0 ? (
                 <InfoNote>
                   {isHindi ? 'इस समय कोई मंदिर खुला नहीं दिख रहा।' : 'No temple shows as open right now.'}
                 </InfoNote>
               ) : null}
-            </>
+            </View>
           )}
 
-          <InfoNote style={styles.gapTop}>
+          <AppText variant="small" color={colors.muted}>
             {isHindi
-              ? 'यह चित्रात्मक नक्शा है, पैमाने पर नहीं। रास्ते के लिए "रास्ता देखें" दबाएँ। त्योहारों पर दर्शन समय बदल सकता है।'
-              : 'Illustrative map, not to scale. Use Directions for navigation. Timings may change on festivals.'}
-          </InfoNote>
+              ? 'यह चित्रात्मक नक्शा है, पैमाने पर नहीं। रास्ते के लिए "रास्ता देखें" दबाएँ — रास्ता Google Maps में खुलेगा। त्योहारों पर दर्शन समय बदल सकता है।'
+              : 'Illustrative map, not to scale. Use Directions for navigation — it opens in Google Maps. Timings may change on festivals.'}
+          </AppText>
         </View>
       </ScrollView>
     </View>
@@ -452,11 +481,13 @@ export default function MapScreen({ navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: GUTTER, marginBottom: 12 },
+  flexWide: { flex: 1.4 },
+  pressed: { opacity: 0.75 },
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: GUTTER, marginBottom: 16 },
   mapBox: {
     alignSelf: 'center',
     borderRadius: 24,
-    borderWidth: 1.5,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   // Explicit size: absoluteFill alone lets Android draw the image at its own size.
@@ -466,28 +497,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     bottom: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: 999,
   },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, paddingHorizontal: GUTTER, marginTop: 10 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendPin: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  legendLine: { width: 22, height: 6, borderRadius: 3 },
   pin: {
     position: 'absolute',
     width: PIN,
     height: PIN,
-    borderRadius: PIN / 2,
-    borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ios: { shadowColor: '#2D2018', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 4 },
-      android: { elevation: 4 },
-    }),
   },
-  pinSelected: { borderWidth: 4, transform: [{ scale: 1.12 }] },
+  pinDot: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pinDotSelected: { width: 42, height: 42, borderRadius: 21, borderWidth: 3 },
   pinLabel: {
     position: 'absolute',
     top: PIN - 2,
@@ -499,8 +528,8 @@ const styles = StyleSheet.create({
   pinLabelLeft: { top: 11, left: -146, alignItems: 'flex-end' },
   pinLabelText: {
     paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
+    paddingVertical: 0,
+    borderRadius: 999,
     overflow: 'hidden',
   },
   riverTag: {
@@ -510,18 +539,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
   },
-  body: { paddingHorizontal: GUTTER, paddingTop: 16, gap: 12 },
-  listTitle: { marginBottom: 2 },
-  sheetRow: { padding: 12 },
-  sheetRowInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  thumb: { width: 72, height: 72, borderRadius: 14 },
+  body: { paddingHorizontal: GUTTER, paddingTop: 20, gap: 14 },
+  listHeader: { marginBottom: 10 },
+  list: { gap: 10 },
+  row: { padding: 10, borderRadius: 16 },
+  rowInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowText: { gap: 3 },
+  thumb: { width: 56, height: 56, borderRadius: 12 },
+  detailsBtn: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  singleCard: { borderRadius: 20 },
   sheetPhoto: { height: 160 },
   sheetBody: { padding: 16, gap: 8 },
   timeLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 6 },
-  gapTop: { marginTop: 6 },
 });

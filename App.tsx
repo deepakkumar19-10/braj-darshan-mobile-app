@@ -22,6 +22,9 @@ import { loadNavigationState, saveNavigationState } from './src/navigation/persi
 import AppErrorBoundary from './src/components/system/AppErrorBoundary';
 import OfflineBanner from './src/components/system/OfflineBanner';
 import { startContentRefresh } from './src/services/contentService';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import { FONT_FILES, fontState } from './src/theme/fonts';
 
 function ThemedApp() {
   const { colors, isDark } = useTheme();
@@ -70,9 +73,21 @@ function ThemedApp() {
   );
 }
 
+// Keep the splash screen up until the Mukta font is ready, so no text flashes in the system font.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function App() {
   // Newer temple/place data from the website (cached; bundled data when offline).
   useEffect(() => startContentRefresh(), []);
+
+  // If the font cannot load, the app still opens, in the phone's own font.
+  const [fontsLoaded, fontError] = useFonts(FONT_FILES);
+  const fontsReady = fontsLoaded || Boolean(fontError);
+  fontState.loaded = fontsLoaded;
+  useEffect(() => {
+    if (fontsReady) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsReady]);
+  if (!fontsReady) return null;
 
   return (
     <SafeAreaProvider>

@@ -1,8 +1,10 @@
 /**
  * Braj Darshan - Temple details
- * Design: design-input/figma "Light · Temple details". Photo, name, address,
- * darshan timings with a summer/winter switch, aarti times, before-you-visit
- * guidance, nearby temples and one primary action: Get directions.
+ * Design: Claude Design canvas "Braj Darshan app redesign", artboard TempleDetail (Nov 2026).
+ * Photo hero with round back / share / save buttons, then a content sheet with rounded top
+ * that overlaps the photo: name, address, open/closed panel, darshan timings with a
+ * summer/winter switch, aarti, about, before-you-visit, festivals and nearby temples.
+ * A fixed bottom bar holds "On map" and the primary action, Get directions.
  * Timings come from the temple's own data and are labelled as regular, not live.
  */
 
@@ -17,15 +19,16 @@ import { Icon } from '../../components/common/Icon';
 import {
   Button,
   Card,
-  Chip,
   IconButton,
   InfoNote,
-  ListRow,
   Photo,
+  RepresentativeTag,
   SectionHeader,
   StatusBadge,
   GUTTER,
 } from '../../components/ui';
+import { lightColors } from '../../theme/colors';
+import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
 import { getPhotoCredit, creditLine } from '../../utils/photoCredits';
 import { useNow } from '../../hooks/useNow';
@@ -39,17 +42,13 @@ import {
   formatMinutes,
 } from '../../utils/templeHours';
 
-const GUIDELINE_ICONS = {
-  '👗': 'dress',
-  '📵': 'noPhoto',
-  '👟': 'parikrama',
-  '🐒': 'alert',
-};
-
 const HINDI_MONTHS_EN = {
   जनवरी: 'January', फ़रवरी: 'February', फरवरी: 'February', मार्च: 'March', अप्रैल: 'April', मई: 'May',
   जून: 'June', जुलाई: 'July', अगस्त: 'August', सितंबर: 'September', अक्टूबर: 'October', नवंबर: 'November', दिसंबर: 'December',
 };
+
+// The photo buttons keep a white face in both themes, so their icons use the light palette.
+const ON_PHOTO = lightColors;
 
 // "अक्टूबर 2026" -> "October 2026"; anything else is shown as it is.
 function monthYearEn(text) {
@@ -60,6 +59,13 @@ function monthYearEn(text) {
 function isSummerNow() {
   const month = getIndianStandardTime(new Date()).getMonth();
   return month >= 3 && month <= 9;
+}
+
+// A darshan window as the big clock line and its AM/PM line: ["8:00 – 1:30", "AM – PM"].
+function windowText(start, end) {
+  const [a, ap] = formatMinutes(start).split(' ');
+  const [b, bp] = formatMinutes(end).split(' ');
+  return [`${a} – ${b}`, ap === bp ? ap : `${ap} – ${bp}`];
 }
 
 export default function TempleDetailScreen({ navigation, route }) {
@@ -94,6 +100,112 @@ function TempleNotFound({ navigation, isHindi, colors, insets }) {
   );
 }
 
+/* ------------------------------------------------------------ Pieces */
+
+// Open / closed / unknown, as a tinted panel: dot (or clock) + word + when it changes.
+function StatusPanel({ status, isHindi, colors }) {
+  const tone = !status.isKnown ? 'info' : status.isOpen ? 'open' : 'closed';
+  const t = {
+    open: {
+      fg: colors.success,
+      bg: colors.successLight,
+      title: isHindi ? 'दर्शन खुले हैं' : 'Open now',
+    },
+    closed: {
+      fg: colors.warning,
+      bg: colors.warningBg,
+      title: isHindi ? 'पट बंद हैं' : 'Closed now',
+    },
+    info: {
+      fg: colors.textSecondary,
+      bg: colors.infoBg,
+      title: isHindi ? 'समय मंदिर से पुष्टि करें' : 'Check timings locally',
+    },
+  }[tone];
+  const sub = isHindi ? status.subtextHi : status.subtextEn;
+  return (
+    <View
+      style={[styles.statusPanel, { backgroundColor: t.bg }]}
+      accessible
+      accessibilityLabel={[t.title, sub].filter(Boolean).join('. ')}
+    >
+      {tone === 'info' ? (
+        <Icon name="clock" size={18} color={t.fg} />
+      ) : (
+        <View style={[styles.statusDot, { backgroundColor: t.fg }]} />
+      )}
+      <View style={styles.flex}>
+        <AppText variant="body" weight="700" color={t.fg}>
+          {t.title}
+        </AppText>
+        {sub ? (
+          <AppText variant="small" color={colors.text}>
+            {sub}
+          </AppText>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+// Two-segment summer / winter switch (the selected segment is a white pill).
+function SeasonToggle({ season, onChange, isHindi, colors }) {
+  const pickSummer = usePressGuard(() => onChange('summer'), 250);
+  const pickWinter = usePressGuard(() => onChange('winter'), 250);
+  const seg = (key, label, onPress) => {
+    const active = season === key;
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={label}
+        hitSlop={{ top: 4, bottom: 4 }}
+        style={[styles.seasonSeg, { backgroundColor: active ? colors.surface : colors.infoBg }]}
+      >
+        <AppText variant="small" weight={active ? '700' : '600'} color={active ? colors.navy : colors.muted}>
+          {label}
+        </AppText>
+      </Pressable>
+    );
+  };
+  return (
+    <View
+      style={[styles.seasonToggle, { backgroundColor: colors.infoBg }]}
+      accessibilityLabel={isHindi ? 'मौसम' : 'Season'}
+    >
+      {seg('summer', isHindi ? 'ग्रीष्म' : 'Summer', pickSummer)}
+      {seg('winter', isHindi ? 'शीत' : 'Winter', pickWinter)}
+    </View>
+  );
+}
+
+function InfoTile({ label, value, valueColor, wide, colors }) {
+  return (
+    <View style={[styles.infoTile, wide && styles.infoTileWide, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <AppText variant="small" color={colors.muted}>
+        {label}
+      </AppText>
+      <AppText variant="body" weight="600" color={valueColor || colors.navy}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
+function Bullet({ children, colors }) {
+  return (
+    <View style={styles.bullet}>
+      <View style={[styles.bulletDot, { backgroundColor: colors.primaryContainer }]} />
+      <AppText variant="body" color={colors.text} style={styles.flex}>
+        {children}
+      </AppText>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------ Screen */
+
 function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const templesData = useTemples();
@@ -103,7 +215,8 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
 
   const fav = isFavorite(temple.id);
   const photoCredit = getPhotoCredit(templePhotoKey(temple));
-  const now = useNow(); // keeps the open/closed badge current while the page stays open
+  const representative = isTempleImageRepresentative(temple);
+  const now = useNow(); // keeps the open/closed panel current while the page stays open
   const status = getTempleStatus(temple, now);
   const windows = parseDarshanWindows(temple.timings?.[season]);
   const nearby = (temple.nearbyTempleIds || [])
@@ -117,6 +230,10 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
   const about = isHindi
     ? temple.history || temple.shortDescription
     : temple.shortDescriptionEn || temple.shortDescription;
+  const duration = isHindi ? temple.recommendedDuration : temple.recommendedDurationEn;
+  const station = isHindi ? temple.nearestStation : temple.nearestStationEn;
+  const hasAudio = Boolean(findBhaktiTrack(temple.audioTrackId));
+  const hasVisitTiles = Boolean(duration || station || temple.photographyAllowed === false);
 
   const openDirections = () => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${temple.latitude},${temple.longitude}`;
@@ -137,96 +254,106 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Photo */}
+        {/* Photo. Its tag and credit sit above the sheet's overlap so they stay visible. */}
         <Photo
           source={getTempleImage(temple)}
-          representative={isTempleImageRepresentative(temple)}
+          representative={false}
           style={styles.hero}
           accessibilityLabel={temple.name}
         >
           <View style={[styles.heroBar, { top: insets.top + 8 }]}>
-            <IconButton icon="chevronLeft" size={28} filled onPress={() => navigation.goBack()} accessibilityLabel={isHindi ? 'वापस' : 'Back'} />
+            <IconButton icon="chevronLeft" size={26} filled onPress={() => navigation.goBack()} accessibilityLabel={isHindi ? 'वापस' : 'Back'} />
             <View style={styles.heroRight}>
-              <IconButton icon="share" filled onPress={share} accessibilityLabel={isHindi ? 'साझा करें' : 'Share'} />
+              <IconButton icon="share" size={20} filled onPress={share} accessibilityLabel={isHindi ? 'साझा करें' : 'Share'} />
               <IconButton
                 icon={fav ? 'heartFilled' : 'heart'}
+                size={20}
                 filled
-                color={fav ? colors.warning : undefined}
+                color={fav ? ON_PHOTO.warning : ON_PHOTO.primary}
                 onPress={() => toggleFavorite(temple)}
                 accessibilityLabel={fav ? (isHindi ? 'सहेजे से हटाएँ' : 'Remove from saved') : (isHindi ? 'सहेजें' : 'Save')}
               />
             </View>
           </View>
+          <View style={styles.heroFoot}>
+            {representative ? <RepresentativeTag style={styles.heroTag} /> : null}
+            {photoCredit ? (
+              <Pressable
+                onPress={() => Linking.openURL(photoCredit.source).catch(() => {})}
+                accessibilityRole="link"
+                hitSlop={8}
+                style={styles.heroTag}
+              >
+                <AppText variant="badge" color="#FFFFFF" numberOfLines={2}>
+                  {creditLine(photoCredit, isHindi)}
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
         </Photo>
-        {photoCredit ? (
-          <Pressable onPress={() => Linking.openURL(photoCredit.source).catch(() => {})} accessibilityRole="link" hitSlop={6}>
-            <AppText variant="badge" color={colors.muted} style={styles.credit} numberOfLines={2}>
-              {creditLine(photoCredit, isHindi)}
-            </AppText>
-          </Pressable>
-        ) : null}
 
-        <View style={styles.body}>
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           {/* Title */}
           <View style={styles.titleBlock}>
             <AppText variant="h1" weight="700" color={colors.navy}>
               {name}
             </AppText>
             {altName ? (
-              <AppText variant="h4" weight="600" color={colors.textSecondary}>
+              <AppText variant="body" color={colors.muted}>
                 {altName}
               </AppText>
             ) : null}
             {temple.location ? (
               <View style={styles.addressRow}>
-                <Icon name="location" size={20} color={colors.primary} />
-                <AppText variant="caption" color={colors.textSecondary} style={styles.flex}>
+                <Icon name="location" size={18} color={colors.primary} />
+                <AppText variant="caption" color={colors.text} style={styles.flex}>
                   {isHindi ? temple.location : `${temple.city} · Local address (Hindi): ${temple.location}`}
                 </AppText>
               </View>
             ) : null}
           </View>
 
+          <StatusPanel status={status} isHindi={isHindi} colors={colors} />
+
           {/* Darshan timings */}
-          <Card>
-            <AppText variant="h3" weight="700" color={colors.navy}>
-              {isHindi ? 'दर्शन समय' : 'Darshan timings'}
-            </AppText>
-            <View style={styles.gap8}>
-              <StatusBadge status={status} />
-            </View>
-            <View style={styles.seasonRow}>
-              <Chip label={isHindi ? 'ग्रीष्म' : 'Summer'} icon="sun" selected={season === 'summer'} onPress={() => setSeason('summer')} />
-              <Chip label={isHindi ? 'शीत' : 'Winter'} icon="tithi" selected={season === 'winter'} onPress={() => setSeason('winter')} />
+          <Card style={styles.card}>
+            <View style={styles.cardHead}>
+              <AppText variant="h3" weight="700" color={colors.navy} style={styles.flexShrink}>
+                {isHindi ? 'दर्शन समय' : 'Darshan timings'}
+              </AppText>
+              <SeasonToggle season={season} onChange={setSeason} isHindi={isHindi} colors={colors} />
             </View>
             {windows ? (
-              windows.map(([start, end], i) => (
-                <View key={`${start}-${end}`} style={styles.windowRow}>
-                  <View style={[styles.windowIcon, { backgroundColor: colors.primaryLight }]}>
-                    <Icon name={i === 0 ? 'sunrise' : 'tithi'} size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.flex}>
-                    <AppText variant="caption" color={colors.muted}>
-                      {i === 0 ? (isHindi ? 'प्रातः दर्शन' : 'Morning darshan') : (isHindi ? 'सायं दर्शन' : 'Evening darshan')}
-                    </AppText>
-                    <AppText variant="bodyBold" color={colors.navy}>
-                      {formatMinutes(start)} – {formatMinutes(end)}
-                    </AppText>
-                  </View>
-                </View>
-              ))
+              <View style={styles.tileGrid}>
+                {windows.map(([start, end], i) => {
+                  const [clock, period] = windowText(start, end);
+                  return (
+                    <View key={`${start}-${end}`} style={[styles.timeTile, { backgroundColor: colors.background }]}>
+                      <AppText variant="small" color={colors.muted}>
+                        {i === 0 ? (isHindi ? 'प्रातः दर्शन' : 'Morning darshan') : (isHindi ? 'सायं दर्शन' : 'Evening darshan')}
+                      </AppText>
+                      <AppText variant="h4" weight="700" color={colors.navy}>
+                        {clock}
+                      </AppText>
+                      <AppText variant="badge" color={colors.muted}>
+                        {period}
+                      </AppText>
+                    </View>
+                  );
+                })}
+              </View>
             ) : (
-              <AppText variant="body" color={colors.text} style={styles.gap8}>
+              <AppText variant="body" color={colors.text}>
                 {temple.timings?.[season]}
               </AppText>
             )}
-            <InfoNote style={styles.gap12}>
+            <InfoNote tone="warning" icon="clock">
               {isHindi
                 ? 'यह मंदिर का नियमित समय है, लाइव नहीं। त्योहारों पर बदल सकता है — स्थानीय पुष्टि करें।'
                 : 'Regular temple timings, not live. They change on festivals — confirm locally.'}
             </InfoNote>
             {temple.lastVerified || temple.sourceAttribution ? (
-              <AppText variant="small" color={colors.muted} style={styles.gap8}>
+              <AppText variant="small" color={colors.muted}>
                 {[
                   temple.lastVerified
                     ? `${isHindi ? 'अंतिम जाँच' : 'Last checked'}: ${isHindi ? temple.lastVerified : monthYearEn(temple.lastVerified)}`
@@ -241,17 +368,17 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
 
           {/* Aarti */}
           {Array.isArray(temple.aartiSchedule) && temple.aartiSchedule.length ? (
-            <Card>
+            <Card style={styles.card}>
               <AppText variant="h3" weight="700" color={colors.navy}>
                 {isHindi ? 'आरती' : 'Aarti'}
               </AppText>
               {temple.aartiSchedule.map((a) => (
-                <View key={a.id} style={styles.windowRow}>
-                  <View style={[styles.windowIcon, { backgroundColor: colors.goldLight }]}>
-                    <Icon name="aarti" size={20} color={colors.primary} />
+                <View key={a.id} style={styles.aartiRow}>
+                  <View style={[styles.aartiIcon, { backgroundColor: colors.goldLight }]}>
+                    <Icon name="aarti" size={22} color={colors.primary} />
                   </View>
                   <View style={styles.flex}>
-                    <AppText variant="bodyBold" color={colors.navy}>
+                    <AppText variant="body" weight="600" color={colors.navy}>
                       {isHindi ? a.nameHi : a.nameEn} · {season === 'summer' ? a.timeSummer : a.timeWinter}
                     </AppText>
                     {isHindi && a.significanceHi ? (
@@ -262,13 +389,14 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
                   </View>
                 </View>
               ))}
-              {findBhaktiTrack(temple.audioTrackId) ? (
+              {hasAudio ? (
                 <Button
-                  title={isHindi ? 'आरती सुनें' : 'Listen to aarti'}
-                  icon="music"
+                  title={isHindi ? 'आरती सुनें · YouTube' : 'Listen to aarti · YouTube'}
+                  accessibilityLabel={isHindi ? 'आरती सुनें' : 'Listen to aarti'}
+                  icon="play"
                   variant="text"
                   onPress={() => navigation.navigate(ROUTES.AUDIO_PLAYER, { trackId: temple.audioTrackId })}
-                  style={styles.leftButton}
+                  style={[styles.listenButton, { backgroundColor: colors.primaryLight }]}
                 />
               ) : null}
             </Card>
@@ -277,7 +405,7 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
           {/* About */}
           {about ? (
             <View>
-              <SectionHeader title={isHindi ? 'मंदिर के बारे में' : 'About this temple'} />
+              <SectionHeader title={isHindi ? 'मंदिर के बारे में' : 'About this temple'} style={styles.headerTight} />
               <AppText variant="body" color={colors.text} numberOfLines={showFullAbout ? undefined : 4}>
                 {about}
               </AppText>
@@ -293,36 +421,58 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
           ) : null}
 
           {/* Before you visit */}
-          <Card>
-            <AppText variant="h3" weight="700" color={colors.navy}>
-              {isHindi ? 'जाने से पहले' : 'Before you visit'}
-            </AppText>
-            {(temple.guidelines || []).map((g) => (
-              <ListRow
-                key={g.labelEn}
-                icon={GUIDELINE_ICONS[g.icon] || 'info'}
-                title={isHindi ? g.labelHi : g.labelEn}
-                subtitle={isHindi ? g.descHi : g.descEn}
-              />
-            ))}
-            {temple.recommendedDurationEn || temple.recommendedDuration ? (
-              <ListRow
-                icon="clock"
-                title={isHindi ? 'दर्शन में लगने वाला समय' : 'Time needed'}
-                subtitle={isHindi ? temple.recommendedDuration : temple.recommendedDurationEn}
-              />
+          <View>
+            <SectionHeader title={isHindi ? 'जाने से पहले' : 'Before you visit'} />
+            {hasVisitTiles ? (
+              <View style={styles.tileGrid}>
+                {duration ? (
+                  <InfoTile
+                    colors={colors}
+                    label={isHindi ? 'दर्शन में लगने वाला समय' : 'Time needed'}
+                    value={duration}
+                  />
+                ) : null}
+                {temple.photographyAllowed === false ? (
+                  <InfoTile
+                    colors={colors}
+                    label={isHindi ? 'फ़ोटोग्राफ़ी' : 'Photography'}
+                    value={isHindi ? 'वर्जित' : 'Not allowed'}
+                    valueColor={colors.warning}
+                  />
+                ) : null}
+                {station ? (
+                  <InfoTile
+                    colors={colors}
+                    wide
+                    label={isHindi ? 'निकटतम स्टेशन' : 'Nearest station'}
+                    value={station}
+                  />
+                ) : null}
+              </View>
             ) : null}
-            {temple.nearestStationEn || temple.nearestStation ? (
-              <ListRow
-                icon="train"
-                title={isHindi ? 'निकटतम स्टेशन' : 'Nearest station'}
-                subtitle={isHindi ? temple.nearestStation : temple.nearestStationEn}
-              />
-            ) : null}
-            {temple.darshanTips && isHindi ? (
-              <ListRow icon="people" title={isHindi ? 'सुझाव' : 'Tip'} subtitle={temple.darshanTips} />
-            ) : null}
-          </Card>
+            <View style={[styles.bullets, hasVisitTiles && styles.bulletsAfterTiles]}>
+              {(temple.guidelines || []).map((g) => {
+                const label = isHindi ? g.labelHi : g.labelEn;
+                const desc = isHindi ? g.descHi : g.descEn;
+                return (
+                  <Bullet key={g.labelEn} colors={colors}>
+                    <AppText variant="body" weight="600" color={colors.navy}>
+                      {label}
+                    </AppText>
+                    {desc ? ` — ${desc}` : ''}
+                  </Bullet>
+                );
+              })}
+              {temple.darshanTips && isHindi ? (
+                <Bullet colors={colors}>
+                  <AppText variant="body" weight="600" color={colors.navy}>
+                    सुझाव
+                  </AppText>
+                  {` — ${temple.darshanTips}`}
+                </Bullet>
+              ) : null}
+            </View>
+          </View>
 
           {/* Festivals */}
           {isHindi && Array.isArray(temple.festivals) && temple.festivals.length ? (
@@ -330,9 +480,8 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
               <SectionHeader title={isHindi ? 'प्रमुख उत्सव' : 'Main festivals'} />
               <View style={styles.festivals}>
                 {temple.festivals.map((f) => (
-                  <View key={f} style={[styles.festivalTag, { backgroundColor: colors.surfaceAlt }]}>
-                    <Icon name="festival" size={16} color={colors.primary} />
-                    <AppText variant="small" color={colors.text}>
+                  <View key={f} style={[styles.festivalPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <AppText variant="caption" color={colors.text}>
                       {f}
                     </AppText>
                   </View>
@@ -360,8 +509,8 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
                 >
                   <View style={styles.nearInner}>
                     <Photo source={getTempleImage(t)} style={styles.nearThumb} accessibilityLabel={t.name} />
-                    <View style={styles.flex}>
-                      <AppText variant="body" weight="700" color={colors.navy}>
+                    <View style={[styles.flex, styles.nearText]}>
+                      <AppText variant="body" weight="600" color={colors.navy}>
                         {isHindi ? t.nameHindi : t.name}
                       </AppText>
                       <StatusBadge status={getTempleStatus(t, now)} size="sm" />
@@ -375,17 +524,17 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
         </View>
       </ScrollView>
 
-      {/* Sticky primary action */}
+      {/* Fixed actions */}
       <View
         style={[
           styles.bottomBar,
-          { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) },
+          { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) + 4 },
         ]}
       >
         <Button
           title={isHindi ? 'नक्शे पर' : 'On map'}
           variant="secondary"
-          icon="map"
+          icon="location"
           onPress={() => navigation.navigate(ROUTES.MAP)}
           style={styles.mapBtn}
         />
@@ -393,7 +542,7 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
           title={isHindi ? 'रास्ता देखें' : 'Get directions'}
           icon="directions"
           onPress={openDirections}
-          style={styles.flex}
+          style={styles.directionsBtn}
         />
       </View>
     </View>
@@ -403,9 +552,9 @@ function TempleDetail({ temple, navigation, isHindi, colors, insets }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  hero: { height: 300 },
+  flexShrink: { flexShrink: 1 },
   notFound: { paddingHorizontal: GUTTER, gap: 16 },
-  credit: { paddingHorizontal: GUTTER, paddingTop: 6 },
+  hero: { height: 300 },
   heroBar: {
     position: 'absolute',
     left: GUTTER,
@@ -413,27 +562,71 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  heroRight: { flexDirection: 'row', gap: 8 },
-  body: { paddingHorizontal: GUTTER, paddingTop: 20, gap: 20 },
+  heroRight: { flexDirection: 'row', gap: 10 },
+  // The sheet overlaps the photo by 24px, so the tag sits just above that.
+  heroFoot: { position: 'absolute', left: GUTTER, right: GUTTER, bottom: 36, alignItems: 'flex-start', gap: 6 },
+  heroTag: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    backgroundColor: 'rgba(23, 18, 14, 0.66)',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  sheet: {
+    marginTop: -24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: GUTTER,
+    paddingTop: 20,
+    gap: 20,
+  },
   titleBlock: { gap: 4 },
-  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
-  gap8: { marginTop: 8 },
-  gap12: { marginTop: 12 },
-  seasonRow: { flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 4 },
-  windowRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  windowIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  leftButton: { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 0 },
-  festivals: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  festivalTag: {
+  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
+  statusPanel: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
   },
-  nearCard: { padding: 12, marginBottom: 10 },
+  statusDot: { width: 10, height: 10, borderRadius: 5 },
+  card: { borderRadius: 20, padding: 18, gap: 14 },
+  cardHead: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  seasonToggle: { flexDirection: 'row', padding: 3, borderRadius: 999 },
+  seasonSeg: {
+    minHeight: 40,
+    minWidth: 56,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  timeTile: { flexGrow: 1, flexBasis: '45%', padding: 12, borderRadius: 14, gap: 2 },
+  infoTile: { flexGrow: 1, flexBasis: '45%', padding: 14, borderRadius: 16, borderWidth: 1, gap: 4 },
+  infoTileWide: { flexBasis: '100%' },
+  aartiRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  aartiIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  listenButton: { minHeight: 48, borderRadius: 14 },
+  headerTight: { marginBottom: 8 },
+  leftButton: { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 0 },
+  bullets: { gap: 10 },
+  bulletsAfterTiles: { marginTop: 14 },
+  bullet: { flexDirection: 'row', gap: 10 },
+  bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 9 },
+  festivals: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  festivalPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
+  nearCard: { padding: 10, marginBottom: 10, borderRadius: 16 },
   nearInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  nearText: { gap: 4 },
   nearThumb: { width: 64, height: 64, borderRadius: 12 },
   bottomBar: {
     position: 'absolute',
@@ -446,5 +639,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
   },
-  mapBtn: { paddingHorizontal: 16 },
+  mapBtn: { flex: 1, paddingHorizontal: 12 },
+  directionsBtn: { flex: 1.4, paddingHorizontal: 12 },
 });

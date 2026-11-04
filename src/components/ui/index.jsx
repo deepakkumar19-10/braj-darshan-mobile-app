@@ -1,6 +1,8 @@
 /**
  * Braj Darshan - UI kit
- * The building blocks of the redesign (design-input/: Figma + Stitch, website colours).
+ * The building blocks of the app. Look: the Nov 2026 "clean Braj" redesign (Claude Design canvas
+ * "Braj Darshan app redesign"): off-white ground, white cards with hairline borders, saffron
+ * accent, navy headings, Mukta font, pill chips, round back button.
  * Every screen should be composed from these so spacing, type, icons, touch
  * targets and colours stay identical everywhere.
  *
@@ -13,6 +15,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View, Image, Platform, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fontFor } from '../../theme/fonts';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { AppText } from '../common/AppText';
@@ -20,18 +23,19 @@ import { Icon } from '../common/Icon';
 import { usePressGuard } from '../../hooks/usePressGuard';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 
-export const GUTTER = 20;
+export const GUTTER = 16;
 
+// Flat cards: a hairline border does the separating; only iOS keeps a whisper of shadow.
 function cardShadow(isDark) {
   if (isDark) return null;
   return Platform.select({
     ios: {
       shadowColor: '#2D2018',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.06,
-      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
     },
-    android: { elevation: 1 },
+    android: null,
   });
 }
 
@@ -100,8 +104,7 @@ export function IconButton({ icon, onPress, accessibilityLabel, color, size = 22
         style,
       ]}
     >
-      {/* Buttons on photos keep a white face, so their icon stays dark in both themes;
-          they are round, as iOS draws controls that float over images. */}
+      {/* Round in both places; buttons on photos keep a white face, so their icon stays dark in both themes. */}
       <Icon name={icon} size={size} color={color || (filled ? '#17324D' : colors.navy)} />
     </Pressable>
   );
@@ -137,8 +140,9 @@ export function Card({ children, onPress, style, accessibilityLabel, padded = tr
 /* ------------------------------------------------------------------- Chips */
 
 export function Chip({ label, selected = false, onPress, icon }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const guarded = usePressGuard(onPress, 250);
+  const onFill = isDark ? '#1E1B18' : '#FFFFFF';
   return (
     <Pressable
       onPress={guarded}
@@ -147,17 +151,17 @@ export function Chip({ label, selected = false, onPress, icon }) {
       style={({ pressed }) => [
         styles.chip,
         {
-          backgroundColor: selected ? colors.primaryLight : colors.surface,
-          borderColor: selected ? colors.primaryContainer : colors.border,
+          backgroundColor: selected ? colors.primary : colors.surface,
+          borderColor: selected ? colors.primary : colors.border,
           opacity: pressed ? 0.8 : 1,
         },
       ]}
     >
-      {icon ? <Icon name={icon} size={18} color={selected ? colors.primary : colors.muted} /> : null}
+      {icon ? <Icon name={icon} size={18} color={selected ? onFill : colors.muted} /> : null}
       <AppText
         variant="caption"
         weight={selected ? '700' : '500'}
-        color={selected ? colors.navy : colors.textSecondary}
+        color={selected ? onFill : colors.text}
       >
         {label}
       </AppText>
@@ -176,9 +180,9 @@ export function StatusBadge({ status, size = 'md' }) {
   if (!status) return null;
   const tone = !status.isKnown ? 'info' : status.isOpen ? 'open' : 'closed';
   const palette = {
-    open: { fg: colors.success, bg: colors.successLight, icon: 'open' },
-    closed: { fg: colors.warning, bg: colors.warningBg, icon: 'clock' },
-    info: { fg: colors.info, bg: colors.infoBg, icon: 'info' },
+    open: { fg: colors.success, bg: colors.successLight, icon: null },
+    closed: { fg: colors.warning, bg: colors.warningBg, icon: null },
+    info: { fg: colors.textSecondary, bg: colors.infoBg, icon: 'clock' },
   }[tone];
   const time = (String(status.nextEvent || '').match(/\d{1,2}:\d{2} [AP]M/) || [])[0];
   let label;
@@ -191,8 +195,12 @@ export function StatusBadge({ status, size = 'md' }) {
   }
   return (
     <View style={[styles.badge, size === 'sm' && styles.badgeSm, { backgroundColor: palette.bg }]}>
-      <Icon name={palette.icon} size={size === 'sm' ? 14 : 16} color={palette.fg} />
-      <AppText variant={size === 'sm' ? 'small' : 'caption'} weight="700" color={palette.fg}>
+      {palette.icon ? (
+        <Icon name={palette.icon} size={size === 'sm' ? 14 : 16} color={palette.fg} />
+      ) : (
+        <View style={[styles.badgeDot, { backgroundColor: palette.fg }]} />
+      )}
+      <AppText variant={size === 'sm' ? 'small' : 'caption'} weight="600" color={palette.fg}>
         {label}
       </AppText>
     </View>
@@ -210,12 +218,23 @@ export function RepresentativeTag({ style }) {
   );
 }
 
-export function InfoNote({ children, icon = 'info', style }) {
-  const { colors } = useTheme();
+/**
+ * A short note on a tinted panel. tone: 'info' (grey, default), 'warning' (gold: dates and
+ * timings to confirm), 'water' (teal: Yamuna and kund safety), 'saffron' (brand), 'danger' (red).
+ */
+export function InfoNote({ children, icon = 'info', style, tone = 'info' }) {
+  const { colors, isDark } = useTheme();
+  const t = {
+    info: { bg: colors.infoBg, fg: colors.textSecondary, icon: colors.muted },
+    warning: { bg: colors.goldLight, fg: isDark ? colors.text : '#4A3418', icon: isDark ? colors.gold : '#8A4A05' },
+    water: { bg: colors.purnimaLight, fg: isDark ? colors.text : '#13434A', icon: colors.purnima },
+    saffron: { bg: colors.primaryLight, fg: isDark ? colors.text : '#4A3418', icon: colors.primary },
+    danger: { bg: colors.warningBg, fg: isDark ? colors.text : '#6A2A22', icon: colors.warning },
+  }[tone] || { bg: colors.infoBg, fg: colors.textSecondary, icon: colors.muted };
   return (
-    <View style={[styles.infoNote, { backgroundColor: colors.infoBg }, style]}>
-      <Icon name={icon} size={18} color={colors.muted} />
-      <AppText variant="caption" color={colors.textSecondary} style={styles.flex}>
+    <View style={[styles.infoNote, { backgroundColor: t.bg }, style]}>
+      <Icon name={icon} size={18} color={t.icon} />
+      <AppText variant="caption" color={t.fg} style={styles.flex}>
         {children}
       </AppText>
     </View>
@@ -244,7 +263,7 @@ export function SectionHeader({ title, actionLabel, onAction, style }) {
 }
 
 /**
- * iOS-style back control: chevron and the word "Back", no box, in the accent colour.
+ * Back control: a round 44pt button with a chevron. "वापस" / "Back" is its screen-reader label.
  */
 export function BackButton({ onPress, label }) {
   const { colors } = useTheme();
@@ -256,13 +275,13 @@ export function BackButton({ onPress, label }) {
       onPress={guarded}
       accessibilityRole="button"
       accessibilityLabel={text}
-      hitSlop={8}
-      style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.5 : 1 }]}
+      hitSlop={6}
+      style={({ pressed }) => [
+        styles.backButton,
+        { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.6 : 1 },
+      ]}
     >
-      <Icon name="chevronLeft" size={30} color={colors.primary} />
-      <AppText variant="bodyLarge" color={colors.primary} maxFontSizeMultiplier={1.3}>
-        {text}
-      </AppText>
+      <Icon name="chevronLeft" size={24} color={colors.navy} />
     </Pressable>
   );
 }
@@ -277,18 +296,15 @@ export function TopBar({ title, subtitle, onBack, right, eyebrow }) {
   const { colors } = useTheme();
   if (onBack) {
     return (
-      <View style={styles.topBarStacked}>
-        <View style={styles.navRow}>
-          <BackButton onPress={onBack} />
-          {right ? <View style={styles.topBarRight}>{right}</View> : null}
-        </View>
-        <View style={styles.largeTitle}>
+      <View style={styles.topBarDetail}>
+        <BackButton onPress={onBack} />
+        <View style={styles.flex}>
           {eyebrow ? (
-            <AppText variant="caption" weight="600" color={colors.primary}>
+            <AppText variant="small" weight="600" color={colors.primary}>
               {eyebrow}
             </AppText>
           ) : null}
-          <AppText variant="h1" weight="700" color={colors.navy}>
+          <AppText variant="h2" weight="700" color={colors.navy}>
             {title}
           </AppText>
           {subtitle ? (
@@ -297,6 +313,7 @@ export function TopBar({ title, subtitle, onBack, right, eyebrow }) {
             </AppText>
           ) : null}
         </View>
+        {right ? <View style={styles.topBarRight}>{right}</View> : null}
       </View>
     );
   }
@@ -379,7 +396,7 @@ export function SearchField({ value, onChangeText, placeholder, onSubmitEditing,
         returnKeyType="search"
         placeholder={placeholder}
         placeholderTextColor={colors.muted}
-        style={[styles.searchInput, { color: colors.text }]}
+        style={[styles.searchInput, { color: colors.text }, fontFor('400')]}
         accessibilityLabel={placeholder || (isHindi ? 'खोजें' : 'Search')}
         autoCorrect={false}
         autoCapitalize="none"
@@ -429,10 +446,10 @@ export function QuickAction({ icon, label, onPress, tone = 'saffron' }) {
       accessibilityLabel={label}
       style={({ pressed }) => [styles.quickAction, pressed && { opacity: 0.75 }]}
     >
-      <View style={[styles.quickTile, { backgroundColor: tint.bg, borderColor: colors.border }]}>
-        <Icon name={icon} size={28} color={tint.fg} />
+      <View style={[styles.quickTile, { backgroundColor: tint.bg }]}>
+        <Icon name={icon} size={26} color={tint.fg} />
       </View>
-      <AppText variant="small" weight="600" color={colors.text} align="center" numberOfLines={2}>
+      <AppText variant="small" weight="500" color={colors.text} align="center" numberOfLines={2}>
         {label}
       </AppText>
     </Pressable>
@@ -540,7 +557,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   button: {
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -550,24 +567,24 @@ const styles = StyleSheet.create({
   buttonText: { minHeight: 48, paddingHorizontal: 8 },
   disabled: { opacity: 0.45 },
   iconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconButtonOnPhoto: { borderRadius: 24, borderWidth: 0 },
+  iconButtonOnPhoto: { borderWidth: 0 },
   card: {
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
     overflow: 'hidden',
   },
   cardPadded: { padding: 16 },
   chip: {
-    minHeight: 48,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -583,6 +600,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   badgeSm: { paddingHorizontal: 10, paddingVertical: 3, gap: 5 },
+  badgeDot: { width: 7, height: 7, borderRadius: 4 },
   repTag: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(30, 24, 18, 0.72)',
@@ -594,8 +612,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    padding: 14,
-    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -608,39 +627,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: GUTTER,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 12,
   },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  topBarStacked: { paddingHorizontal: GUTTER, paddingTop: 4, paddingBottom: 12 },
-  navRow: {
+  topBarDetail: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 52,
+    gap: 12,
+    paddingHorizontal: GUTTER,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
-  // Pulls the chevron to the gutter edge, as iOS does, while keeping a 44pt target.
-  backButton: { flexDirection: 'row', alignItems: 'center', minHeight: 44, marginLeft: -10, paddingRight: 8 },
-  largeTitle: { marginTop: 4, gap: 2 },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   langToggle: {
-    height: 48,
-    padding: 4,
-    borderRadius: 14,
+    height: 44,
+    padding: 3,
+    borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
   },
   langSeg: {
-    height: 38,
-    minWidth: 38,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    height: 36,
+    minWidth: 40,
+    paddingHorizontal: 10,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   search: {
-    minHeight: 56,
+    minHeight: 52,
     borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
@@ -653,10 +678,9 @@ const styles = StyleSheet.create({
   searchClear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   quickAction: { width: '25%', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 2 },
   quickTile: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    borderWidth: 1,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -668,9 +692,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   rowIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,15 +1,15 @@
 /**
  * Braj Darshan - Help & essentials
- * Layout from the redesign (design-input/figma "Light · Help"): the national
- * emergency numbers as one calm list (tap a row to call), practical tips,
- * travel basics and the app's contact email.
+ * Layout from the Nov 2026 redesign (Claude Design "Help"): a red emergency panel
+ * with the two national numbers as big call buttons (112 filled, 108 outlined),
+ * "safe travel" tips as an accordion, how to reach Braj, and the app's contact email.
  *
  * Honesty rules: only India's national numbers (112, 108) are shown. No office
  * addresses, local helplines, live chat, request forms or "dispatch" features,
  * because the app does not run any of those.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, Linking, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
@@ -20,7 +20,6 @@ import {
   TopBar,
   LanguageToggle,
   Card,
-  InfoNote,
   SectionHeader,
   ListRow,
   GUTTER,
@@ -147,17 +146,27 @@ const TRAVEL = [
   },
 ];
 
+// Shown together as one "safe travel" accordion.
+const SAFETY_TIPS = [...GROUP_TIPS, ...PLACE_TIPS];
+
 function callNumber(number) {
   Linking.openURL(`tel:${number}`).catch(() => {});
 }
 
 /**
- * One helpline in the list: small neutral icon, service name, the number and a
- * quiet call glyph. The whole row is the button (opens the phone dialler).
+ * One big call button in the emergency panel. 112 is filled red, 108 is outlined, so the
+ * number for "any emergency" is the first thing the eye lands on. Opens the phone dialler.
  */
-function HelplineRow({ item, isHindi, colors }) {
+function CallButton({ item, isHindi, colors, isDark }) {
   const title = isHindi ? item.titleHi : item.titleEn;
+  const desc = isHindi ? item.descHi : item.descEn;
   const call = usePressGuard(() => callNumber(item.number));
+  const filled = Boolean(item.urgent);
+  // On the filled (red) button text is white in light mode and near-black in dark mode,
+  // where the red is lighter; the outlined one uses the theme's red and the panel's text tone.
+  const onRed = isDark ? '#1E1B18' : '#FFFFFF';
+  const fg = filled ? onRed : colors.warning;
+  const sub = filled ? onRed : isDark ? colors.text : '#6A2A22';
   return (
     <Pressable
       onPress={call}
@@ -165,69 +174,93 @@ function HelplineRow({ item, isHindi, colors }) {
       accessibilityLabel={isHindi ? `${title}, ${item.number} पर कॉल करें` : `Call ${item.number}, ${title}`}
       accessibilityHint={isHindi ? 'फ़ोन का डायलर खुलेगा' : 'Opens the phone dialler'}
       style={({ pressed }) => [
-        styles.helpRow,
-        // Background set in both states (Android drops the radius of conditional backgrounds).
-        { backgroundColor: pressed ? colors.surfaceContainerLow : colors.card },
+        styles.callButton,
+        filled
+          ? { backgroundColor: colors.warning }
+          : { backgroundColor: colors.surface, borderColor: `${colors.warning}55` },
+        !filled && styles.callButtonOutlined,
+        { opacity: pressed ? 0.85 : 1 },
       ]}
     >
-      <View style={[styles.helpIcon, { backgroundColor: colors.surfaceContainer }]}>
-        {/* Only 112 keeps a touch of red, on its small icon. */}
-        <Icon name={item.icon} size={18} color={item.urgent ? colors.warning : colors.muted} />
-      </View>
+      <Icon name="phone" size={26} color={fg} />
       <View style={styles.flex}>
-        <AppText variant="body" weight="600" color={colors.navy}>
-          {title}
+        <AppText variant="h2" weight="700" color={fg} style={styles.callNumber}>
+          {item.number}
         </AppText>
-        <AppText variant="caption" color={colors.muted}>
-          {isHindi ? item.descHi : item.descEn}
+        {/* 112 says what it is for; 108 also names the service. */}
+        <AppText variant="small" color={sub}>
+          {filled ? desc : `${title} — ${desc}`}
         </AppText>
-      </View>
-      <AppText variant="h3" weight="700" color={colors.navy} style={styles.helpNumber}>
-        {item.number}
-      </AppText>
-      <View style={[styles.callGlyph, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Icon name="phone" size={18} color={colors.primary} />
       </View>
     </Pressable>
   );
 }
 
-function HelplineList({ isHindi, colors }) {
+function EmergencyPanel({ isHindi, colors, isDark }) {
+  const strong = isDark ? colors.warning : '#8E1B12';
+  const soft = isDark ? colors.text : '#6A2A22';
   return (
-    <Card padded={false}>
-      {EMERGENCY.map((item, index) => (
-        <View key={item.number}>
-          {index > 0 ? <View style={[styles.helpDivider, { backgroundColor: colors.border }]} /> : null}
-          <HelplineRow item={item} isHindi={isHindi} colors={colors} />
-        </View>
+    <View style={[styles.sos, { backgroundColor: colors.warningBg }]}>
+      <View>
+        <AppText variant="h4" weight="700" color={strong} accessibilityRole="header">
+          {isHindi ? 'तुरंत ख़तरा हो तो 112 पर कॉल करें' : 'If you are in immediate danger, call 112'}
+        </AppText>
+        <AppText variant="small" color={soft}>
+          {isHindi
+            ? 'अपने पास का कोई पहचान-चिह्न बताएँ और ऑपरेटर के निर्देश मानें।'
+            : "Share your nearest landmark and follow the operator's instructions."}
+        </AppText>
+      </View>
+      {EMERGENCY.map((item) => (
+        <CallButton key={item.number} item={item} isHindi={isHindi} colors={colors} isDark={isDark} />
       ))}
-    </Card>
+      <AppText variant="small" color={soft}>
+        {isHindi
+          ? 'सरकारी हेल्पलाइन नंबर · नंबर दबाते ही फ़ोन का डायलर खुलेगा'
+          : 'Government helplines · Tap a number to open your phone dialler'}
+      </AppText>
+    </View>
   );
 }
 
-function TipCard({ tip, isHindi, colors }) {
+function TipRow({ tip, open, onToggle, isHindi, colors }) {
+  const title = isHindi ? tip.titleHi : tip.titleEn;
   return (
-    <Card>
-      <View style={styles.inlineTop}>
-        <View style={[styles.tipIcon, { backgroundColor: colors.primaryLight }]}>
-          <Icon name={tip.icon} size={22} color={colors.primary} />
-        </View>
-        <AppText variant="h4" weight="700" color={colors.navy} style={styles.flex}>
-          {isHindi ? tip.titleHi : tip.titleEn}
+    <View>
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={title}
+        style={({ pressed }) => [
+          styles.tipHead,
+          // Background set in both states (Android drops the radius of conditional backgrounds).
+          { backgroundColor: pressed ? colors.surfaceContainerLow : colors.card },
+        ]}
+      >
+        <AppText variant="body" weight="600" color={colors.navy} style={styles.flex}>
+          {title}
         </AppText>
-      </View>
-      <AppText variant="body" color={colors.text} style={styles.tipText}>
-        {isHindi ? tip.textHi : tip.textEn}
-      </AppText>
-    </Card>
+        <View style={open ? styles.chevronOpen : null}>
+          <Icon name="chevronDown" size={20} color={colors.muted} />
+        </View>
+      </Pressable>
+      {open ? (
+        <AppText variant="body" color={colors.text} style={styles.tipBody}>
+          {isHindi ? tip.textHi : tip.textEn}
+        </AppText>
+      ) : null}
+    </View>
   );
 }
 
 export default function HelpdeskScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { isHindi } = useLanguage();
+  // One tip open at a time; the first starts open.
+  const [openTip, setOpenTip] = useState(SAFETY_TIPS[0].id);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -243,69 +276,50 @@ export default function HelpdeskScreen({ navigation }) {
         />
 
         <View style={styles.content}>
-          <View style={styles.section}>
-            <SectionHeader
-              title={isHindi ? 'सरकारी हेल्पलाइन नंबर' : 'Government helplines'}
-              style={styles.sectionHeader}
-            />
-            <AppText variant="caption" color={colors.muted}>
-              {isHindi ? 'नंबर दबाते ही फ़ोन का डायलर खुलेगा' : 'Tap a number to open your phone dialler'}
-            </AppText>
-            <HelplineList isHindi={isHindi} colors={colors} />
-          </View>
-
-          <InfoNote>
-            {isHindi
-              ? 'तुरंत ख़तरा हो तो 112 पर कॉल करें। अपने पास का कोई पहचान-चिह्न बताएँ और ऑपरेटर के निर्देश मानें।'
-              : "If you are in immediate danger, call 112. Share your nearest landmark and follow the operator's instructions."}
-          </InfoNote>
+          <EmergencyPanel isHindi={isHindi} colors={colors} isDark={isDark} />
 
           <View style={styles.section}>
-            <SectionHeader
-              title={isHindi ? 'अपने साथियों का ध्यान' : 'Care for your group'}
-              style={styles.sectionHeader}
-            />
-            {GROUP_TIPS.map((tip) => (
-              <TipCard key={tip.id} tip={tip} isHindi={isHindi} colors={colors} />
-            ))}
-          </View>
-
-          <View style={styles.section}>
-            <SectionHeader
-              title={isHindi ? 'मंदिर और घाट पर' : 'At temples and ghats'}
-              style={styles.sectionHeader}
-            />
-            {PLACE_TIPS.map((tip) => (
-              <TipCard key={tip.id} tip={tip} isHindi={isHindi} colors={colors} />
-            ))}
-          </View>
-
-          <Card>
-            <AppText variant="h4" weight="700" color={colors.navy}>
-              {isHindi ? 'ट्रेन, बस और सड़क' : 'Train, bus & road'}
-            </AppText>
-            {TRAVEL.map((t) => (
-              <View key={t.id} style={[styles.inlineTop, styles.travelRow]}>
-                <View style={[styles.tipIcon, { backgroundColor: colors.purnimaLight }]}>
-                  <Icon name={t.icon} size={22} color={colors.purnima} />
+            <SectionHeader title={isHindi ? 'सुरक्षित यात्रा' : 'Travel safely'} style={styles.sectionHeader} />
+            <Card padded={false}>
+              {SAFETY_TIPS.map((tip, index) => (
+                <View key={tip.id}>
+                  {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
+                  <TipRow
+                    tip={tip}
+                    open={openTip === tip.id}
+                    onToggle={() => setOpenTip((cur) => (cur === tip.id ? null : tip.id))}
+                    isHindi={isHindi}
+                    colors={colors}
+                  />
                 </View>
-                <View style={styles.flex}>
-                  <AppText variant="bodyBold" color={colors.navy}>
+              ))}
+            </Card>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader
+              title={isHindi ? 'ब्रज कैसे पहुँचें' : 'How to reach Braj'}
+              style={styles.sectionHeader}
+            />
+            <View style={styles.travelList}>
+              {TRAVEL.map((t) => (
+                <Card key={t.id} style={styles.travelRow}>
+                  <AppText variant="body" weight="700" color={colors.navy} style={styles.travelLabel}>
                     {isHindi ? t.titleHi : t.titleEn}
                   </AppText>
-                  <AppText variant="body" color={colors.text}>
+                  <AppText variant="caption" color={colors.text} style={styles.flex}>
                     {isHindi ? t.textHi : t.textEn}
                   </AppText>
-                </View>
-              </View>
-            ))}
-          </Card>
+                </Card>
+              ))}
+            </View>
+          </View>
 
           <Card>
             <AppText variant="h4" weight="700" color={colors.navy}>
               {isHindi ? 'DIVYABRAJ को लिखें' : 'Write to DIVYABRAJ'}
             </AppText>
-            <AppText variant="body" color={colors.text} style={styles.tipText}>
+            <AppText variant="caption" color={colors.text} style={styles.contactText}>
               {isHindi
                 ? 'ऐप के बारे में सुझाव या जानकारी में सुधार के लिए ईमेल करें:'
                 : 'For app feedback and content corrections, email:'}
@@ -329,31 +343,41 @@ export default function HelpdeskScreen({ navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
-  section: { gap: 12, marginTop: 8 },
+  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 20 },
+  section: { gap: 10 },
   sectionHeader: { marginBottom: 0 },
-  helpRow: {
+  sos: { borderRadius: 20, padding: 18, gap: 12 },
+  callButton: {
+    minHeight: 64,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  callButtonOutlined: { borderWidth: 1 },
+  callNumber: { fontSize: 24, lineHeight: 30 },
+  divider: { height: StyleSheet.hairlineWidth },
+  tipHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 72,
-    paddingHorizontal: 16,
+    minHeight: 56,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
+  tipBody: { paddingHorizontal: 14, paddingBottom: 14 },
+  travelList: { gap: 8 },
+  travelRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderRadius: 16,
     paddingVertical: 12,
+    paddingHorizontal: 14,
   },
-  helpIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  helpNumber: { minWidth: 40, textAlign: 'right' },
-  callGlyph: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Inset to line up with the service name, not the icon.
-  helpDivider: { height: StyleSheet.hairlineWidth, marginLeft: 64 },
-  inlineTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  tipIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  tipText: { marginTop: 10 },
-  travelRow: { marginTop: 14, alignItems: 'flex-start' },
+  travelLabel: { width: 76 },
+  contactText: { marginTop: 6 },
 });

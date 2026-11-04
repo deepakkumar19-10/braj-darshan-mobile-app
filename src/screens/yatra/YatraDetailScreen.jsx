@@ -1,9 +1,11 @@
 /**
  * Braj Darshan - Yatra day plan
- * Layout from the redesign (design-input/figma "Light · Yatra day plan"): one day
- * of a plan as a numbered timeline. Times come from src/data/yatra.json and are
- * shown as suggestions; temple stops add the temple's regular darshan hours from
- * temples.json and a Google Maps link.
+ * Layout from the Nov 2026 redesign (YatraDay artboard): a photo of the day's
+ * town, then a rounded sheet with the day pill, title and tagline, three "at a
+ * glance" tiles, the day's stops as a vertical timeline, the gold tip note and
+ * the disclaimer, with Share and Map fixed at the bottom. Times come from
+ * src/data/yatra.json and are shown as suggestions; temple stops add the
+ * temple's regular darshan hours from temples.json and a Google Maps link.
  *
  * Params: { id, yatra, planDayIds? } — planDayIds lists the days of the chosen plan.
  */
@@ -19,21 +21,35 @@ import {
   Button,
   Card,
   Chip,
+  IconButton,
   InfoNote,
   LanguageToggle,
   ListRow,
   Photo,
+  RepresentativeTag,
   SectionHeader,
-  TopBar,
   GUTTER,
-  useBottomInset,
 } from '../../components/ui';
 import YatraPlannerModal from '../../components/yatra/YatraPlannerModal';
-import { getTempleImage, isTempleImageRepresentative } from '../../utils/imageAssets';
+import { getPlaceImage } from '../../utils/imageAssets';
 import { formatMinutes, getIndianStandardTime, getTodaysWindows } from '../../utils/templeHours';
 import { ROUTES } from '../../navigation/routes';
 import yatraData from '../../data/yatra.json';
-import { getTemples } from '../../services/contentService';
+import { getPlaces, getTemples } from '../../services/contentService';
+
+const HERO_HEIGHT = 220;
+const SHEET_OVERLAP = 20;
+
+// The main town of each day plan (from its title in yatra.json) and the places.json
+// entry whose photo stands for it; the photo is marked "Representative photo".
+const DAY_TOWN = {
+  1: { hi: 'मथुरा', en: 'Mathura', place: 'Mathura' },
+  2: { hi: 'गोकुल', en: 'Gokul', place: 'Gokul' },
+  3: { hi: 'वृंदावन', en: 'Vrindavan', place: 'Vrindavan' },
+  4: { hi: 'गोवर्धन', en: 'Govardhan', place: 'Govardhan' },
+  5: { hi: 'बरसाना', en: 'Barsana', place: 'Barsana' },
+  6: { hi: 'बलदेव', en: 'Baldev', place: 'Dauji Mandir' },
+};
 
 // English text for the Hindi-only fields of yatra.json (same order as the data).
 const DAY_EN = {
@@ -157,61 +173,60 @@ function openDirections(temple) {
   Linking.openURL(url).catch(() => {});
 }
 
-function StopCard({ index, stop, isHindi, colors }) {
-  const temple = templeFor(stop.textHi);
-  const image = temple ? getTempleImage(temple) : null;
+function GlanceTile({ label, value, colors }) {
   return (
-    <View>
-      <View style={styles.stopHead}>
-        <View style={[styles.stopNum, { backgroundColor: colors.primaryLight }]}>
-          <AppText variant="caption" weight="700" color={colors.primary}>
-            {index + 1}
-          </AppText>
-        </View>
-        <AppText variant="h4" weight="700" color={colors.navy} style={styles.flex}>
-          {stop.time
-            ? `${stop.time} · ${isHindi ? 'सुझाया गया समय' : 'suggested'}`
-            : isHindi
-              ? 'समय अपनी सुविधा से'
-              : 'Time as convenient'}
-        </AppText>
+    <View style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <AppText variant="small" color={colors.muted}>
+        {label}
+      </AppText>
+      <AppText variant="caption" weight="600" color={colors.navy}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
+function TimelineStop({ stop, last, isHindi, colors }) {
+  const temple = templeFor(stop.textHi);
+  return (
+    <View style={styles.stopRow}>
+      <View style={styles.rail}>
+        <View style={[styles.railDot, { backgroundColor: colors.surface, borderColor: colors.primaryContainer }]} />
+        {last ? null : <View style={[styles.railLine, { backgroundColor: colors.borderGold }]} />}
       </View>
-      <Card padded={false}>
-        {image ? (
-          <Photo
-            source={image}
-            representative={isTempleImageRepresentative(temple)}
-            style={styles.stopPhoto}
-            accessibilityLabel={isHindi ? temple.nameHindi : temple.name}
-          />
+      <View style={[styles.stopBody, last && styles.stopBodyLast]}>
+        <AppText variant="small" weight="700" color={colors.primary}>
+          {stop.time || (isHindi ? 'समय अपनी सुविधा से' : 'Time as convenient')}
+        </AppText>
+        <AppText variant="body" weight="600" color={colors.navy}>
+          {isHindi ? stop.textHi : stop.textEn}
+        </AppText>
+        {temple ? (
+          <>
+            <AppText variant="small" color={colors.muted} style={styles.stopDarshan}>
+              {darshanLine(temple, isHindi)}
+            </AppText>
+            <Button
+              title={isHindi ? 'रास्ता देखें (Google Maps)' : 'Directions (Google Maps)'}
+              variant="text"
+              icon="directions"
+              onPress={() => openDirections(temple)}
+              accessibilityLabel={
+                isHindi
+                  ? `${temple.nameHindi} का रास्ता देखें (Google Maps)`
+                  : `Directions to ${temple.name} (Google Maps)`
+              }
+              style={styles.directionsBtn}
+            />
+          </>
         ) : null}
-        <View style={styles.stopBody}>
-          <AppText variant="h4" weight="700" color={colors.navy}>
-            {isHindi ? stop.textHi : stop.textEn}
-          </AppText>
-          {temple ? (
-            <>
-              <AppText variant="caption" color={colors.muted}>
-                {darshanLine(temple, isHindi)}
-              </AppText>
-              <Button
-                title={isHindi ? 'रास्ता देखें (Google Maps)' : 'Directions (Google Maps)'}
-                variant="text"
-                icon="directions"
-                onPress={() => openDirections(temple)}
-                style={styles.directionsBtn}
-              />
-            </>
-          ) : null}
-        </View>
-      </Card>
+      </View>
     </View>
   );
 }
 
 export default function YatraDetailScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  const bottomInset = useBottomInset();
   const { colors } = useTheme();
   const { isHindi } = useLanguage();
   const scrollRef = useRef(null);
@@ -233,9 +248,21 @@ export default function YatraDetailScreen({ route, navigation }) {
     const parsed = parseStop(raw);
     return { time: parsed.time, textHi: parsed.text, textEn: (en.stops && en.stops[i]) || parsed.text };
   });
-  const places = isHindi ? yatra.places || [] : en.places || yatra.places || [];
   const tips = isHindi ? yatra.tips : en.tips || yatra.tips;
   const parikramaId = DAY_PARIKRAMA[yatra.id];
+  const town = DAY_TOWN[yatra.id] || null;
+  const heroImage = town ? getPlaceImage(getPlaces().find((p) => p.name === town.place)) : null;
+  const title = isHindi ? yatra.title : yatra.titleEn;
+
+  const planLabel =
+    total > 1
+      ? isHindi
+        ? `दिन ${position + 1} (${total} में से)`
+        : `Day ${position + 1} of ${total}`
+      : isHindi
+        ? '1 दिन की योजना'
+        : '1-day plan';
+  const pill = town ? `${planLabel} · ${isHindi ? town.hi : town.en}` : planLabel;
 
   const goToDay = (day) => {
     navigation.setParams({ id: day.id, yatra: day, planDayIds: planDays.map((d) => d.id) });
@@ -243,7 +270,6 @@ export default function YatraDetailScreen({ route, navigation }) {
   };
 
   const handleShare = async () => {
-    const title = isHindi ? yatra.title : yatra.titleEn;
     const lines = stops.map((s) => `${s.time ? `${s.time} – ` : ''}${isHindi ? s.textHi : s.textEn}`);
     const note = isHindi
       ? 'समय केवल सुझाव हैं — त्योहारों पर बदल सकते हैं, स्थानीय पुष्टि करें।'
@@ -256,155 +282,179 @@ export default function YatraDetailScreen({ route, navigation }) {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <TopBar
-        eyebrow={isHindi ? `${total} दिन की योजना` : `${total}-day plan`}
-        title={isHindi ? `दिन ${position + 1} (${total} में से)` : `Day ${position + 1} of ${total}`}
-        onBack={() => navigation.goBack()}
-        right={<LanguageToggle />}
-      />
-
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
         showsVerticalScrollIndicator={false}
       >
-        {total > 1 ? (
-          <View style={styles.chipRow}>
-            {planDays.map((day, i) => (
-              <Chip
-                key={day.id}
-                label={isHindi ? `दिन ${i + 1}` : `Day ${i + 1}`}
-                selected={day.id === yatra.id}
-                onPress={() => goToDay(day)}
-              />
-            ))}
+        <Photo
+          source={heroImage}
+          fallbackIcon="route"
+          style={styles.hero}
+          accessibilityLabel={town ? (isHindi ? town.hi : town.en) : undefined}
+        >
+          <View style={[styles.heroBar, { top: insets.top + 8 }]}>
+            <IconButton
+              icon="chevronLeft"
+              size={28}
+              filled
+              onPress={() => navigation.goBack()}
+              accessibilityLabel={isHindi ? 'वापस' : 'Back'}
+            />
+            <LanguageToggle />
           </View>
-        ) : null}
+          {/* Placed above the sheet's rounded edge so it stays visible. */}
+          {heroImage ? <RepresentativeTag style={styles.heroTag} /> : null}
+        </Photo>
 
-        {/* Day summary */}
-        <View>
-          <AppText variant="h2" weight="700" color={colors.navy}>
-            {isHindi ? yatra.title : yatra.titleEn}
-          </AppText>
-          <AppText variant="body" color={colors.textSecondary} style={styles.gapSmall}>
-            {isHindi ? yatra.tagline : yatra.taglineEn}
-          </AppText>
-        </View>
-
-        <Card style={styles.factsCard}>
-          <ListRow
-            icon="clock"
-            title={durationText(yatra.duration, isHindi)}
-            subtitle={isHindi ? 'दिन की अवधि' : 'Length of the day'}
-          />
-          <ListRow
-            icon="sunrise"
-            title={isHindi ? yatra.bestTime : yatra.bestTimeEn}
-            subtitle={isHindi ? 'शुरुआत (सुझाव)' : 'Start (suggested)'}
-          />
-          <ListRow
-            icon="car"
-            title={isHindi ? yatra.transport : yatra.transportEn}
-            subtitle={isHindi ? 'आने-जाने का साधन (सुझाव)' : 'Getting around (suggested)'}
-          />
-          {places.length ? (
-            <ListRow
-              icon="location"
-              title={places.join(' · ')}
-              subtitle={isHindi ? 'आज के स्थान' : 'Places today'}
-            />
-          ) : null}
-        </Card>
-
-        <InfoNote>
-          {isHindi
-            ? 'समय केवल सुझाव हैं। यह बुकिंग या आधिकारिक यात्रा कार्यक्रम नहीं है। अपने समूह के अनुसार बदलें और स्थानीय पुष्टि करें।'
-            : 'Times are suggestions. This is not a booking or an official travel schedule. Adjust for your group and confirm locally.'}
-        </InfoNote>
-
-        {/* Timeline */}
-        <View>
-          <SectionHeader title={isHindi ? 'आपका दिन, एक नज़र में' : 'Your day, at a glance'} />
-          {stops.map((stop, i) => (
-            <View key={`${yatra.id}-${i}`}>
-              <StopCard index={i} stop={stop} isHindi={isHindi} colors={colors} />
-              {i < stops.length - 1 ? (
-                <View style={styles.transfer}>
-                  <Icon name="route" size={18} color={colors.muted} />
-                  <AppText variant="caption" color={colors.muted} style={styles.flex}>
-                    {isHindi
-                      ? 'पैदल या स्थानीय वाहन से आगे बढ़ें। यात्रा का समय बदलता है; स्थानीय लोगों से पूछें।'
-                      : 'Walk or take a local transfer. Travel time varies; ask locally.'}
-                  </AppText>
-                </View>
-              ) : null}
-            </View>
-          ))}
-        </View>
-
-        {parikramaId ? (
-          <Card style={styles.listCard}>
-            <ListRow
-              icon="parikrama"
-              title={isHindi ? 'गोवर्धन परिक्रमा मार्गदर्शिका' : 'Govardhan Parikrama guide'}
-              subtitle={isHindi ? 'पड़ाव, नियम और सावधानियां' : 'Stops, etiquette and safety'}
-              onPress={() => navigation.navigate(ROUTES.PARIKRAMA_DETAIL, { id: parikramaId })}
-            />
-          </Card>
-        ) : null}
-
-        {tips ? (
-          <Card>
-            <View style={styles.tipHead}>
-              <Icon name="info" size={20} color={colors.primary} />
-              <AppText variant="h4" weight="700" color={colors.navy}>
-                {isHindi ? 'जाने से पहले' : 'Before you go'}
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          {/* Day summary */}
+          <View style={styles.titleBlock}>
+            <View style={[styles.dayPill, { backgroundColor: colors.primaryLight }]}>
+              <AppText variant="small" weight="700" color={colors.primary}>
+                {pill}
               </AppText>
             </View>
-            <AppText variant="body" color={colors.text} style={styles.gapSmall}>
-              {tips}
+            <AppText variant="h1" weight="700" color={colors.navy} accessibilityRole="header">
+              {title}
             </AppText>
-          </Card>
-        ) : null}
+            <AppText variant="body" color={colors.muted}>
+              {isHindi ? yatra.tagline : yatra.taglineEn}
+            </AppText>
+          </View>
 
-        <InfoNote>
-          {isHindi
-            ? 'त्योहारों पर समय बदल सकता है — कृपया स्थानीय पुष्टि करें।'
-            : 'Timings may change on festivals — confirm locally.'}
-        </InfoNote>
+          {total > 1 ? (
+            <View style={styles.chipRow}>
+              {planDays.map((day, i) => (
+                <Chip
+                  key={day.id}
+                  label={isHindi ? `दिन ${i + 1}` : `Day ${i + 1}`}
+                  selected={day.id === yatra.id}
+                  onPress={() => goToDay(day)}
+                />
+              ))}
+            </View>
+          ) : null}
 
-        {nextDay ? (
-          <Card style={styles.listCard}>
-            <ListRow
-              icon="route"
-              title={isHindi ? nextDay.title : nextDay.titleEn}
-              subtitle={isHindi ? `अगला: दिन ${position + 2}` : `Next: Day ${position + 2}`}
-              onPress={() => goToDay(nextDay)}
-            />
-          </Card>
-        ) : null}
+          {/* At a glance */}
+          <View>
+            <SectionHeader title={isHindi ? 'आपका दिन, एक नज़र में' : 'Your day, at a glance'} />
+            <View style={styles.tiles}>
+              <GlanceTile
+                label={isHindi ? 'दिन की अवधि' : 'Length of the day'}
+                value={durationText(yatra.duration, isHindi)}
+                colors={colors}
+              />
+              <GlanceTile
+                label={isHindi ? 'शुरुआत (सुझाव)' : 'Start (suggested)'}
+                value={isHindi ? yatra.bestTime : yatra.bestTimeEn}
+                colors={colors}
+              />
+              <GlanceTile
+                label={isHindi ? 'साधन (सुझाव)' : 'Getting around (suggested)'}
+                value={isHindi ? yatra.transport : yatra.transportEn}
+                colors={colors}
+              />
+            </View>
+          </View>
 
-        <View style={styles.actions}>
-          <Button
-            title={isHindi ? 'स्थान नक्शे पर देखें' : 'View places on map'}
-            icon="map"
-            onPress={() => navigation.navigate(ROUTES.MAP)}
-          />
+          {/* Timeline */}
+          <View>
+            <SectionHeader title={isHindi ? 'आज के स्थान' : 'Places today'} />
+            {stops.map((stop, i) => (
+              <TimelineStop
+                key={`${yatra.id}-${i}`}
+                stop={stop}
+                last={i === stops.length - 1}
+                isHindi={isHindi}
+                colors={colors}
+              />
+            ))}
+            {stops.length > 1 ? (
+              <View style={styles.transfer}>
+                <Icon name="route" size={18} color={colors.muted} />
+                <AppText variant="small" color={colors.muted} style={styles.flex}>
+                  {isHindi
+                    ? 'पैदल या स्थानीय वाहन से आगे बढ़ें। यात्रा का समय बदलता है; स्थानीय लोगों से पूछें।'
+                    : 'Walk or take a local transfer. Travel time varies; ask locally.'}
+                </AppText>
+              </View>
+            ) : null}
+          </View>
+
+          {parikramaId ? (
+            <Card style={styles.listCard}>
+              <ListRow
+                icon="parikrama"
+                title={isHindi ? 'गोवर्धन परिक्रमा मार्गदर्शिका' : 'Govardhan Parikrama guide'}
+                subtitle={isHindi ? 'पड़ाव, नियम और सावधानियां' : 'Stops, etiquette and safety'}
+                onPress={() => navigation.navigate(ROUTES.PARIKRAMA_DETAIL, { id: parikramaId })}
+              />
+            </Card>
+          ) : null}
+
+          {tips ? (
+            <InfoNote tone="warning" icon="info">
+              {tips}
+            </InfoNote>
+          ) : null}
+
+          <View style={styles.disclaimer}>
+            <AppText variant="small" color={colors.muted}>
+              {isHindi
+                ? 'समय केवल सुझाव हैं। यह बुकिंग या आधिकारिक यात्रा कार्यक्रम नहीं है। अपने समूह के अनुसार बदलें और स्थानीय पुष्टि करें।'
+                : 'Times are suggestions. This is not a booking or an official travel schedule. Adjust for your group and confirm locally.'}
+            </AppText>
+            <AppText variant="small" color={colors.muted}>
+              {isHindi
+                ? 'त्योहारों पर समय बदल सकता है — कृपया स्थानीय पुष्टि करें।'
+                : 'Timings may change on festivals — confirm locally.'}
+            </AppText>
+          </View>
+
+          {nextDay ? (
+            <Card style={styles.listCard}>
+              <ListRow
+                icon="route"
+                title={isHindi ? nextDay.title : nextDay.titleEn}
+                subtitle={isHindi ? `अगला: दिन ${position + 2}` : `Next: Day ${position + 2}`}
+                onPress={() => goToDay(nextDay)}
+              />
+            </Card>
+          ) : null}
+
           <Button
             title={isHindi ? 'योजना के दिन बदलें' : 'Change plan length'}
             variant="secondary"
             icon="calendar"
             onPress={() => setPlannerVisible(true)}
           />
-          <Button
-            title={isHindi ? 'यह दिन साझा करें' : 'Share this day'}
-            variant="text"
-            icon="share"
-            onPress={handleShare}
-          />
         </View>
       </ScrollView>
+
+      <View
+        style={[
+          styles.bottomBar,
+          { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) + 4 },
+        ]}
+      >
+        <Button
+          title={isHindi ? 'साझा करें' : 'Share'}
+          variant="secondary"
+          icon="share"
+          onPress={handleShare}
+          accessibilityLabel={isHindi ? 'यह दिन साझा करें' : 'Share this day'}
+          style={styles.barShare}
+        />
+        <Button
+          title={isHindi ? 'स्थान नक्शे पर' : 'Places on map'}
+          icon="map"
+          onPress={() => navigation.navigate(ROUTES.MAP)}
+          accessibilityLabel={isHindi ? 'स्थान नक्शे पर देखें' : 'View places on map'}
+          style={styles.barMap}
+        />
+      </View>
 
       <YatraPlannerModal
         visible={plannerVisible}
@@ -422,29 +472,51 @@ export default function YatraDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  gapSmall: { marginTop: 6 },
-  factsCard: { paddingVertical: 4 },
-  listCard: { paddingVertical: 4 },
-  stopHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  stopNum: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stopPhoto: { height: 160 },
-  stopBody: { padding: 16, gap: 6 },
-  directionsBtn: { alignSelf: 'flex-start', marginLeft: -8 },
-  transfer: {
+  hero: { height: HERO_HEIGHT },
+  heroBar: {
+    position: 'absolute',
+    left: GUTTER,
+    right: GUTTER,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingVertical: 14,
-    paddingLeft: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  tipHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  actions: { gap: 12, marginTop: 4 },
+  heroTag: { position: 'absolute', left: GUTTER, bottom: SHEET_OVERLAP + 10 },
+  sheet: {
+    marginTop: -SHEET_OVERLAP,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: GUTTER,
+    paddingTop: 20,
+    gap: 20,
+  },
+  titleBlock: { gap: 6 },
+  dayPill: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 1, borderRadius: 999 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tiles: { flexDirection: 'row', gap: 8 },
+  tile: { flex: 1, gap: 2, padding: 12, borderRadius: 14, borderWidth: 1 },
+  stopRow: { flexDirection: 'row', gap: 14 },
+  rail: { width: 20, alignItems: 'center' },
+  railDot: { width: 14, height: 14, marginTop: 4, borderRadius: 7, borderWidth: 3 },
+  railLine: { flex: 1, width: 2 },
+  stopBody: { flex: 1, paddingBottom: 18 },
+  stopBodyLast: { paddingBottom: 4 },
+  stopDarshan: { marginTop: 2 },
+  directionsBtn: { alignSelf: 'flex-start', marginLeft: -8, minHeight: 44 },
+  transfer: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingTop: 8 },
+  listCard: { paddingVertical: 4 },
+  disclaimer: { gap: 6 },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: GUTTER,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  barShare: { flex: 1, paddingHorizontal: 12 },
+  barMap: { flex: 1.3, paddingHorizontal: 12 },
 });

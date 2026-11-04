@@ -1,10 +1,12 @@
 /**
  * Braj Darshan - Make my own plan
- * A short form (days, who is coming, pace, places, optional dates) that builds a
- * suggested plan from the app's own day plans in src/data/yatra.json and links to
- * each day. Nothing is booked or synced; the screen says the plan is a suggestion.
+ * Layout from the Nov 2026 redesign (Planner artboard): a short form (days as
+ * segmented buttons, who is coming as checkboxes, pace as radio cards, places as
+ * check chips, optional dates) that builds a suggested plan from the app's own
+ * day plans in src/data/yatra.json and links to each day. Nothing is booked or
+ * synced; the screen says the plan is a suggestion.
  *
- * Optional params (from the Yatra plans screen): { days, elders, children, experiences, autoCreate }.
+ * Optional params (from older links): { days, elders, children, experiences, autoCreate }.
  */
 
 import React, { useMemo, useRef, useState } from 'react';
@@ -15,6 +17,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +28,6 @@ import { Icon } from '../../components/common/Icon';
 import {
   Button,
   Card,
-  Chip,
   InfoNote,
   LanguageToggle,
   ListRow,
@@ -34,6 +36,8 @@ import {
   GUTTER,
   useBottomInset,
 } from '../../components/ui';
+import { usePressGuard } from '../../hooks/usePressGuard';
+import { fontFor } from '../../theme/fonts';
 import { ROUTES } from '../../navigation/routes';
 import yatraData from '../../data/yatra.json';
 
@@ -108,39 +112,132 @@ function buildPlan(days, experienceIds) {
   return { planDays, missed };
 }
 
-function PaceCard({ pace, selected, onPress, isHindi, colors }) {
+// Tick mark of a checkbox: a filled check circle when on, an empty ring when off.
+function CheckMark({ checked, colors, size = 22 }) {
+  if (checked) return <Icon name="open" size={size} color={colors.primary} />;
+  return <View style={[styles.checkRing, { width: size, height: size, borderRadius: size / 2, borderColor: colors.subtle }]} />;
+}
+
+function DayButton({ n, selected, onPress, isHindi, colors, isDark }) {
+  const guarded = usePressGuard(onPress, 250);
+  const label = isHindi ? `${n} दिन` : `${n} ${n === 1 ? 'day' : 'days'}`;
   return (
-    <Card
-      onPress={onPress}
-      accessibilityLabel={isHindi ? pace.hi : pace.en}
-      style={selected ? { backgroundColor: colors.primaryLight, borderColor: colors.primary } : null}
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.dayBtn,
+        {
+          backgroundColor: selected ? colors.primary : colors.surface,
+          borderColor: selected ? colors.primary : colors.border,
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}
     >
-      <View style={styles.paceRow}>
-        <View style={[styles.paceIcon, { backgroundColor: selected ? colors.surface : colors.primaryLight }]}>
-          <Icon name={pace.icon} size={22} color={colors.primary} />
-        </View>
-        <View style={styles.flex}>
-          <AppText variant="bodyBold" color={colors.navy}>
-            {isHindi ? pace.hi : pace.en}
-          </AppText>
-          <AppText variant="caption" color={colors.textSecondary}>
-            {isHindi ? pace.descHi : pace.descEn}
-          </AppText>
-        </View>
-        <Icon
-          name={selected ? 'open' : 'chevronRight'}
-          size={22}
-          color={selected ? colors.primary : colors.muted}
-        />
+      <AppText
+        variant="bodyBold"
+        color={selected ? (isDark ? '#1E1B18' : '#FFFFFF') : colors.navy}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.3}
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+function CheckCard({ label, checked, onPress, colors }) {
+  const guarded = usePressGuard(onPress, 250);
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.checkCard,
+        {
+          backgroundColor: checked ? colors.primaryLight : colors.surface,
+          borderColor: checked ? colors.primary : colors.border,
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}
+    >
+      <CheckMark checked={checked} colors={colors} />
+      <AppText variant="body" weight="500" color={colors.text} style={styles.flexShrink}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+function PaceCard({ pace, selected, onPress, isHindi, colors }) {
+  const guarded = usePressGuard(onPress, 250);
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={`${isHindi ? pace.hi : pace.en}. ${isHindi ? pace.descHi : pace.descEn}`}
+      style={({ pressed }) => [
+        styles.paceCard,
+        selected ? styles.paceOn : styles.paceOff,
+        selected
+          ? { backgroundColor: colors.primaryLight, borderColor: colors.primary }
+          : { backgroundColor: colors.surface, borderColor: colors.border },
+        pressed && { opacity: 0.85 },
+      ]}
+    >
+      <View
+        style={[
+          styles.radio,
+          selected ? styles.radioOn : styles.radioOff,
+          { borderColor: selected ? colors.primary : colors.subtle },
+        ]}
+      />
+      <View style={styles.flex}>
+        <AppText variant="bodyBold" color={colors.navy}>
+          {isHindi ? pace.hi : pace.en}
+        </AppText>
+        <AppText variant="caption" color={colors.text}>
+          {isHindi ? pace.descHi : pace.descEn}
+        </AppText>
       </View>
-    </Card>
+    </Pressable>
+  );
+}
+
+function IncludeChip({ label, selected, onPress, colors }) {
+  const guarded = usePressGuard(onPress, 250);
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.includeChip,
+        {
+          backgroundColor: selected ? colors.primaryLight : colors.surface,
+          borderColor: selected ? colors.borderGold : colors.border,
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}
+    >
+      <CheckMark checked={selected} colors={colors} size={20} />
+      <AppText variant="caption" weight={selected ? '600' : '500'} color={selected ? colors.navy : colors.text}>
+        {label}
+      </AppText>
+    </Pressable>
   );
 }
 
 export default function SmartPlannerScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { isHindi } = useLanguage();
   const params = (route && route.params) || {};
 
@@ -270,7 +367,7 @@ export default function SmartPlannerScreen({ route, navigation }) {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <TopBar
         title={isHindi ? 'अपनी योजना बनाएं' : 'Make my own plan'}
-        subtitle={isHindi ? 'आपके समूह के लिए सुझाव' : 'Suggestions for your group'}
+        subtitle={isHindi ? 'बताइए आपके समूह के लिए क्या सुविधाजनक है' : 'Tell us what feels comfortable for your group'}
         onBack={() => navigation.goBack()}
         right={<LanguageToggle />}
       />
@@ -285,12 +382,6 @@ export default function SmartPlannerScreen({ route, navigation }) {
           contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
           showsVerticalScrollIndicator={false}
         >
-          <InfoNote>
-            {isHindi
-              ? 'योजना ऐप की दिन-योजनाओं से बनती है। यह बुकिंग नहीं है; समय केवल सुझाव हैं।'
-              : 'Your plan is built from the app’s day plans. It is not a booking; times are suggestions.'}
-          </InfoNote>
-
           {/* Days */}
           <View>
             <SectionHeader
@@ -298,13 +389,16 @@ export default function SmartPlannerScreen({ route, navigation }) {
               actionLabel={isHindi ? 'फिर से शुरू करें' : 'Reset'}
               onAction={handleReset}
             />
-            <View style={styles.chipRow}>
+            <View style={styles.dayGrid} accessibilityRole="radiogroup">
               {DAY_OPTIONS.map((n) => (
-                <Chip
+                <DayButton
                   key={n}
-                  label={isHindi ? `${n} दिन` : `${n} ${n === 1 ? 'day' : 'days'}`}
+                  n={n}
                   selected={selectedDays === n}
                   onPress={() => setSelectedDays(n)}
+                  isHindi={isHindi}
+                  colors={colors}
+                  isDark={isDark}
                 />
               ))}
             </View>
@@ -313,35 +407,37 @@ export default function SmartPlannerScreen({ route, navigation }) {
           {/* Group */}
           <View>
             <SectionHeader title={isHindi ? 'कौन साथ आ रहा है?' : 'Who’s coming?'} />
-            <View style={styles.chipRow}>
-              <Chip
+            <View style={styles.checkRow}>
+              <CheckCard
                 label={isHindi ? 'बुज़ुर्ग' : 'Elders'}
-                icon="people"
-                selected={withElders}
+                checked={withElders}
                 onPress={() => setWithElders((v) => !v)}
+                colors={colors}
               />
-              <Chip
+              <CheckCard
                 label={isHindi ? 'बच्चे' : 'Children'}
-                icon="people"
-                selected={withChildren}
+                checked={withChildren}
                 onPress={() => setWithChildren((v) => !v)}
+                colors={colors}
               />
             </View>
           </View>
 
           {/* Pace */}
-          <View style={styles.stack}>
+          <View>
             <SectionHeader title={isHindi ? 'यात्रा की गति' : 'Pace'} />
-            {PACES.map((pace) => (
-              <PaceCard
-                key={pace.id}
-                pace={pace}
-                selected={selectedPace === pace.id}
-                onPress={() => setSelectedPace(pace.id)}
-                isHindi={isHindi}
-                colors={colors}
-              />
-            ))}
+            <View style={styles.stack} accessibilityRole="radiogroup">
+              {PACES.map((pace) => (
+                <PaceCard
+                  key={pace.id}
+                  pace={pace}
+                  selected={selectedPace === pace.id}
+                  onPress={() => setSelectedPace(pace.id)}
+                  isHindi={isHindi}
+                  colors={colors}
+                />
+              ))}
+            </View>
           </View>
 
           {/* Places */}
@@ -349,43 +445,64 @@ export default function SmartPlannerScreen({ route, navigation }) {
             <SectionHeader title={isHindi ? 'क्या शामिल करना चाहेंगे?' : 'What would you like to include?'} />
             <View style={styles.chipRow}>
               {EXPERIENCES.map((exp) => (
-                <Chip
+                <IncludeChip
                   key={exp.id}
                   label={isHindi ? exp.hi : exp.en}
-                  icon={exp.icon}
                   selected={selectedExperiences.includes(exp.id)}
                   onPress={() => toggleExperience(exp.id)}
+                  colors={colors}
                 />
               ))}
             </View>
           </View>
 
           {/* Dates */}
-          <View>
-            <SectionHeader title={isHindi ? 'यात्रा की तारीखें (वैकल्पिक)' : 'Travel dates (optional)'} />
+          <View style={styles.datesBlock}>
+            <AppText variant="h3" weight="700" color={colors.navy}>
+              {isHindi ? 'यात्रा की तारीखें ' : 'Travel dates '}
+              <AppText variant="body" weight="400" color={colors.muted}>
+                {isHindi ? '(वैकल्पिक)' : '(optional)'}
+              </AppText>
+            </AppText>
             <TextInput
               value={travelDates}
               onChangeText={setTravelDates}
               placeholder={isHindi ? 'जैसे 12–14 नवंबर' : 'e.g. 12–14 November'}
               placeholderTextColor={colors.muted}
-              style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-              accessibilityLabel={isHindi ? 'यात्रा की तारीखें' : 'Travel dates'}
+              style={[
+                styles.input,
+                { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
+                fontFor('400'),
+              ]}
+              accessibilityLabel={isHindi ? 'यात्रा की तारीखें (वैकल्पिक)' : 'Travel dates (optional)'}
               returnKeyType="done"
               maxFontSizeMultiplier={1.4}
             />
-            <AppText variant="caption" color={colors.muted} style={styles.gapSmall}>
+            <AppText variant="small" color={colors.muted}>
               {isHindi
                 ? 'केवल आपके साझा संदेश के लिए। पर्व की तारीखें पंचांग में देखें।'
                 : 'Only used in the plan you share. Check festival dates in the Panchang.'}
             </AppText>
           </View>
 
-          <Button title={isHindi ? 'मेरी योजना बनाएं' : 'Create my plan'} icon="route" onPress={handleCreate} />
+          <View style={styles.createBlock}>
+            <Button
+              title={isHindi ? 'मेरी योजना बनाएं' : 'Create my plan'}
+              icon="route"
+              onPress={handleCreate}
+              style={styles.createBtn}
+            />
+            <AppText variant="small" color={colors.muted} align="center">
+              {isHindi
+                ? 'योजना ऐप की दिन-योजनाओं से बनती है। यह बुकिंग नहीं है; समय केवल सुझाव हैं।'
+                : 'Your plan is built from the app’s day plans. It is not a booking; times are suggestions.'}
+            </AppText>
+          </View>
 
           {/* Result */}
           {showResult ? (
             <View onLayout={onResultLayout} style={styles.stack}>
-              <SectionHeader title={isHindi ? 'आपकी सुझाई गई योजना' : 'Your suggested plan'} />
+              <SectionHeader title={isHindi ? 'आपकी सुझाई गई योजना' : 'Your suggested plan'} style={styles.resultHead} />
               <AppText variant="body" color={colors.textSecondary}>
                 {isHindi
                   ? `${selectedDays} दिन · गति: ${paceLabel}${withElders ? ' · बुज़ुर्गों के साथ' : ''}${withChildren ? ' · बच्चों के साथ' : ''}`
@@ -407,7 +524,7 @@ export default function SmartPlannerScreen({ route, navigation }) {
               </Card>
 
               {missed.length ? (
-                <InfoNote icon="alert">
+                <InfoNote tone="warning" icon="alert">
                   {isHindi
                     ? `इतने दिनों में शामिल नहीं हो सका: ${missed.map((m) => m.hi).join(', ')}। दिन बढ़ाएं या चुनाव बदलें।`
                     : `Did not fit in ${selectedDays} ${selectedDays === 1 ? 'day' : 'days'}: ${missed.map((m) => m.en).join(', ')}. Add days or change your choices.`}
@@ -459,11 +576,50 @@ export default function SmartPlannerScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
+  flexShrink: { flexShrink: 1 },
   content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 24 },
-  stack: { gap: 12 },
+  stack: { gap: 10 },
+  dayGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Three per row: (100% - 2 gaps) / 3.
+  dayBtn: {
+    flexBasis: '30%',
+    flexGrow: 1,
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  checkRow: { flexDirection: 'row', gap: 10 },
+  checkCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 52,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  checkRing: { borderWidth: 2 },
+  paceCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 14, borderRadius: 16 },
+  paceOn: { borderWidth: 1.5 },
+  paceOff: { borderWidth: 1 },
+  radio: { width: 20, height: 20, borderRadius: 10, marginTop: 2 },
+  radioOn: { borderWidth: 6 },
+  radioOff: { borderWidth: 2 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  paceRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  paceIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  includeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  datesBlock: { gap: 6 },
   input: {
     minHeight: 52,
     borderWidth: 1,
@@ -471,7 +627,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
   },
-  gapSmall: { marginTop: 6 },
+  createBlock: { gap: 10 },
+  createBtn: { minHeight: 56 },
+  resultHead: { marginBottom: 2 },
   listCard: { paddingVertical: 4 },
   divider: { height: 1 },
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12 },

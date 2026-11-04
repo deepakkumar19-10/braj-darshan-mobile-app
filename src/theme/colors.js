@@ -3,8 +3,8 @@
  * Source of truth: the divyabraj.com website tokens (App.css) as refined in the
  * Figma + Stitch redesign (design-input/). Same brand on web and app.
  *
- * Light: cream #FFF9ED ground, saffron #D97706 brand, navy #17324D headings,
- *        brown #493225 body text, #EEE2D4 borders, gold #F4C542 accents.
+ * Light: off-white #FFFBF4 ground (was cream #FFF9ED before the Nov 2026 redesign), saffron #D97706 brand, navy #17324D headings,
+ *        brown #3F3128 body text, #EFE6D8 borders, gold #F4C542 accents.
  * Text-on-cream and white-on-button colours use the deeper saffron #A85A06 so
  * small text stays at 4.5:1 contrast (#D97706 is kept for large fills).
  * Dark:  #121212 ground, #1E1E1E surfaces, amber #F59E0B brand, #F5EBDD text.
@@ -33,8 +33,8 @@ export const lightColors = {
   secondaryContainer: '#E5B32F',
 
   // Surfaces
-  background: '#FFF9ED',       // Website cream
-  canvas: '#FFF9ED',
+  background: '#FFFBF4',       // Clean off-white (redesign, Nov 2026)
+  canvas: '#FFFBF4',
   surface: '#FFFFFF',
   surfaceAlt: '#F6EEE2',
   surfaceContainerLow: '#F9F3E7',
@@ -50,30 +50,30 @@ export const lightColors = {
   navy: '#17324D',             // Headings
   primaryNavy: '#17324D',
   charcoal: '#2B211B',
-  text: '#493225',             // Body
-  textSecondary: '#5E4B3E',
-  muted: '#786A5D',            // Secondary text (5:1 on cream)
+  text: '#3F3128',             // Body
+  textSecondary: '#5A4C40',
+  muted: '#6B5E52',            // Secondary text (6:1 on the ground)
   subtle: '#7E7064',
 
   // Borders
-  border: '#EEE2D4',
+  border: '#EFE6D8',
   borderLight: '#F4ECE0',
   borderGold: '#EAD9B0',
-  divider: '#EEE2D4',
+  divider: '#EFE6D8',
 
   // Tab bar
   tabBarBg: '#FFFFFF',
-  tabBarBorder: '#EEE2D4',
+  tabBarBorder: '#EFE6D8',
   tabBarActive: '#A85A06',
-  tabBarInactive: '#786A5D',
+  tabBarInactive: '#6B5E52',
 
   // Drawer
-  drawerBg: '#FFF9ED',
+  drawerBg: '#FFFBF4',
   drawerHeaderBg: '#FFFFFF',
   drawerActiveBg: '#FDF0DC',
   drawerActiveText: '#A85A06',
   drawerInactiveText: '#5E4B3E',
-  drawerBorder: '#EEE2D4',
+  drawerBorder: '#EFE6D8',
 
   // Status (always paired with an icon and a word)
   success: '#1F7A4D',          // Open
@@ -81,8 +81,8 @@ export const lightColors = {
   warning: '#B42318',          // Closed
   warningBg: '#FBE9E7',
   error: '#B42318',
-  info: '#786A5D',
-  infoBg: '#F6EEE2',
+  info: '#6B5E52',
+  infoBg: '#F3ECE0',
   ekadashi: '#6D28D9',
   ekadashiLight: '#F1EAFE',
   purnima: '#0F5E66',

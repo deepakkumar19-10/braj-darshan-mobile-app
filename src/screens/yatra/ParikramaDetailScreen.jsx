@@ -1,14 +1,17 @@
 /**
  * Braj Darshan - Parikrama guide
- * Layout from the redesign (design-input/figma "Light · Govardhan Parikrama"):
- * approximate length and time, an illustrative (not navigational) route ring,
- * the stops in order, etiquette, a gentler-walk checklist and emergency numbers.
+ * Layout from the Nov 2026 redesign (Parikrama artboard): photo hero, a rounded
+ * sheet with the title, four fact tiles (approximate length and time, start,
+ * good time to start), the stops grouped by section with numbered circles,
+ * etiquette, three care rows, the facilities disclaimer, 112/108 call buttons and
+ * a fixed "directions to the start" button.
  * Content comes from src/data/parikrama.json; English text for its Hindi-only
- * fields lives below. Distances and times are approximate and say so.
+ * fields lives below. Distances and times are approximate and say so; the stop
+ * order is illustrative, not a navigation map.
  */
 
 import React from 'react';
-import { StyleSheet, View, ScrollView, Pressable, Linking, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -17,19 +20,21 @@ import { Icon } from '../../components/common/Icon';
 import {
   Button,
   Card,
+  IconButton,
   InfoNote,
   LanguageToggle,
-  ListRow,
   Photo,
+  RepresentativeTag,
   SectionHeader,
-  TopBar,
   GUTTER,
-  useBottomInset,
 } from '../../components/ui';
 import { usePressGuard } from '../../hooks/usePressGuard';
 import { getPlaceImage } from '../../utils/imageAssets';
 import parikramaData from '../../data/parikrama.json';
 import { getTemples } from '../../services/contentService';
+
+const HERO_HEIGHT = 210;
+const SHEET_OVERLAP = 20;
 
 // Daan Ghati Mandir (temple 5) is the usual starting point of the Govardhan parikrama.
 function daanGhatiDestination() {
@@ -214,90 +219,52 @@ function findParikrama(id) {
   return parikramaData.find((p) => p.id === key || key.startsWith(`${p.id}-`)) || null;
 }
 
-function RouteRing({ count, colors, isHindi }) {
-  const { width } = useWindowDimensions();
-  const dot = 36;
-  // Card padding (16 each side) plus room for the dots must fit inside the gutters.
-  const size = Math.min(width - GUTTER * 2 - 32 - dot - 4, 240);
-  const radius = size / 2;
-  const box = size + dot;
-  const dots = Array.from({ length: count }, (_, i) => {
-    // Start on the left and go clockwise, the walking direction for parikrama.
-    const angle = Math.PI + (i * 2 * Math.PI) / count;
-    return {
-      n: i + 1,
-      left: box / 2 + radius * Math.cos(angle) - dot / 2,
-      top: box / 2 + radius * Math.sin(angle) - dot / 2,
-    };
-  });
+// The part of a data field inside brackets, e.g. "बड़ी 12 किमी + छोटी 9 किमी" from "21 KM (बड़ी 12 किमी + छोटी 9 किमी)".
+function bracketPart(text) {
+  const m = String(text || '').match(/\(([^)]*)\)/);
+  return m ? m[1].trim() : null;
+}
+
+function FactTile({ label, value, note, colors }) {
   return (
-    <View
-      style={[styles.ringBox, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-      accessible
-      accessibilityLabel={
-        isHindi
-          ? `प्रतीकात्मक मार्ग, ${count} पड़ाव, घड़ी की दिशा में`
-          : `Illustrative route with ${count} stops, clockwise`
-      }
-    >
-      <AppText variant="caption" weight="600" color={colors.textSecondary}>
-        {isHindi ? 'प्रतीकात्मक मार्ग · यह नेविगेशन नक्शा नहीं है' : 'Illustrative route · not a navigation map'}
+    <View style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <AppText variant="small" color={colors.muted}>
+        {label}
       </AppText>
-      <View style={[styles.ringArea, { width: box, height: box }]}>
-        <View
-          style={[
-            styles.ring,
-            {
-              left: dot / 2,
-              top: dot / 2,
-              width: size,
-              height: size,
-              borderRadius: size / 2,
-              borderColor: colors.primaryContainer,
-            },
-          ]}
-        />
-        <View style={[styles.ringCenter, { left: box / 2 - 24, top: box / 2 - 24 }]}>
-          <Icon name="parikrama" size={28} color={colors.muted} />
-        </View>
-        {dots.map((d) => (
-          <View
-            key={d.n}
-            style={[
-              styles.ringDot,
-              {
-                left: d.left,
-                top: d.top,
-                width: dot,
-                height: dot,
-                borderRadius: dot / 2,
-                backgroundColor: colors.surface,
-                borderColor: colors.primary,
-              },
-            ]}
-          >
-            <AppText variant="caption" weight="700" color={colors.primary} maxFontSizeMultiplier={1.1}>
-              {d.n}
-            </AppText>
-          </View>
-        ))}
-      </View>
-      <AppText variant="caption" color={colors.textSecondary} align="center">
-        {isHindi ? 'घड़ी की दिशा में चलें · क्रम नीचे की सूची जैसा है' : 'Walk clockwise · numbers follow the list below'}
+      <AppText variant="body" weight="700" color={colors.navy}>
+        {value}
+      </AppText>
+      {note ? (
+        <AppText variant="small" color={colors.muted}>
+          {note}
+        </AppText>
+      ) : null}
+    </View>
+  );
+}
+
+function CareRow({ title, text, colors }) {
+  return (
+    <View style={[styles.careRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <AppText variant="body" weight="700" color={colors.navy} style={styles.careTitle}>
+        {title}
+      </AppText>
+      <AppText variant="caption" color={colors.text} style={styles.flex}>
+        {text}
       </AppText>
     </View>
   );
 }
 
-function EmergencyCard({ isHindi, colors }) {
+function EmergencyButtons({ isHindi, colors }) {
   const callNumber = usePressGuard((n) => Linking.openURL(`tel:${n}`).catch(() => {}));
   const items = [
     { n: '112', icon: 'emergency', hi: 'आपातकाल', en: 'Emergency' },
-    { n: '108', icon: 'phone', hi: 'एंबुलेंस', en: 'Ambulance' },
+    { n: '108', icon: 'ambulance', hi: 'एंबुलेंस', en: 'Ambulance' },
   ];
   return (
-    <Card>
-      <AppText variant="h4" weight="700" color={colors.navy}>
+    <View style={styles.emergency}>
+      <AppText variant="caption" weight="600" color={colors.muted}>
         {isHindi ? 'ये नंबर पास रखें' : 'Keep these numbers handy'}
       </AppText>
       <View style={styles.emergencyRow}>
@@ -312,25 +279,19 @@ function EmergencyCard({ isHindi, colors }) {
             accessibilityRole="button"
             accessibilityLabel={isHindi ? `${item.n} पर कॉल करें` : `Call ${item.n}`}
           >
-            <Icon name={item.icon} size={22} color={colors.warning} />
-            <View>
-              <AppText variant="h3" weight="700" color={colors.warning}>
-                {item.n}
-              </AppText>
-              <AppText variant="small" color={colors.textSecondary}>
-                {isHindi ? item.hi : item.en}
-              </AppText>
-            </View>
+            <Icon name={item.icon} size={20} color={colors.warning} />
+            <AppText variant="bodyBold" color={colors.warning} maxFontSizeMultiplier={1.3} style={styles.flexShrink}>
+              {`${item.n} · ${isHindi ? item.hi : item.en}`}
+            </AppText>
           </Pressable>
         ))}
       </View>
-    </Card>
+    </View>
   );
 }
 
 export default function ParikramaDetailScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  const bottomInset = useBottomInset();
   const { colors } = useTheme();
   const { isHindi } = useLanguage();
 
@@ -339,7 +300,7 @@ export default function ParikramaDetailScreen({ route, navigation }) {
   const extra = EXTRA[parikrama.id] || {};
   const en = extra.en || {};
 
-  // Flatten the sections into one numbered list, matching the ring.
+  // Number the stops straight through all sections.
   let counter = 0;
   const sections = (parikrama.sections || []).map((section, sIdx) => ({
     name: isHindi ? hindiOnly(section.name) : (en.sections && en.sections[sIdx]) || section.name,
@@ -353,16 +314,17 @@ export default function ParikramaDetailScreen({ route, navigation }) {
       };
     }),
   }));
-  const stopCount = counter;
   const rules = isHindi ? parikrama.rules || [] : en.rules || parikrama.rules || [];
   const tips = isHindi ? parikrama.tips : en.tips || parikrama.tips;
 
   const name = isHindi ? parikrama.title : en.name || parikrama.titleEn;
   const otherName = isHindi ? en.name || parikrama.titleEn : parikrama.title;
   const lengthHead = isHindi ? extra.lengthHi || parikrama.distance : en.length || parikrama.distance;
-  const durationLine = isHindi
-    ? `सामान्य समय: लगभग ${parikrama.duration}। दर्शन और विश्राम के साथ अक्सर अधिक समय लगता है।`
-    : `Typical time: ${en.duration || parikrama.duration}, often longer with darshan and rest.`;
+  // Hindi-only detail of the distance (e.g. the two parts of the Govardhan parikrama), unless already shown.
+  const lengthPart = isHindi ? bracketPart(parikrama.distance) : null;
+  const lengthNote = lengthPart && !String(lengthHead).includes(lengthPart) ? lengthPart : null;
+  const durationValue = isHindi ? `लगभग ${parikrama.duration}` : en.duration || parikrama.duration;
+  const difficulty = isHindi ? hindiOnly(parikrama.difficulty) : en.difficulty || parikrama.difficulty;
 
   const image = extra.image ? getPlaceImage({ image: extra.image }) : null;
 
@@ -372,173 +334,210 @@ export default function ParikramaDetailScreen({ route, navigation }) {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <TopBar
-        title={name}
-        subtitle={otherName}
-        onBack={() => navigation.goBack()}
-        right={<LanguageToggle />}
-      />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 110 }} showsVerticalScrollIndicator={false}>
+        <Photo source={image} fallbackIcon="parikrama" style={styles.hero} accessibilityLabel={name}>
+          <View style={[styles.heroBar, { top: insets.top + 8 }]}>
+            <IconButton
+              icon="chevronLeft"
+              size={28}
+              filled
+              onPress={() => navigation.goBack()}
+              accessibilityLabel={isHindi ? 'वापस' : 'Back'}
+            />
+            <LanguageToggle />
+          </View>
+          {/* Placed above the sheet's rounded edge so it stays visible. */}
+          {image ? <RepresentativeTag style={styles.heroTag} /> : null}
+        </Photo>
 
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Photo source={image} representative style={styles.hero} accessibilityLabel={name} />
-
-        {/* Length and time */}
-        <Card>
-          <AppText variant="h2" weight="700" color={colors.navy}>
-            {lengthHead}
-          </AppText>
-          <AppText variant="body" color={colors.text} style={styles.gapSmall}>
-            {durationLine}
-          </AppText>
-          <AppText variant="caption" color={colors.muted} style={styles.gapSmall}>
-            {isHindi
-              ? 'दूरी और समय अनुमानित हैं · बीच-बीच में विश्राम करें'
-              : 'Distance and time are approximate · take regular breaks'}
-          </AppText>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <ListRow
-            icon="location"
-            title={isHindi ? hindiOnly(parikrama.startPoint) : en.startPoint || parikrama.startPoint}
-            subtitle={isHindi ? 'आरंभ स्थल' : 'Starting point'}
-          />
-          <ListRow
-            icon="sunrise"
-            title={isHindi ? parikrama.bestTime : en.bestTime || parikrama.bestTime}
-            subtitle={isHindi ? 'शुरू करने का अच्छा समय (सुझाव)' : 'Good time to start (suggested)'}
-          />
-          <ListRow
-            icon="parikrama"
-            title={isHindi ? hindiOnly(parikrama.difficulty) : en.difficulty || parikrama.difficulty}
-            subtitle={isHindi ? 'श्रम' : 'Effort'}
-          />
-        </Card>
-
-        {/* About */}
-        <View>
-          <AppText variant="bodyBold" color={colors.primary}>
-            {isHindi ? parikrama.subtitle : en.subtitle || parikrama.subtitle}
-          </AppText>
-          <AppText variant="body" color={colors.text} style={styles.gapSmall}>
-            {isHindi ? parikrama.overview : en.overview || parikrama.overview}
-          </AppText>
-        </View>
-
-        {stopCount > 1 ? <RouteRing count={stopCount} colors={colors} isHindi={isHindi} /> : null}
-
-        <InfoNote>
-          {isHindi
-            ? 'सुविधाएं अलग-अलग होती हैं — स्थानीय रूप से जांचें। इन पड़ावों पर पानी, शौचालय और ई-रिक्शा की पुष्टि नहीं है।'
-            : 'Facilities vary — check locally. Water, toilets and e-rickshaws are not confirmed at these stops.'}
-        </InfoNote>
-
-        {/* Stops */}
-        <View>
-          <SectionHeader title={isHindi ? 'परिक्रमा के पड़ाव' : 'Along the parikrama'} />
-          {sections.map((section, sIdx) => (
-            <View key={`s${sIdx}`} style={styles.section}>
-              {section.name ? (
-                <AppText variant="caption" weight="700" color={colors.primary} style={styles.sectionName}>
-                  {section.name}
-                </AppText>
-              ) : null}
-              {section.stops.map((stop) => (
-                <Card key={stop.n}>
-                  <AppText variant="h4" weight="700" color={colors.navy}>
-                    {stop.n} · {stop.name}
-                  </AppText>
-                  <AppText variant="body" color={colors.text} style={styles.gapSmall}>
-                    {stop.desc}
-                  </AppText>
-                </Card>
-              ))}
-            </View>
-          ))}
-        </View>
-
-        {/* Etiquette */}
-        {rules.length ? (
-          <Card>
-            <AppText variant="h4" weight="700" color={colors.navy}>
-              {isHindi ? 'परिक्रमा की मर्यादा' : 'Parikrama etiquette'}
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          {/* Title */}
+          <View style={styles.titleBlock}>
+            <AppText variant="h1" weight="700" color={colors.navy} accessibilityRole="header">
+              {name}
             </AppText>
-            {rules.map((rule, idx) => (
-              <View key={idx} style={styles.ruleRow}>
-                <Icon name="flower" size={18} color={colors.primary} style={styles.ruleIcon} />
-                <AppText variant="body" color={colors.text} style={styles.flex}>
-                  {rule}
+            {otherName && otherName !== name ? (
+              <AppText variant="caption" color={colors.muted}>
+                {otherName}
+              </AppText>
+            ) : null}
+            <AppText variant="body" color={colors.muted}>
+              {isHindi ? parikrama.subtitle : en.subtitle || parikrama.subtitle}
+            </AppText>
+            {difficulty ? (
+              <View style={[styles.effortPill, { backgroundColor: colors.primaryLight }]}>
+                <Icon name="parikrama" size={16} color={colors.primary} />
+                <AppText variant="small" weight="700" color={colors.primary}>
+                  {isHindi ? `श्रम: ${difficulty}` : `Effort: ${difficulty}`}
                 </AppText>
               </View>
-            ))}
-          </Card>
-        ) : null}
+            ) : null}
+          </View>
 
-        {/* Gentler, safer walk */}
-        <Card>
-          <AppText variant="h4" weight="700" color={colors.navy}>
-            {isHindi ? 'आराम से और सुरक्षित चलें' : 'A gentler, safer walk'}
+          {/* Facts */}
+          <View style={styles.factsBlock}>
+            <View style={styles.tileRow}>
+              <FactTile
+                label={isHindi ? 'दूरी (अनुमानित)' : 'Distance (approx.)'}
+                value={lengthHead}
+                note={lengthNote}
+                colors={colors}
+              />
+              <FactTile label={isHindi ? 'समय (अनुमानित)' : 'Time (approx.)'} value={durationValue} colors={colors} />
+            </View>
+            <View style={styles.tileRow}>
+              <FactTile
+                label={isHindi ? 'आरंभ स्थल' : 'Starting point'}
+                value={isHindi ? hindiOnly(parikrama.startPoint) : en.startPoint || parikrama.startPoint}
+                colors={colors}
+              />
+              <FactTile
+                label={isHindi ? 'शुरू करने का अच्छा समय (सुझाव)' : 'Good time to start (suggested)'}
+                value={isHindi ? parikrama.bestTime : en.bestTime || parikrama.bestTime}
+                colors={colors}
+              />
+            </View>
+            <AppText variant="small" color={colors.muted}>
+              {isHindi
+                ? 'दूरी और समय अनुमानित हैं · दर्शन और विश्राम के साथ अक्सर अधिक समय लगता है। बीच-बीच में विश्राम करें।'
+                : 'Distance and time are approximate · often longer with darshan and rest. Take regular breaks.'}
+            </AppText>
+          </View>
+
+          {/* About */}
+          <AppText variant="body" color={colors.text}>
+            {isHindi ? parikrama.overview : en.overview || parikrama.overview}
           </AppText>
-          <ListRow
-            icon="sun"
-            title={isHindi ? 'जल्दी शुरू करें' : 'Start early'}
-            subtitle={
-              isHindi
-                ? 'तेज़ धूप से बचें और अंधेरे में अकेले न चलें।'
-                : 'Avoid harsh heat and do not walk alone after dark.'
-            }
-          />
-          <ListRow
-            icon="parikrama"
-            title={isHindi ? 'पैरों का ध्यान रखें' : 'Protect your feet'}
-            subtitle={
-              isHindi
-                ? 'सुरक्षित जूते-चप्पल चुनें; परंपरा के बारे में स्थानीय लोगों से पूछें।'
-                : 'Choose safe footwear; ask locally about customs.'
-            }
-          />
-          <ListRow
-            icon="water"
-            title={isHindi ? 'पीने का पानी साथ रखें' : 'Carry drinking water'}
-            subtitle={
-              isHindi
-                ? 'छाया में रुकें; बुज़ुर्गों और बच्चों को साथ रखें।'
-                : 'Pause in shade; keep elders and children together.'
-            }
-          />
-        </Card>
 
-        {tips ? (
-          <Card>
-            <View style={styles.tipHead}>
-              <Icon name="info" size={20} color={colors.primary} />
-              <AppText variant="h4" weight="700" color={colors.navy}>
-                {isHindi ? 'स्थानीय सुझाव' : 'Local tip'}
+          {/* Stops */}
+          <View style={styles.stopsBlock}>
+            <View>
+              <AppText variant="h3" weight="700" color={colors.navy}>
+                {isHindi ? 'परिक्रमा के पड़ाव' : 'Along the parikrama'}
+              </AppText>
+              <AppText variant="small" color={colors.muted}>
+                {isHindi
+                  ? 'घड़ी की दिशा में चलें · प्रतीकात्मक क्रम, यह नेविगेशन नक्शा नहीं है'
+                  : 'Walk clockwise · illustrative order, not a navigation map'}
               </AppText>
             </View>
-            <AppText variant="body" color={colors.text} style={styles.gapSmall}>
-              {tips}
+            {sections.map((section, sIdx) => (
+              <Card key={`s${sIdx}`} style={styles.sectionCard}>
+                {section.name ? (
+                  <AppText variant="caption" weight="700" color={colors.primary}>
+                    {section.name}
+                  </AppText>
+                ) : null}
+                {section.stops.map((stop) => (
+                  <View key={stop.n} style={styles.stopRow}>
+                    <View style={[styles.stopNum, { backgroundColor: colors.primaryLight }]}>
+                      <AppText variant="small" weight="700" color={colors.primary} maxFontSizeMultiplier={1.2}>
+                        {stop.n}
+                      </AppText>
+                    </View>
+                    <View style={styles.flex}>
+                      <AppText variant="body" weight="600" color={colors.navy}>
+                        {stop.name}
+                      </AppText>
+                      {stop.desc ? (
+                        <AppText variant="small" color={colors.textSecondary}>
+                          {stop.desc}
+                        </AppText>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </Card>
+            ))}
+          </View>
+
+          {/* Etiquette */}
+          {rules.length ? (
+            <Card>
+              <AppText variant="h4" weight="700" color={colors.navy}>
+                {isHindi ? 'परिक्रमा की मर्यादा' : 'Parikrama etiquette'}
+              </AppText>
+              {rules.map((rule, idx) => (
+                <View key={idx} style={styles.ruleRow}>
+                  <Icon name="flower" size={18} color={colors.primary} style={styles.ruleIcon} />
+                  <AppText variant="body" color={colors.text} style={styles.flex}>
+                    {rule}
+                  </AppText>
+                </View>
+              ))}
+            </Card>
+          ) : null}
+
+          {/* Gentler, safer walk */}
+          <View style={styles.careBlock}>
+            <SectionHeader title={isHindi ? 'आराम से और सुरक्षित चलें' : 'A gentler, safer walk'} style={styles.careHead} />
+            <CareRow
+              title={isHindi ? 'जल्दी शुरू करें' : 'Start early'}
+              text={
+                isHindi
+                  ? 'तेज़ धूप से बचें और अंधेरे में अकेले न चलें।'
+                  : 'Avoid harsh heat and do not walk alone after dark.'
+              }
+              colors={colors}
+            />
+            <CareRow
+              title={isHindi ? 'पैरों का ध्यान रखें' : 'Protect your feet'}
+              text={
+                isHindi
+                  ? 'सुरक्षित जूते-चप्पल चुनें; परंपरा के बारे में स्थानीय लोगों से पूछें।'
+                  : 'Choose safe footwear; ask locally about customs.'
+              }
+              colors={colors}
+            />
+            <CareRow
+              title={isHindi ? 'पीने का पानी साथ रखें' : 'Carry drinking water'}
+              text={
+                isHindi
+                  ? 'छाया में रुकें; बुज़ुर्गों और बच्चों को साथ रखें।'
+                  : 'Pause in shade; keep elders and children together.'
+              }
+              colors={colors}
+            />
+            <AppText variant="small" color={colors.muted}>
+              {isHindi
+                ? 'सुविधाएं अलग-अलग होती हैं — इन पड़ावों पर पानी, शौचालय और ई-रिक्शा की पुष्टि नहीं है। स्थानीय रूप से जांचें।'
+                : 'Facilities vary — water, toilets and e-rickshaws are not confirmed at these stops. Check locally.'}
             </AppText>
-          </Card>
-        ) : null}
+          </View>
 
-        <EmergencyCard isHindi={isHindi} colors={colors} />
+          {tips ? (
+            <InfoNote tone="warning" icon="info">
+              {isHindi ? `स्थानीय सुझाव: ${tips}` : `Local tip: ${tips}`}
+            </InfoNote>
+          ) : null}
 
-        <View>
-          <Button
-            title={isHindi ? 'आरंभ स्थल का रास्ता' : 'Directions to the start'}
-            icon="directions"
-            onPress={openStart}
-          />
-          <AppText variant="caption" color={colors.muted} align="center" style={styles.gapSmall}>
+          <EmergencyButtons isHindi={isHindi} colors={colors} />
+
+          <AppText variant="small" color={colors.muted} align="center">
             {isHindi
               ? 'Google Maps में खुलेगा। ऐप में रास्ता-दर-रास्ता मार्गदर्शन नहीं है।'
               : 'Opens Google Maps. The app does not give turn-by-turn guidance.'}
           </AppText>
         </View>
       </ScrollView>
+
+      <View
+        style={[
+          styles.bottomBar,
+          { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) + 4 },
+        ]}
+      >
+        <Button
+          title={isHindi ? 'आरंभ स्थल का रास्ता' : 'Directions to the start'}
+          icon="directions"
+          onPress={openStart}
+          accessibilityLabel={
+            isHindi ? 'आरंभ स्थल का रास्ता, Google Maps में खुलेगा' : 'Directions to the start, opens Google Maps'
+          }
+          style={styles.flex}
+        />
+      </View>
     </View>
   );
 }
@@ -546,45 +545,83 @@ export default function ParikramaDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
-  hero: { height: 200, borderRadius: 20 },
-  gapSmall: { marginTop: 6 },
-  divider: { height: 1, marginTop: 14, marginBottom: 2 },
-  ringBox: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    alignItems: 'center',
-    gap: 12,
-  },
-  ringArea: { position: 'relative' },
-  ring: { position: 'absolute', borderWidth: 3 },
-  ringCenter: {
+  flexShrink: { flexShrink: 1 },
+  hero: { height: HERO_HEIGHT },
+  heroBar: {
     position: 'absolute',
-    width: 48,
-    height: 48,
+    left: GUTTER,
+    right: GUTTER,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  heroTag: { position: 'absolute', left: GUTTER, bottom: SHEET_OVERLAP + 10 },
+  sheet: {
+    marginTop: -SHEET_OVERLAP,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: GUTTER,
+    paddingTop: 20,
+    gap: 20,
+  },
+  titleBlock: { gap: 6 },
+  effortPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 999,
+    marginTop: 2,
+  },
+  factsBlock: { gap: 8 },
+  tileRow: { flexDirection: 'row', gap: 8 },
+  tile: { flex: 1, gap: 2, padding: 12, borderRadius: 14, borderWidth: 1 },
+  stopsBlock: { gap: 12 },
+  sectionCard: { padding: 14, gap: 10 },
+  stopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  stopNum: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    marginTop: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ringDot: {
-    position: 'absolute',
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  section: { gap: 12, marginBottom: 12 },
-  sectionName: { marginTop: 4 },
   ruleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12 },
   ruleIcon: { marginTop: 3 },
-  tipHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  emergencyRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  careBlock: { gap: 8 },
+  careHead: { marginBottom: 2 },
+  careRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  careTitle: { width: 110 },
+  emergency: { gap: 8 },
+  emergencyRow: { flexDirection: 'row', gap: 10 },
   emergencyBtn: {
     flex: 1,
-    minHeight: 64,
+    minHeight: 50,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+  },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    paddingHorizontal: GUTTER,
+    paddingTop: 12,
+    borderTopWidth: 1,
   },
 });

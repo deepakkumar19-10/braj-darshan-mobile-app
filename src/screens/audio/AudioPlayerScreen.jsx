@@ -69,20 +69,17 @@ function ChantRow({ chant, onSpeak, isHindi, colors }) {
         { backgroundColor: pressed ? colors.surfaceContainerLow : colors.card },
       ]}
     >
-      <View style={[styles.chantIcon, { backgroundColor: colors.primaryLight }]}>
-        <Icon name="music" size={20} color={colors.primary} />
-      </View>
       <View style={styles.flex}>
-        <AppText variant="bodyBold" color={colors.navy}>
+        <AppText variant="body" weight="600" color={colors.navy}>
           {title}
         </AppText>
         {words ? (
-          <AppText variant="caption" color={colors.textSecondary}>
+          <AppText variant="small" color={colors.muted}>
             {words}
           </AppText>
         ) : null}
       </View>
-      <View style={[styles.chantPlay, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.chantPlay, { backgroundColor: colors.primaryLight }]}>
         <Icon name="play" size={20} color={colors.primary} />
       </View>
     </Pressable>
@@ -108,12 +105,14 @@ function ChantSection({ isHindi, colors }) {
 
   return (
     <View style={styles.section}>
-      <SectionHeader title={isHindi ? 'नाम जप सुनें' : 'Hear a chant'} style={styles.sectionHeader} />
-      <AppText variant="caption" color={colors.muted}>
-        {isHindi
-          ? 'दबाते ही फ़ोन की अपनी आवाज़ (टेक्स्ट-टू-स्पीच) में बोला जाता है।'
-          : "Tap to hear it in your phone's own text-to-speech voice."}
-      </AppText>
+      <View>
+        <SectionHeader title={isHindi ? 'नाम जप सुनें' : 'Hear a chant'} style={styles.sectionHeader} />
+        <AppText variant="small" color={colors.muted}>
+          {isHindi
+            ? 'दबाते ही फ़ोन की अपनी आवाज़ (टेक्स्ट-टू-स्पीच) में बोला जाता है।'
+            : "Tap to hear it in your phone's own text-to-speech voice."}
+        </AppText>
+      </View>
       <Card padded={false}>
         {CHANTS.map((c, index) => (
           <View key={c.id}>
@@ -141,8 +140,9 @@ function ChantSection({ isHindi, colors }) {
 
 /* ---------------------------------------------------------------- Cards */
 
-function TrackCard({ item, highlighted, onOpen, isHindi, colors }) {
+function TrackCard({ item, highlighted, onOpen, isHindi, colors, isDark }) {
   const [showText, setShowText] = useState(false);
+  const open = usePressGuard(() => onOpen(item));
   const title = isHindi ? item.titleHi : item.titleEn;
   const isLive = item.kind === 'live';
   const isPlaylist = item.kind === 'playlist';
@@ -152,31 +152,50 @@ function TrackCard({ item, highlighted, onOpen, isHindi, colors }) {
     : isPlaylist
       ? isHindi ? 'YouTube पर पूरी प्लेलिस्ट' : 'Whole playlist on YouTube'
       : isHindi ? 'YouTube पर सुनें' : 'Listen on YouTube';
+  // The thumbnail frame stays dark in both themes, like a video player, so a thumbnail that
+  // cannot load (offline) still reads as a video and the white label on it stays legible.
+  const frame = isDark ? colors.surfaceContainerHigh : colors.charcoal;
+  const onPrimary = isDark ? '#1E1B18' : '#FFFFFF';
+  const frameLabel = isLive
+    ? isHindi ? 'लाइव चैनल' : 'Live channel'
+    : isPlaylist
+      ? isHindi ? 'YouTube प्लेलिस्ट' : 'YouTube playlist'
+      : isHindi ? 'YouTube वीडियो' : 'YouTube video';
 
   return (
     <Card
-      onPress={() => onOpen(item)}
-      accessibilityLabel={`${title}. ${actionText}`}
-      style={highlighted ? { borderColor: colors.primary, backgroundColor: colors.primaryLight } : null}
+      style={[
+        styles.trackCard,
+        highlighted ? { borderColor: colors.primary, backgroundColor: colors.primaryLight } : null,
+      ]}
     >
-      <View style={styles.trackRow}>
+      {/* Thumbnail and title also open the item (touch only: the button below is the accessible control). */}
+      <Pressable
+        onPress={open}
+        accessible={false}
+        style={({ pressed }) => [styles.trackRow, { opacity: pressed ? 0.8 : 1 }]}
+      >
         {item.artworkUrl ? (
           <Image
             source={{ uri: item.artworkUrl }}
-            style={[styles.thumb, { backgroundColor: colors.surfaceContainer }]}
+            style={[styles.thumb, { backgroundColor: frame }]}
             resizeMode="cover"
+            fadeDuration={0}
             accessible={false}
           />
         ) : (
-          <View style={[styles.thumb, styles.thumbIcon, { backgroundColor: colors.surfaceContainer }]}>
-            <Icon name={isLive ? 'aarti' : isPlaylist ? 'list' : 'music'} size={28} color={colors.primary} />
+          <View style={[styles.thumb, styles.thumbIcon, { backgroundColor: frame }]}>
+            <Icon name={isPlaylist ? 'list' : 'play'} size={24} color="#FFFFFF" />
+            <AppText variant="badge" weight="500" color="rgba(255,255,255,0.85)" style={styles.thumbLabel}>
+              {frameLabel}
+            </AppText>
           </View>
         )}
-        <View style={styles.flex}>
+        <View style={styles.trackText}>
           {isLive ? (
             <View style={styles.inline}>
               <View style={[styles.liveDot, { backgroundColor: colors.error }]} />
-              <AppText variant="small" weight="700" color={colors.error}>
+              <AppText variant="badge" weight="700" color={colors.error} style={styles.liveText}>
                 {isHindi ? 'लाइव' : 'LIVE'}
               </AppText>
             </View>
@@ -185,7 +204,7 @@ function TrackCard({ item, highlighted, onOpen, isHindi, colors }) {
             {title}
           </AppText>
           {!isLive && !isPlaylist ? (
-            <AppText variant="caption" color={colors.textSecondary} numberOfLines={2}>
+            <AppText variant="small" color={colors.text} numberOfLines={2}>
               {performerOf(item, isHindi)}
             </AppText>
           ) : null}
@@ -194,23 +213,34 @@ function TrackCard({ item, highlighted, onOpen, isHindi, colors }) {
             {item.channel}
           </AppText>
         </View>
-      </View>
+      </Pressable>
 
       <View style={styles.cardFooter}>
-        <View style={styles.inline}>
-          <Icon name="externalLink" size={16} color={colors.primary} />
-          <AppText variant="caption" weight="700" color={colors.primary}>
+        <Pressable
+          onPress={open}
+          accessibilityRole="button"
+          accessibilityLabel={`${title}. ${actionText}`}
+          style={({ pressed }) => [
+            styles.openButton,
+            { backgroundColor: pressed ? colors.primaryDark : colors.primary },
+          ]}
+        >
+          <Icon name="externalLink" size={16} color={onPrimary} />
+          <AppText variant="caption" weight="600" color={onPrimary} style={styles.shrink}>
             {actionText}
           </AppText>
-        </View>
+        </Pressable>
         {hasText ? (
           <Pressable
             onPress={() => setShowText((v) => !v)}
-            hitSlop={10}
             accessibilityRole="button"
             accessibilityState={{ expanded: showText }}
+            style={({ pressed }) => [
+              styles.textToggle,
+              { backgroundColor: colors.infoBg, opacity: pressed ? 0.75 : 1 },
+            ]}
           >
-            <AppText variant="caption" weight="700" color={colors.navy}>
+            <AppText variant="caption" weight="600" color={colors.navy}>
               {showText ? (isHindi ? 'पाठ छुपाएँ' : 'Hide text') : isHindi ? 'पावन पाठ' : 'Text'}
             </AppText>
           </Pressable>
@@ -250,7 +280,7 @@ function TrackCard({ item, highlighted, onOpen, isHindi, colors }) {
 export default function AudioPlayerScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { isHindi } = useLanguage();
 
   // A temple page can ask for its aarti: open that track's category and show it first.
@@ -290,25 +320,26 @@ export default function AudioPlayerScreen({ navigation, route }) {
         />
 
         <View style={styles.content}>
-          <InfoNote icon="music">
+          <InfoNote icon="music" tone="saffron">
             {isHindi
               ? 'हर भजन उसके असली मालिक (लेबल, कलाकार, मंदिर या आश्रम) के आधिकारिक YouTube चैनल पर खुलता है, ताकि व्यूज़ और कमाई उन्हीं को मिले। YouTube ऐप न हो तो ब्राउज़र में खुलेगा।'
               : 'Each bhajan opens on the official YouTube channel of its owner (label, artist, temple or ashram), so the views and revenue go to them. Without the YouTube app it opens in the browser.'}
           </InfoNote>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+          {/* Category pills wrap onto more lines, so every category stays in view. */}
+          <View style={styles.tabs}>
             {categories.map((c) => (
               <Chip
                 key={c.id}
-                label={`${c.icon} ${isHindi ? c.titleHi : c.titleEn} (${itemsInCategory(c.id).length})`}
+                label={`${isHindi ? c.titleHi : c.titleEn} (${itemsInCategory(c.id).length})`}
                 selected={category === c.id}
                 onPress={() => setCategory(c.id)}
               />
             ))}
-          </ScrollView>
+          </View>
 
           {openFailed ? (
-            <InfoNote icon="offline">
+            <InfoNote icon="offline" tone="danger">
               {isHindi
                 ? 'YouTube नहीं खुल सका। इंटरनेट जाँचकर फिर कोशिश करें।'
                 : 'YouTube could not open. Check your internet and try again.'}
@@ -316,7 +347,7 @@ export default function AudioPlayerScreen({ navigation, route }) {
           ) : null}
 
           {category === 'live' ? (
-            <AppText variant="caption" color={colors.muted}>
+            <AppText variant="small" color={colors.muted}>
               {isHindi
                 ? 'ये चैनल आरती, दर्शन या कथा के समय लाइव आते हैं। उस समय लाइव न हो तो YouTube पर चैनल के पिछले वीडियो दिखेंगे।'
                 : 'These channels go live for aarti, darshan or katha. If nothing is live right now, YouTube shows the channel instead.'}
@@ -332,10 +363,19 @@ export default function AudioPlayerScreen({ navigation, route }) {
                 onOpen={open}
                 isHindi={isHindi}
                 colors={colors}
+                isDark={isDark}
               />
             ))}
             {playlists.map((p) => (
-              <TrackCard key={p.id} item={p} highlighted={false} onOpen={open} isHindi={isHindi} colors={colors} />
+              <TrackCard
+                key={p.id}
+                item={p}
+                highlighted={false}
+                onOpen={open}
+                isHindi={isHindi}
+                colors={colors}
+                isDark={isDark}
+              />
             ))}
           </View>
 
@@ -349,42 +389,61 @@ export default function AudioPlayerScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
+  shrink: { flexShrink: 1 },
   content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 20 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  tabs: { flexDirection: 'row', gap: 8 },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   list: { gap: 12 },
+  trackCard: { padding: 12 },
   trackRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  trackText: { flex: 1, minWidth: 0, gap: 2 },
   // YouTube thumbnails are 16:9.
-  thumb: { width: 128, height: 72, borderRadius: 10 },
-  thumbIcon: { alignItems: 'center', justifyContent: 'center' },
-  liveDot: { width: 8, height: 8, borderRadius: 4 },
+  thumb: { width: 128, height: 72, borderRadius: 12 },
+  thumbIcon: { alignItems: 'center', justifyContent: 'center', gap: 2 },
+  thumbLabel: { fontSize: 11, lineHeight: 14, letterSpacing: 0 },
+  liveDot: { width: 7, height: 7, borderRadius: 4 },
+  liveText: { letterSpacing: 0 },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 12,
+    marginTop: 10,
+    gap: 10,
+  },
+  openButton: {
+    flexShrink: 1,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  textToggle: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textBox: { gap: 10, marginTop: 14 },
   significance: { borderRadius: 14, padding: 14, gap: 4 },
   section: { gap: 10 },
-  sectionHeader: { marginBottom: 0 },
+  sectionHeader: { marginBottom: 4 },
   chantRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 72,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    minHeight: 64,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  chantIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   chantPlay: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowDivider: { height: StyleSheet.hairlineWidth, marginLeft: 68 },
+  rowDivider: { height: StyleSheet.hairlineWidth },
 });

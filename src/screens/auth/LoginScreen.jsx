@@ -1,25 +1,58 @@
+/**
+ * Braj Darshan - Sign in
+ * Accounts are not available yet (see src/context/AuthContext.jsx): the gold note says so
+ * up front, signing in shows the same message, and "Continue as guest" opens the full app.
+ * Layout from the Nov 2026 redesign (Claude Design "Login").
+ */
+
 import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
-import { MorpankhIcon, LotusIcon } from '../../components/common';
+import { AppText } from '../../components/common/AppText';
+import { Button, InfoNote } from '../../components/ui';
+import { fontFor } from '../../theme/fonts';
 import { ROUTES } from '../../navigation/routes';
+
+// The divyabraj.com logo, as on Home and More.
+const LOGO = require('../../assets/images/brand/braj-logo.png');
+
+/** A labelled text field: the label sits above a 52pt input. */
+function Field({ label, colors, ...inputProps }) {
+  return (
+    <View style={styles.field}>
+      <AppText variant="caption" weight="600" color={colors.navy}>
+        {label}
+      </AppText>
+      <TextInput
+        accessibilityLabel={label}
+        placeholderTextColor={colors.muted}
+        maxFontSizeMultiplier={1.4}
+        style={[
+          styles.input,
+          { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+          fontFor('400'),
+        ]}
+        {...inputProps}
+      />
+    </View>
+  );
+}
 
 export default function LoginScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t, isHindi } = useLanguage();
   const { login, loginAsGuest } = useAuth();
 
@@ -78,133 +111,97 @@ export default function LoginScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Brand Header */}
+        {/* Brand header */}
         <View style={styles.brandHeader}>
-          <View style={[styles.logoCircle, { backgroundColor: colors.primaryLight, borderColor: colors.gold }]}>
-            <MorpankhIcon size={40} />
-          </View>
-          <Text style={[styles.appTitle, { color: colors.navy }]}>
+          <Image
+            source={LOGO}
+            style={styles.logo}
+            resizeMode="cover"
+            fadeDuration={0}
+            accessibilityLabel="DivyaBraj"
+          />
+          <AppText variant="h1" weight="700" color={colors.navy} align="center" accessibilityRole="header">
             {isHindi ? 'श्री ब्रज दर्शन' : 'Braj Darshan'}
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          </AppText>
+          <AppText variant="body" color={colors.muted} align="center">
             {t('auth.loginSubtitle', 'अपनी पावन यात्रा जारी रखने के लिए साइन इन करें')}
-          </Text>
+          </AppText>
         </View>
 
-        {/* Card Form */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.navy }]}>
-            {t('auth.loginTitle', 'साइन इन करें')}
-          </Text>
+        <InfoNote tone="warning" icon="info">
+          {isHindi
+            ? 'खाता (लॉगिन) सुविधा अभी उपलब्ध नहीं है। आप अतिथि के रूप में ऐप पूरी तरह उपयोग कर सकते हैं।'
+            : 'Accounts are not available in the app yet. You can use the full app as a guest.'}
+        </InfoNote>
 
-          {/* Email Field */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-              {t('auth.email', 'ईमेल पता')}
-            </Text>
-            <TextInput
-              style={[
-                styles.textInput,
-                {
-                  backgroundColor: isDark ? colors.cardAlt : '#FAF8F5',
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
-              placeholder="radhe@brajdarshan.org"
-              placeholderTextColor={colors.muted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
-
-          {/* Password Field */}
-          <View style={styles.inputGroup}>
-            <View style={styles.passwordRow}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                {t('auth.password', 'पासवर्ड')}
-              </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate(ROUTES.FORGOT_PASSWORD)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Text style={[styles.forgotText, { color: colors.primary }]}>
-                  {t('auth.forgotPassword', 'पासवर्ड भूल गए?')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <TextInput
-              style={[
-                styles.textInput,
-                {
-                  backgroundColor: isDark ? colors.cardAlt : '#FAF8F5',
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
+        {/* Form */}
+        <View style={styles.form}>
+          <Field
+            label={t('auth.email', 'ईमेल पता')}
+            colors={colors}
+            placeholder="radhe@brajdarshan.org"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <View>
+            <Field
+              label={t('auth.password', 'पासवर्ड')}
+              colors={colors}
               placeholder="••••••••"
-              placeholderTextColor={colors.muted}
               secureTextEntry
+              autoComplete="password"
+              textContentType="password"
               value={password}
               onChangeText={setPassword}
             />
+            <Button
+              variant="text"
+              title={t('auth.forgotPassword', 'पासवर्ड भूल गए?')}
+              onPress={() => navigation.navigate(ROUTES.FORGOT_PASSWORD)}
+              style={styles.forgot}
+            />
           </View>
 
-          {/* Sign In Button */}
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+          <Button
+            title={
+              loading
+                ? isHindi ? 'सत्यापन हो रहा है...' : 'Signing In...'
+                : t('auth.signInBtn', 'साइन इन करें')
+            }
             onPress={handleLogin}
-            activeOpacity={0.85}
             disabled={loading}
-          >
-            <Text style={styles.primaryButtonText}>
-              {loading ? (isHindi ? 'सत्यापन हो रहा है...' : 'Signing In...') : t('auth.signInBtn', 'साइन इन करें')}
-            </Text>
-          </TouchableOpacity>
+          />
+        </View>
 
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.muted }]}>
-              {isHindi ? 'अथवा' : 'OR'}
-            </Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          </View>
+        {/* Divider */}
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <AppText variant="small" color={colors.muted}>
+            {isHindi ? 'अथवा' : 'OR'}
+          </AppText>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+        </View>
 
-          {/* Guest Button */}
-          <TouchableOpacity
-            style={[
-              styles.guestButton,
-              {
-                backgroundColor: isDark ? colors.cardAlt : colors.primaryLight,
-                borderColor: colors.gold,
-              },
-            ]}
-            onPress={handleGuest}
-            activeOpacity={0.85}
-          >
-            <LotusIcon size={18} color={colors.primary} />
-            <Text style={[styles.guestButtonText, { color: colors.primary }]}>
-              {t('auth.continueGuest', 'अतिथि तीर्थयात्री के रूप में जारी रखें')}
-            </Text>
-          </TouchableOpacity>
+        <Button
+          variant="secondary"
+          title={t('auth.continueGuest', 'अतिथि तीर्थयात्री के रूप में जारी रखें')}
+          onPress={handleGuest}
+        />
 
-          {/* Link to Register */}
-          <View style={styles.footerLinkWrap}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              {t('auth.noAccount', 'खाता नहीं है?')}{' '}
-            </Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate(ROUTES.REGISTER)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={[styles.linkText, { color: colors.primary }]}>
-                {t('auth.signUpBtn', 'नया खाता बनाएं')}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        {/* Link to Register */}
+        <View style={styles.footer}>
+          <AppText variant="body" color={colors.text}>
+            {isHindi ? 'खाता नहीं है?' : "Don't have an account?"}
+          </AppText>
+          <Button
+            variant="text"
+            title={t('auth.signUpBtn', 'नया खाता बनाएं')}
+            onPress={() => navigation.navigate(ROUTES.REGISTER)}
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -212,128 +209,30 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-  brandHeader: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  logoCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  appTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+  container: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 32, gap: 18 },
+  brandHeader: { alignItems: 'center', gap: 8 },
+  logo: { width: 72, height: 72, borderRadius: 22 },
+  form: { gap: 14 },
+  field: { gap: 6 },
+  input: {
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 1,
     paddingHorizontal: 16,
-  },
-  card: {
-    borderRadius: 20,
-    padding: 22,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  passwordRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  forgotText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  textInput: {
-    height: 48, // Apple HIG min 44pt touch target
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 15,
-  },
-  primaryButton: {
-    height: 50,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
+    paddingVertical: 0,
     fontSize: 16,
-    fontWeight: '700',
   },
-  dividerRow: {
+  forgot: { alignSelf: 'flex-end', minHeight: 44, paddingHorizontal: 0 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dividerLine: { flex: 1, height: 1 },
+  // Pushed to the bottom of the screen when there is room.
+  footer: {
+    marginTop: 'auto',
     flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 18,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    paddingHorizontal: 10,
-  },
-  guestButton: {
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-  },
-  guestButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  footerLinkWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    fontSize: 13,
-  },
-  linkText: {
-    fontSize: 13,
-    fontWeight: '700',
+    gap: 2,
   },
 });

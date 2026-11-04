@@ -1,8 +1,9 @@
 /**
  * Braj Darshan - Temples
- * Design: design-input/figma "Light · Temples". Search, List/Map switch, town
- * chips built from the data (no empty filters), an "Open now" filter, and
- * compact rows showing each temple's own status and today's hours.
+ * Look: the Nov 2026 "clean Braj" redesign (artboard Temples): title with a List / Map
+ * switch, search, pill filters ("All", "Open now" and town chips built from the data, so
+ * no filter is ever empty), a count line, and row cards showing each temple's photo,
+ * town and deity, its own open/closed status, today's hours and a save button.
  */
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
@@ -27,7 +28,6 @@ import {
   Photo,
   SearchField,
   StatusBadge,
-  TopBar,
   GUTTER,
   useBottomInset,
 } from '../../components/ui';
@@ -50,6 +50,12 @@ function todayHours(temple) {
   return windows.map(([s, e]) => `${formatMinutes(s)}–${formatMinutes(e)}`).join(' · ');
 }
 
+// Same season rule the timings use (utils/templeHours: April–October = summer timings).
+function isSummerTimings(now) {
+  const month = getIndianStandardTime(now).getMonth();
+  return month >= 3 && month <= 9;
+}
+
 function townsOf(templesData) {
   const seen = new Map();
   templesData.forEach((t) => {
@@ -65,10 +71,49 @@ function matches(temple, terms) {
   return terms.every((t) => hay.includes(t));
 }
 
+// List / Map switch: a pill track with the current view raised in white.
+function ViewSwitch({ isHindi, colors, onMap }) {
+  const guardedMap = usePressGuard(onMap);
+  const seg = (selected) => [
+    styles.seg,
+    selected && { backgroundColor: colors.surface, borderColor: colors.border },
+  ];
+  return (
+    <View style={[styles.segTrack, { backgroundColor: colors.infoBg }]}>
+      <View
+        style={seg(true)}
+        accessible
+        accessibilityRole="button"
+        accessibilityState={{ selected: true }}
+        accessibilityLabel={isHindi ? 'सूची' : 'List'}
+      >
+        <AppText variant="caption" weight="600" color={colors.navy} maxFontSizeMultiplier={1.2}>
+          {isHindi ? 'सूची' : 'List'}
+        </AppText>
+      </View>
+      <Pressable
+        onPress={guardedMap}
+        hitSlop={{ top: 4, bottom: 4 }}
+        accessibilityRole="button"
+        accessibilityState={{ selected: false }}
+        accessibilityLabel={isHindi ? 'नक्शा' : 'Map'}
+        style={({ pressed }) => [seg(false), { opacity: pressed ? 0.7 : 1 }]}
+      >
+        <AppText variant="caption" weight="600" color={colors.muted} maxFontSizeMultiplier={1.2}>
+          {isHindi ? 'नक्शा' : 'Map'}
+        </AppText>
+      </Pressable>
+    </View>
+  );
+}
+
 const TempleRow = React.memo(function TempleRow({ temple, isHindi, colors, onOpen, isFav, onToggleFav, now }) {
   const status = getTempleStatus(temple, now);
   const hours = todayHours(temple);
   const favGuard = usePressGuard(onToggleFav, 300);
+  const place = isHindi
+    ? [temple.cityHindi, temple.deityHindi].filter(Boolean).join(' · ')
+    : [temple.city, temple.deity].filter(Boolean).join(' · ');
   return (
     <Card onPress={onOpen} style={styles.row} accessibilityLabel={temple.name}>
       <View style={styles.rowInner}>
@@ -77,12 +122,12 @@ const TempleRow = React.memo(function TempleRow({ temple, isHindi, colors, onOpe
           style={styles.thumb}
           accessibilityLabel={temple.name}
         />
-        <View style={styles.flex}>
-          <AppText variant="body" weight="700" color={colors.navy} numberOfLines={2}>
+        <View style={styles.rowText}>
+          <AppText variant="h4" weight="700" color={colors.navy} numberOfLines={2}>
             {isHindi ? temple.nameHindi : temple.name}
           </AppText>
-          <AppText variant="small" color={colors.muted} numberOfLines={1}>
-            {isHindi ? `${temple.name} · ${temple.cityHindi}` : `${temple.nameHindi} · ${temple.city}`}
+          <AppText variant="small" color={colors.muted} numberOfLines={2}>
+            {place}
           </AppText>
           <View style={styles.badgeWrap}>
             <StatusBadge status={status} size="sm" />
@@ -92,23 +137,23 @@ const TempleRow = React.memo(function TempleRow({ temple, isHindi, colors, onOpe
               {isHindi ? `आज: ${hours}` : `Today: ${hours}`}
             </AppText>
           ) : null}
+          {isTempleImageRepresentative(temple) ? (
+            <AppText variant="small" color={colors.muted}>
+              {isHindi ? 'प्रतीकात्मक चित्र' : 'Representative photo'}
+            </AppText>
+          ) : null}
         </View>
         <Pressable
           onPress={favGuard}
-          hitSlop={8}
-          style={styles.favBtn}
+          hitSlop={4}
+          style={({ pressed }) => [styles.favBtn, { opacity: pressed ? 0.6 : 1 }]}
           accessibilityRole="button"
           accessibilityLabel={isFav ? (isHindi ? 'सहेजे से हटाएँ' : 'Remove from saved') : isHindi ? 'सहेजें' : 'Save'}
           accessibilityState={{ selected: isFav }}
         >
-          <Icon name="heart" filled={isFav} size={24} color={isFav ? colors.warning : colors.muted} />
+          <Icon name="heart" filled={isFav} size={22} color={colors.primary} />
         </Pressable>
       </View>
-      {isTempleImageRepresentative(temple) ? (
-        <AppText variant="badge" color={colors.muted} style={styles.repNote}>
-          {isHindi ? 'प्रतीकात्मक चित्र' : 'Representative photo'}
-        </AppText>
-      ) : null}
     </Card>
   );
 });
@@ -147,17 +192,38 @@ export default function TempleListScreen({ navigation, route }) {
     [navigation]
   );
 
+  const clearFilters = () => {
+    setTown('All');
+    setOpenOnly(false);
+  };
+
+  const summer = isSummerTimings(now);
+  const countLine = isHindi
+    ? `${temples.length} मंदिर · आज ${summer ? 'ग्रीष्म' : 'शीत'} ऋतु का समय`
+    : `${temples.length} temples · ${summer ? 'summer' : 'winter'} timings today`;
+
   const header = (
     <View>
-      <TopBar
-        title={isHindi ? 'मंदिर' : 'Temples'}
-        subtitle={
-          isHindi
-            ? `${templesData.length} मंदिर · त्योहारों पर समय बदल सकता है`
-            : `${templesData.length} temples · timings may change on festivals`
-        }
-        right={<LanguageToggle />}
-      />
+      {/* Title row: name and language switch, then the subtitle with the List / Map switch */}
+      <View style={styles.titleRow}>
+        <AppText
+          variant="h1"
+          weight="700"
+          color={colors.navy}
+          accessibilityRole="header"
+          numberOfLines={1}
+          style={styles.flex}
+        >
+          {isHindi ? 'मंदिर' : 'Temples'}
+        </AppText>
+        <LanguageToggle />
+      </View>
+      <View style={styles.subRow}>
+        <AppText variant="caption" color={colors.muted} style={styles.flex}>
+          {isHindi ? 'ब्रज के प्रमुख मंदिर और दर्शन समय' : 'Major temples of Braj and their darshan times'}
+        </AppText>
+        <ViewSwitch isHindi={isHindi} colors={colors} onMap={() => navigation.navigate(ROUTES.MAP)} />
+      </View>
 
       <SearchField
         value={searchQuery}
@@ -166,29 +232,22 @@ export default function TempleListScreen({ navigation, route }) {
         style={styles.search}
       />
 
-      <View style={styles.segment}>
-        <Chip label={isHindi ? 'सूची' : 'List'} icon="list" selected onPress={() => {}} />
-        <Chip label={isHindi ? 'नक्शा' : 'Map'} icon="map" selected={false} onPress={() => navigation.navigate(ROUTES.MAP)} />
-      </View>
-
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip label={isHindi ? 'सभी' : 'All'} selected={town === 'All'} onPress={() => setTown('All')} />
-        {towns.map((t) => (
-          <Chip key={t.id} label={isHindi ? t.hi : t.en} selected={town === t.id} onPress={() => setTown(t.id)} />
-        ))}
-      </ScrollView>
-
-      <View style={styles.segment}>
+        <Chip label={isHindi ? 'सभी' : 'All'} selected={town === 'All' && !openOnly} onPress={clearFilters} />
         <Chip
           label={isHindi ? 'अभी खुले' : 'Open now'}
           icon="open"
           selected={openOnly}
           onPress={() => setOpenOnly((v) => !v)}
         />
-        <AppText variant="small" color={colors.muted} style={styles.count}>
-          {isHindi ? `${temples.length} परिणाम` : `${temples.length} results`}
-        </AppText>
-      </View>
+        {towns.map((t) => (
+          <Chip key={t.id} label={isHindi ? t.hi : t.en} selected={town === t.id} onPress={() => setTown(t.id)} />
+        ))}
+      </ScrollView>
+
+      <AppText variant="small" color={colors.muted} style={styles.count}>
+        {countLine}
+      </AppText>
     </View>
   );
 
@@ -228,8 +287,7 @@ export default function TempleListScreen({ navigation, route }) {
                   icon="close"
                   onPress={() => {
                     setSearchQuery('');
-                    setTown('All');
-                    setOpenOnly(false);
+                    clearFilters();
                   }}
                 />
               </View>
@@ -237,13 +295,11 @@ export default function TempleListScreen({ navigation, route }) {
           </View>
         }
         ListFooterComponent={
-          <View style={styles.rowWrap}>
-            <InfoNote>
-              {isHindi
-                ? 'समय मंदिरों के नियमित समय पर आधारित है, लाइव नहीं। त्योहारों पर बदल सकता है — जाने से पहले स्थानीय पुष्टि करें।'
-                : 'Based on regular temple timings, not live. They change on festivals — confirm locally before you go.'}
-            </InfoNote>
-          </View>
+          <AppText variant="small" color={colors.muted} style={styles.note}>
+            {isHindi
+              ? 'समय मंदिरों के नियमित समय पर आधारित है, लाइव नहीं। त्योहारों पर बदल सकता है — जाने से पहले स्थानीय पुष्टि करें।'
+              : 'Based on regular temple timings, not live. They change on festivals — confirm locally before you go.'}
+          </AppText>
         }
       />
     </View>
@@ -253,22 +309,40 @@ export default function TempleListScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  search: { marginHorizontal: GUTTER },
-  emptyActions: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  segment: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
     paddingHorizontal: GUTTER,
-    marginTop: 12,
+    paddingTop: 16,
   },
-  chips: { paddingHorizontal: GUTTER, gap: 8, marginTop: 12 },
-  count: { marginLeft: 'auto' },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: GUTTER,
+    marginTop: 4,
+  },
+  segTrack: { flexDirection: 'row', padding: 4, borderRadius: 999 },
+  seg: {
+    minHeight: 36,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  search: { marginHorizontal: GUTTER, marginTop: 16 },
+  chips: { paddingHorizontal: GUTTER, gap: 8, marginTop: 14 },
+  count: { paddingHorizontal: GUTTER, marginTop: 14 },
+  emptyActions: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   rowWrap: { paddingHorizontal: GUTTER, marginTop: 12 },
-  row: { padding: 12 },
+  row: { padding: 10 },
   rowInner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  thumb: { width: 88, height: 88, borderRadius: 14 },
-  badgeWrap: { marginVertical: 6 },
-  favBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginTop: -8, marginRight: -8 },
-  repNote: { marginTop: 6 },
+  rowText: { flex: 1, gap: 4 },
+  thumb: { width: 96, height: 96, borderRadius: 12 },
+  badgeWrap: { marginVertical: 2 },
+  favBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginTop: -2, marginRight: -2 },
+  note: { paddingHorizontal: GUTTER, marginTop: 16 },
 });

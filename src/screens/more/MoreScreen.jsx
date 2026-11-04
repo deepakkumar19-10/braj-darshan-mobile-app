@@ -3,28 +3,22 @@
  * Every section that is not a main tab, as grouped lists (MORE_GROUPS) of rows.
  * The same lists (MORE_GROUPS + MORE_SECTIONS) feed the side drawer so both always
  * match. "About" is not a separate item here: it lives in Settings (Settings → About).
+ * Look: the Nov 2026 "clean Braj" redesign (artboard More): app icon header, two
+ * grouped lists with tinted icon squares, a short note and a footer line.
  */
 
 import React from 'react';
-import { StyleSheet, View, ScrollView, Linking, Image } from 'react-native';
+import { StyleSheet, View, ScrollView, Linking, Image, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { AppText } from '../../components/common/AppText';
 import { Icon } from '../../components/common/Icon';
-import {
-  Card,
-  InfoNote,
-  LanguageToggle,
-  ListRow,
-  SectionHeader,
-  TopBar,
-  GUTTER,
-  useBottomInset,
-} from '../../components/ui';
+import { Card, InfoNote, LanguageToggle, GUTTER, useBottomInset } from '../../components/ui';
+import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
 
-// The divyabraj.com header logo, same as the Home header circle.
+// The divyabraj.com logo, shown as the app icon (same as the Home header).
 const LOGO = require('../../assets/images/brand/braj-logo.png');
 
 export const PRIVACY_URL = 'https://www.divyabraj.com/privacy';
@@ -35,6 +29,7 @@ export const MORE_GROUPS = [
   { id: 'app', hi: 'सहायता व सेटिंग्स', en: 'Help & settings' },
 ];
 
+// tone: tint of the icon square on the More screen ('red' for help & emergency, saffron otherwise).
 export const MORE_SECTIONS = [
   {
     id: 'yatra',
@@ -59,7 +54,7 @@ export const MORE_SECTIONS = [
   {
     id: 'festivals',
     group: 'explore',
-    icon: 'festival',
+    icon: 'aarti',
     route: ROUTES.EVENTS,
     hi: 'उत्सव',
     en: 'Festivals',
@@ -90,6 +85,7 @@ export const MORE_SECTIONS = [
     id: 'help',
     group: 'app',
     icon: 'phone',
+    tone: 'red',
     route: ROUTES.HELPDESK,
     hi: 'सहायता व आपातकाल',
     en: 'Help & emergency',
@@ -142,6 +138,38 @@ export function openSection(navigate, item) {
   navigate(item.route, item.params);
 }
 
+// One row of a grouped list: tinted icon square, title, subtitle, chevron (or "opens outside" for web links).
+function MoreRow({ item, first, isHindi, colors, onPress }) {
+  const guarded = usePressGuard(onPress);
+  const tint = item.tone === 'red'
+    ? { bg: colors.warningBg, fg: colors.warning }
+    : { bg: colors.primaryLight, fg: colors.primary };
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.row,
+        !first && { borderTopWidth: 1, borderTopColor: colors.border },
+        { opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: tint.bg }]}>
+        <Icon name={item.icon} size={22} color={tint.fg} />
+      </View>
+      <View style={styles.flex}>
+        <AppText variant="body" weight="600" color={colors.navy}>
+          {isHindi ? item.hi : item.en}
+        </AppText>
+        <AppText variant="small" color={colors.muted}>
+          {isHindi ? item.subHi : item.subEn}
+        </AppText>
+      </View>
+      <Icon name={item.url ? 'externalLink' : 'chevronRight'} size={item.url ? 18 : 20} color={colors.muted} />
+    </Pressable>
+  );
+}
+
 export default function MoreScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
@@ -156,32 +184,42 @@ export default function MoreScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
       >
-        <TopBar
-          title={isHindi ? 'और देखें' : 'Explore more'}
-          subtitle={isHindi ? 'राधे राधे · ब्रज में आपका साथी' : 'Radhe Radhe · your companion in Braj'}
-          right={<LanguageToggle />}
-        />
+        {/* Header: app icon, title and greeting; language switch on the right */}
+        <View style={styles.header}>
+          <Image
+            source={LOGO}
+            style={[styles.logo, { backgroundColor: colors.surface }]}
+            resizeMode="cover"
+            fadeDuration={0}
+            accessibilityLabel="DivyaBraj"
+          />
+          <View style={styles.flex}>
+            <AppText variant="h1" weight="700" color={colors.navy} accessibilityRole="header" numberOfLines={2}>
+              {isHindi ? 'और देखें' : 'Explore more'}
+            </AppText>
+            <AppText variant="caption" color={colors.muted}>
+              {isHindi ? 'राधे राधे · ब्रज में आपका साथी' : 'Radhe Radhe · your companion in Braj'}
+            </AppText>
+          </View>
+          <LanguageToggle />
+        </View>
 
         <View style={styles.body}>
           {MORE_GROUPS.map((group) => (
-            <View key={group.id}>
-              <SectionHeader title={isHindi ? group.hi : group.en} />
-              <Card style={styles.listCard}>
+            <View key={group.id} style={styles.group}>
+              <AppText variant="small" weight="700" color={colors.muted} accessibilityRole="header">
+                {isHindi ? group.hi : group.en}
+              </AppText>
+              <Card padded={false}>
                 {sectionsInGroup(group.id).map((item, index) => (
-                  <View key={item.id}>
-                    {index > 0 ? (
-                      <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    ) : null}
-                    <ListRow
-                      icon={item.icon}
-                      title={isHindi ? item.hi : item.en}
-                      subtitle={isHindi ? item.subHi : item.subEn}
-                      onPress={() => openSection(navigate, item)}
-                      right={
-                        item.url ? <Icon name="externalLink" size={20} color={colors.muted} /> : undefined
-                      }
-                    />
-                  </View>
+                  <MoreRow
+                    key={item.id}
+                    item={item}
+                    first={index === 0}
+                    isHindi={isHindi}
+                    colors={colors}
+                    onPress={() => openSection(navigate, item)}
+                  />
                 ))}
               </Card>
             </View>
@@ -193,17 +231,9 @@ export default function MoreScreen({ navigation }) {
               : 'No account needed. Explore freely; saved temples and preferences stay on this phone.'}
           </InfoNote>
 
-          <View style={styles.footer}>
-            <View style={[styles.footerIcon, { backgroundColor: colors.surface, borderColor: colors.borderGold }]}>
-              <Image source={LOGO} style={styles.footerLogo} resizeMode="cover" fadeDuration={0} accessibilityLabel="DivyaBraj" />
-            </View>
-            <AppText variant="h3" weight="700" color={colors.navy} align="center">
-              श्री ब्रज दर्शन
-            </AppText>
-            <AppText variant="small" color={colors.muted} align="center">
-              {isHindi ? 'DIVYABRAJ · शांत, सजग यात्रा के लिए' : 'DIVYABRAJ · Made for a mindful yatra'}
-            </AppText>
-          </View>
+          <AppText variant="small" color={colors.muted} align="center">
+            {isHindi ? 'DIVYABRAJ · शांत, सजग यात्रा के लिए' : 'DIVYABRAJ · Made for a mindful yatra'}
+          </AppText>
         </View>
       </ScrollView>
     </View>
@@ -212,20 +242,30 @@ export default function MoreScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  body: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 24 },
-  listCard: { paddingVertical: 4 },
-  // Starts under the row text, past the 44px icon tile and its 14px gap.
-  divider: { height: 1, marginLeft: 58 },
-  footer: { alignItems: 'center', gap: 4, paddingTop: 8 },
-  footerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  flex: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: GUTTER,
+    paddingTop: 16,
+  },
+  logo: { width: 52, height: 52, borderRadius: 16 },
+  body: { paddingHorizontal: GUTTER, paddingTop: 22, gap: 22 },
+  group: { gap: 10 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 64,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  rowIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
-    borderWidth: 1.5,
-    overflow: 'hidden',
   },
-  footerLogo: { width: 64, height: 64 },
 });

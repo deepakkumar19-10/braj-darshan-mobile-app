@@ -1,38 +1,42 @@
 /**
  * Braj Darshan - Home
- * Layout from the redesign (design-input/figma "Light · Home"): greeting, search,
- * quick actions, today in Braj (Panchang + next festival), temples open now, helplines.
+ * Layout from the Nov 2026 "clean Braj" redesign (artboard Main): brand header, welcome
+ * title, search, the navy "Today in Braj" panel (tithi, sunrise, sunset), quick actions,
+ * temples open now, upcoming festivals and the 112 / 108 helplines.
  * Everything shown is computed from the app's own data; approximate values say so.
  */
 
 import React, { useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, Linking, Image, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { AppText } from '../../components/common/AppText';
 import { Icon } from '../../components/common/Icon';
 import {
   Card,
+  IconButton,
   LanguageToggle,
   QuickAction,
   SectionHeader,
   StatusBadge,
   Photo,
-  RepresentativeTag,
   SearchField,
   normalizeSearch,
   matchesSearch,
   GUTTER,
   useBottomInset,
 } from '../../components/ui';
-import { getNextFestival, daysUntil, istDateKey } from '../../utils/festivals';
+import { daysUntil, istDateKey } from '../../utils/festivals';
 import { useNow } from '../../hooks/useNow';
-import { getFestivalImage, getFestivalIcon } from '../../utils/festivalImages';
 import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
-import { calculatePanchang } from '../../services/panchangService';
+import {
+  calculatePanchang,
+  YEAR_FESTIVALS_MAP,
+  TITHIS_SHUKLA,
+  TITHIS_KRISHNA,
+} from '../../services/panchangService';
 import { getTempleStatus } from '../../utils/templeHours';
 import { getTempleImage, isTempleImageRepresentative } from '../../utils/imageAssets';
 import { usePlaces, useTemples } from '../../services/contentService';
@@ -41,12 +45,48 @@ import foodData from '../../data/food.json';
 import { GHATS } from '../../data/ghats';
 import { searchTerms, searchFields } from '../../utils/searchText';
 
-// Same logo and hero photo as divyabraj.com (hero: Unsplash photo used on the website).
+// Same logo as divyabraj.com, shown as the app icon in the header.
 const LOGO = require('../../assets/images/brand/braj-logo.png');
-const HERO = require('../../assets/images/brand/home-hero.jpg');
+
+// The "Today in Braj" panel is deliberately dark navy in both themes.
+const HERO = {
+  bg: '#17324D',
+  tile: '#24476B',
+  accent: '#F4D9A8',
+  text: '#FFFFFF',
+  soft: 'rgba(255,255,255,0.88)',
+  faint: 'rgba(255,255,255,0.74)',
+};
 
 const MONTHS_HI = ['जन', 'फ़र', 'मार्च', 'अप्रै', 'मई', 'जून', 'जुला', 'अग', 'सित', 'अक्टू', 'नव', 'दिस'];
 const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const MONTHS_FULL_HI = [
+  'जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून',
+  'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर',
+];
+const MONTHS_FULL_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+// The 30 tithis in order (Shukla 1–15, then Krishna 1–15): the one after a tithi is the next in this list.
+const ALL_TITHIS = [...TITHIS_SHUKLA, ...TITHIS_KRISHNA];
+
+function nextTithi(tithiHi) {
+  const i = ALL_TITHIS.findIndex((t) => t.hi === tithiHi);
+  return i < 0 ? null : ALL_TITHIS[(i + 1) % ALL_TITHIS.length];
+}
+
+const UPCOMING_FESTIVALS = 2;
+
+// The next festivals on or after today (IST) from the app's festival calendar.
+function upcomingFestivals(todayKey, count) {
+  return Object.keys(YEAR_FESTIVALS_MAP)
+    .sort()
+    .filter((k) => k >= todayKey)
+    .slice(0, count)
+    .map((key) => ({ key, ...YEAR_FESTIVALS_MAP[key], isToday: key === todayKey }));
+}
 
 const RESULTS_PER_GROUP = 4;
 
@@ -191,28 +231,83 @@ function SearchResults({ query, index, onOpen, onSeeAllTemples, isHindi, colors 
   );
 }
 
-// Soft diagonal colour wash behind a card's content (top-left to bottom-right), in both themes.
-// LinearGradient clones each child, so the stops are built without null entries.
-function Wash({ id, from, via, to }) {
-  const stops = via
-    ? [[0, from], [0.6, via], [1, to]]
-    : [[0, from], [1, to]];
+function SunTile({ icon, label, value }) {
   return (
-    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" pointerEvents="none">
-      <Defs>
-        <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          {stops.map(([offset, color]) => (
-            <Stop key={offset} offset={String(offset)} stopColor={color} stopOpacity="1" />
-          ))}
-        </LinearGradient>
-      </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
-    </Svg>
+    <View style={styles.sunTile}>
+      <Icon name={icon} size={20} color={HERO.accent} />
+      <View>
+        <AppText variant="small" color={HERO.soft}>
+          {label}
+        </AppText>
+        <AppText variant="body" weight="600" color={HERO.text}>
+          {value}
+        </AppText>
+      </View>
+    </View>
   );
 }
 
-function OpenTempleCard({ temple, onPress, isHindi, colors }) {
-  const status = getTempleStatus(temple);
+// Navy "Today in Braj" panel: today's tithi, nakshatra, sunrise and sunset. Tap for the full Panchang.
+function TodayPanel({ today, todayKey, isHindi, onPress }) {
+  const guarded = usePressGuard(onPress);
+  const [, m, d] = todayKey.split('-').map(Number);
+  const dateLabel = isHindi
+    ? `${today.dayNameHi}, ${d} ${MONTHS_FULL_HI[m - 1]}`
+    : `${today.dayNameEn}, ${d} ${MONTHS_FULL_EN[m - 1]}`;
+  const tithiLine = isHindi
+    ? `${today.hinduMonthHi} ${today.tithiHi}`
+    : `${today.hinduMonthEn} ${today.tithiEn}`;
+  const next = nextTithi(today.tithiHi);
+  const until = today.tithiEndsAt
+    ? isHindi
+      ? `${today.tithiEndsAt} तक${next ? `, फिर ${next.shortHi}` : ''}`
+      : `Until ${today.tithiEndsAt}${next ? `, then ${next.shortEn}` : ''}`
+    : '';
+  const nakshatra = isHindi ? `नक्षत्र ${today.nakshatraHi}` : `Nakshatra ${today.nakshatraEn}`;
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="button"
+      accessibilityLabel={isHindi ? 'आज का पंचांग' : "Today's Panchang"}
+      style={({ pressed }) => [styles.today, { opacity: pressed ? 0.92 : 1 }]}
+    >
+      <View style={styles.rowBetween}>
+        <AppText variant="caption" weight="600" color={HERO.accent}>
+          {isHindi ? 'आज ब्रज में' : 'Today in Braj'}
+        </AppText>
+        <AppText variant="caption" color={HERO.soft}>
+          {dateLabel}
+        </AppText>
+      </View>
+      <View>
+        <AppText variant="h2" weight="700" color={HERO.text} style={styles.todayTithi}>
+          {tithiLine}
+        </AppText>
+        <AppText variant="caption" color={HERO.soft}>
+          {until ? `${until} · ${nakshatra}` : nakshatra}
+        </AppText>
+      </View>
+      <View style={styles.sunGrid}>
+        <SunTile icon="sunrise" label={isHindi ? 'सूर्योदय' : 'Sunrise'} value={today.sunrise} />
+        <SunTile icon="sunset" label={isHindi ? 'सूर्यास्त' : 'Sunset'} value={today.sunset} />
+      </View>
+      <View style={styles.rowBetween}>
+        <AppText variant="small" color={HERO.faint} style={styles.flex}>
+          {isHindi ? 'तिथि अनुमानित है — स्थानीय पंचांग से मिलाएँ' : 'Approximate tithi — check a local panchang'}
+        </AppText>
+        <View style={styles.inlineLink}>
+          <AppText variant="caption" weight="600" color={HERO.accent}>
+            {isHindi ? 'पूरा पंचांग' : 'Full Panchang'}
+          </AppText>
+          <Icon name="chevronRight" size={18} color={HERO.accent} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+function OpenTempleCard({ temple, now, onPress, isHindi, colors }) {
+  const status = getTempleStatus(temple, now);
   return (
     <Card onPress={onPress} padded={false} style={styles.openCard} accessibilityLabel={temple.name}>
       <Photo
@@ -222,38 +317,72 @@ function OpenTempleCard({ temple, onPress, isHindi, colors }) {
         accessibilityLabel={temple.name}
       />
       <View style={styles.openBody}>
+        <StatusBadge status={status} size="sm" />
         <AppText variant="body" weight="700" color={colors.navy} numberOfLines={2}>
           {isHindi ? temple.nameHindi : temple.name}
         </AppText>
         <AppText variant="small" color={colors.muted}>
           {isHindi ? temple.cityHindi : temple.city}
         </AppText>
-        <StatusBadge status={status} size="sm" />
       </View>
     </Card>
   );
 }
 
-function HelplineRow({ number, label, icon, onCall, colors, isHindi, last }) {
+function FestivalRow({ festival, when, onPress, isHindi, colors, first }) {
+  const guarded = usePressGuard(onPress);
+  const [, month, day] = festival.key.split('-').map(Number);
+  const name = isHindi ? festival.nameHi : festival.nameEn;
+  // Only Hindi descriptions exist in the calendar, so English shows the countdown alone.
+  const detail = isHindi && festival.descHi ? `${when} · ${festival.descHi}` : when;
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="button"
+      accessibilityLabel={isHindi ? `आगामी पर्व: ${festival.nameHi}, ${when}` : `Next festival: ${festival.nameEn}, ${when}`}
+      style={({ pressed }) => [
+        styles.festRow,
+        !first && { borderTopWidth: 1, borderTopColor: colors.border },
+        { opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <View style={[styles.dateChip, { backgroundColor: colors.primaryLight }]}>
+        <AppText variant="h3" weight="700" color={colors.primary} style={styles.dateDay}>
+          {day}
+        </AppText>
+        <AppText variant="badge" weight="600" color={colors.primary} style={styles.dateMonth}>
+          {isHindi ? MONTHS_HI[month - 1] : MONTHS_EN[month - 1]}
+        </AppText>
+      </View>
+      <View style={styles.flex}>
+        <AppText variant="body" weight="600" color={colors.navy} numberOfLines={2}>
+          {name}
+        </AppText>
+        <AppText variant="small" color={colors.muted} numberOfLines={2}>
+          {detail}
+        </AppText>
+      </View>
+    </Pressable>
+  );
+}
+
+function HelplineTile({ number, label, onCall, colors, isHindi }) {
   return (
     <Pressable
       onPress={() => onCall(number)}
       accessibilityRole="button"
       accessibilityLabel={isHindi ? `${label}, ${number} पर कॉल करें` : `${label}, call ${number}`}
-      style={({ pressed }) => [
-        styles.helpRow,
-        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-        { opacity: pressed ? 0.7 : 1 },
-      ]}
+      style={({ pressed }) => [styles.helpTile, { backgroundColor: colors.warningBg, opacity: pressed ? 0.75 : 1 }]}
     >
-      <Icon name={icon} size={20} color={colors.muted} />
-      <AppText variant="body" color={colors.text} style={styles.flex}>
-        {label}
-      </AppText>
-      <AppText variant="body" weight="700" color={colors.navy}>
-        {number}
-      </AppText>
-      <Icon name="phone" size={20} color={colors.primary} />
+      <Icon name="phone" size={22} color={colors.warning} />
+      <View style={styles.flex}>
+        <AppText variant="h4" weight="700" color={colors.warning} style={styles.helpNumber}>
+          {number}
+        </AppText>
+        <AppText variant="small" weight="500" color={colors.warning} numberOfLines={1}>
+          {label}
+        </AppText>
+      </View>
     </Pressable>
   );
 }
@@ -276,12 +405,7 @@ export default function HomeScreen({ navigation }) {
     const [y, m, d] = todayKey.split('-').map(Number);
     return calculatePanchang(new Date(y, m - 1, d));
   }, [todayKey]);
-  const festival = useMemo(() => {
-    const [y, m, d] = todayKey.split('-').map(Number);
-    return getNextFestival(new Date(Date.UTC(y, m - 1, d, 6, 30))); // noon IST of today
-  }, [todayKey]);
-  const festivalDays = festival ? daysUntil(festival.key, now) : null;
-  const festivalImage = useMemo(() => getFestivalImage(festival), [festival]);
+  const festivals = useMemo(() => upcomingFestivals(todayKey, UPCOMING_FESTIVALS), [todayKey]);
   const templesData = useTemples();
   const placesData = usePlaces();
   const searchIndex = useMemo(() => buildSearchIndex(templesData, placesData), [templesData, placesData]);
@@ -302,14 +426,12 @@ export default function HomeScreen({ navigation }) {
   });
   const callNumber = usePressGuard((n) => Linking.openURL(`tel:${n}`).catch(() => {}));
 
-  const [, month, day] = festival ? festival.key.split('-').map(Number) : [];
-  const festivalWhen = festival
-    ? festival.isToday || festivalDays === 0
-      ? isHindi ? 'आज' : 'Today'
-      : festivalDays === 1
-        ? isHindi ? 'कल' : 'Tomorrow'
-        : isHindi ? `${festivalDays} दिन बाकी` : `In ${festivalDays} days`
-    : '';
+  const festivalWhen = (festival) => {
+    const days = daysUntil(festival.key, now);
+    if (festival.isToday || days <= 0) return isHindi ? 'आज' : 'Today';
+    if (days === 1) return isHindi ? 'कल' : 'Tomorrow';
+    return isHindi ? `${days} दिन बाद` : `In ${days} days`;
+  };
   const searching = searchQuery.trim().length > 0;
 
   return (
@@ -322,45 +444,40 @@ export default function HomeScreen({ navigation }) {
         automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
-        {/* Brand header: the divyabraj.com emblem in a circle, greeting, actions */}
+        {/* Header: app icon, name, language switch, saved temples */}
         <View style={styles.header}>
-          <View style={[styles.logoCircle, { backgroundColor: colors.surface, borderColor: colors.borderGold }]}>
-            <Image source={LOGO} style={styles.logo} resizeMode="cover" fadeDuration={0} accessibilityLabel="DivyaBraj — Braj Dharshan" />
-          </View>
+          <Image
+            source={LOGO}
+            style={[styles.logo, { backgroundColor: colors.surface }]}
+            resizeMode="cover"
+            fadeDuration={0}
+            accessibilityLabel="DivyaBraj — Braj Dharshan"
+          />
           <View style={styles.flex}>
-            <AppText variant="small" weight="700" color={colors.primary}>
-              राधे राधे
-            </AppText>
-            <AppText variant="h3" weight="700" color={colors.navy} numberOfLines={2}>
+            <AppText variant="h4" weight="700" color={colors.navy} numberOfLines={1} style={styles.brandName}>
               {isHindi ? 'श्री ब्रज दर्शन' : 'Braj Darshan'}
             </AppText>
+            <AppText variant="small" color={colors.muted} numberOfLines={2}>
+              {isHindi ? 'राधे राधे · ब्रज में आपका साथी' : 'Radhe Radhe · your companion in Braj'}
+            </AppText>
           </View>
-          {/* Only the language switch here, so the name has room; Saved lives in More. */}
           <LanguageToggle />
+          <IconButton
+            icon="heart"
+            color={colors.primary}
+            accessibilityLabel={isHindi ? 'सहेजे गए' : 'Saved'}
+            onPress={() => go(ROUTES.FAVORITES)}
+          />
         </View>
 
-        {/* Welcome banner */}
-        <View style={styles.heroWrap}>
-          <Photo source={HERO} scrim style={styles.hero} accessibilityLabel={isHindi ? 'ब्रज में श्रद्धालु' : 'Pilgrims in Braj'}>
-            <View style={styles.heroText}>
-              <AppText variant="small" weight="700" color="#FDE7B3">
-                {isHindi ? 'ब्रज में आपका स्वागत है' : 'Welcome to Braj'}
-              </AppText>
-              <AppText variant="h2" weight="700" color="#FFFFFF">
-                {isHindi ? 'मंदिर, दर्शन समय और यात्रा — एक ही जगह' : 'Temples, darshan times and yatra — in one place'}
-              </AppText>
-              <Pressable
-                onPress={() => go(ROUTES.TEMPLES)}
-                accessibilityRole="button"
-                style={({ pressed }) => [styles.heroBtn, { opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Icon name="temple" size={18} color="#8A4A05" />
-                <AppText variant="caption" weight="700" color="#8A4A05">
-                  {isHindi ? 'मंदिर देखें' : 'Explore temples'}
-                </AppText>
-              </Pressable>
-            </View>
-          </Photo>
+        {/* Welcome */}
+        <View style={styles.welcome}>
+          <AppText variant="heroHindi" weight="700" color={colors.navy} accessibilityRole="header">
+            {isHindi ? 'ब्रज में आपका स्वागत है' : 'Welcome to Braj'}
+          </AppText>
+          <AppText variant="body" color={colors.muted}>
+            {isHindi ? 'मंदिर, दर्शन समय और यात्रा — एक ही जगह' : 'Temples, darshan times and yatra — in one place'}
+          </AppText>
         </View>
 
         {/* Search: temples, towns, ghats, festivals and food, results right here */}
@@ -384,152 +501,32 @@ export default function HomeScreen({ navigation }) {
           ) : null}
         </View>
 
-        {/* Quick actions */}
+        {/* Today in Braj: tithi, sunrise and sunset; opens the full Panchang */}
         <View style={styles.section}>
-          <SectionHeader title={isHindi ? 'आपकी ब्रज यात्रा' : 'Your Braj, at your pace'} />
-          <View style={styles.grid}>
-            <QuickAction icon="temple" label={isHindi ? 'मंदिर' : 'Temples'} onPress={() => go(ROUTES.TEMPLES)} />
-            <QuickAction icon="map" tone="teal" label={isHindi ? 'नक्शा' : 'Map'} onPress={() => go(ROUTES.MAP)} />
-            <QuickAction icon="route" label={isHindi ? 'यात्रा योजना' : 'Yatra plans'} onPress={() => go(ROUTES.YATRA)} />
-            <QuickAction
-              icon="parikrama"
-              tone="teal"
-              label={isHindi ? 'परिक्रमा' : 'Parikrama'}
-              onPress={() => go(ROUTES.PARIKRAMA_DETAIL, { id: 'govardhan-parikrama' })}
-            />
-            <QuickAction icon="panchang" label={isHindi ? 'पंचांग' : 'Panchang'} onPress={() => go(ROUTES.PANCHANG)} />
-            <QuickAction icon="ghat" tone="teal" label={isHindi ? 'घाट व स्थल' : 'Ghats & places'} onPress={() => go(ROUTES.PLACES)} />
-            <QuickAction icon="food" label={isHindi ? 'ब्रज भोग' : 'Braj food'} onPress={() => go(ROUTES.FOOD)} />
-            <QuickAction icon="phone" tone="teal" label={isHindi ? 'सहायता' : 'Help'} onPress={() => go(ROUTES.HELPDESK)} />
-          </View>
+          <TodayPanel today={today} todayKey={todayKey} isHindi={isHindi} onPress={() => go(ROUTES.PANCHANG)} />
         </View>
 
-        {/* Today in Braj: Panchang and the next festival */}
-        <View style={styles.section}>
-          <SectionHeader title={isHindi ? 'आज ब्रज में' : 'Today in Braj'} />
-          <Card
-            onPress={() => go(ROUTES.PANCHANG)}
-            padded={false}
-            accessibilityLabel={isHindi ? 'आज का पंचांग' : "Today's Panchang"}
-          >
-            <Wash id="home-panchang-wash" from={colors.primaryLight} via={colors.surface} to={colors.purnimaLight} />
-            <View style={styles.panchangBody}>
-              <View style={styles.rowBetween}>
-                <AppText variant="small" weight="700" color={colors.primary}>
-                  {isHindi ? 'आज का पंचांग' : "Today's Panchang"}
-                </AppText>
-                <View style={styles.inlineLink}>
-                  <AppText variant="caption" weight="700" color={colors.primary}>
-                    {isHindi ? 'पूरा पंचांग' : 'Full Panchang'}
-                  </AppText>
-                  <Icon name="chevronRight" size={18} color={colors.primary} />
-                </View>
-              </View>
-              <View style={styles.tithiRow}>
-                <View style={[styles.tithiIcon, { backgroundColor: colors.surface, borderColor: colors.borderGold }]}>
-                  <Icon name="tithi" size={26} color={colors.purnima} />
-                </View>
-                <View style={styles.flex}>
-                  <AppText variant="h3" weight="700" color={colors.navy}>
-                    {isHindi ? today.tithiHi : today.tithiEn}
-                  </AppText>
-                  <AppText variant="caption" color={colors.textSecondary}>
-                    {isHindi ? 'तिथि अनुमानित है — स्थानीय पंचांग से मिलाएँ' : 'Approximate tithi — check a local panchang'}
-                  </AppText>
-                </View>
-              </View>
-              <View style={[styles.sunRow, { borderTopColor: colors.border }]}>
-                <View style={styles.sunItem}>
-                  <Icon name="sunrise" size={20} color={colors.primary} />
-                  <View>
-                    <AppText variant="small" color={colors.muted}>{isHindi ? 'सूर्योदय' : 'Sunrise'}</AppText>
-                    <AppText variant="body" weight="700" color={colors.navy}>{today.sunrise}</AppText>
-                  </View>
-                </View>
-                <View style={styles.sunItem}>
-                  <Icon name="sunset" size={20} color={colors.primary} />
-                  <View>
-                    <AppText variant="small" color={colors.muted}>{isHindi ? 'सूर्यास्त' : 'Sunset'}</AppText>
-                    <AppText variant="body" weight="700" color={colors.navy}>{today.sunset}</AppText>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </Card>
-
-          {/* Next festival: that festival's own photo when the app has one, else a plain card */}
-          {festival && festivalImage ? (
-            <Card
-              onPress={() => go(ROUTES.EVENTS)}
-              padded={false}
-              style={styles.festCardGap}
-              accessibilityLabel={isHindi ? `आगामी पर्व: ${festival.nameHi}` : `Next festival: ${festival.nameEn}`}
-            >
-              <Photo source={festivalImage} scrim style={styles.festPhoto}>
-                <View style={[styles.dateBlock, styles.festDateOnPhoto]}>
-                  <AppText variant="h2" weight="700" color="#A85A06">
-                    {day}
-                  </AppText>
-                  <AppText variant="small" weight="700" color="#786A5D">
-                    {isHindi ? MONTHS_HI[month - 1] : MONTHS_EN[month - 1]}
-                  </AppText>
-                </View>
-                <RepresentativeTag style={styles.festRepTag} />
-                <View style={styles.festText}>
-                  <AppText variant="small" weight="700" color="#FDE7B3">
-                    {isHindi ? 'आगामी पर्व' : 'Next festival'}
-                  </AppText>
-                  <AppText variant="h3" weight="700" color="#FFFFFF" numberOfLines={2}>
-                    {isHindi ? festival.nameHi : festival.nameEn}
-                  </AppText>
-                  <AppText variant="caption" weight="600" color="#FFFFFF">
-                    {festivalWhen}
-                  </AppText>
-                </View>
-              </Photo>
-            </Card>
-          ) : festival ? (
-            <Card
-              onPress={() => go(ROUTES.EVENTS)}
-              padded={false}
-              style={[styles.festCardGap, { borderColor: colors.primaryFixed }]}
-              accessibilityLabel={isHindi ? `आगामी पर्व: ${festival.nameHi}` : `Next festival: ${festival.nameEn}`}
-            >
-              <Wash id="home-festival-wash" from={colors.primaryLight} to={colors.primaryFixed} />
-              <View style={styles.festMark} pointerEvents="none">
-                <Icon name={getFestivalIcon(festival)} size={132} color={colors.primary} style={styles.festMarkIcon} />
-              </View>
-              <View style={[styles.festRow, styles.festPlainBody]}>
-                <View style={[styles.dateBlock, { backgroundColor: colors.surface }]}>
-                  <AppText variant="h2" weight="700" color={colors.primary}>
-                    {day}
-                  </AppText>
-                  <AppText variant="small" weight="700" color={colors.muted}>
-                    {isHindi ? MONTHS_HI[month - 1] : MONTHS_EN[month - 1]}
-                  </AppText>
-                </View>
-                <View style={styles.flex}>
-                  <AppText variant="small" weight="700" color={colors.primary}>
-                    {isHindi ? 'आगामी पर्व' : 'Next festival'}
-                  </AppText>
-                  <AppText variant="h4" weight="700" color={colors.navy}>
-                    {isHindi ? festival.nameHi : festival.nameEn}
-                  </AppText>
-                  <AppText variant="caption" color={colors.textSecondary}>
-                    {festivalWhen}
-                  </AppText>
-                </View>
-                <Icon name="chevronRight" size={20} color={colors.muted} />
-              </View>
-            </Card>
-          ) : null}
+        {/* Quick actions (Temples and Panchang are tabs, and linked from this page) */}
+        <View style={[styles.section, styles.grid]}>
+          <QuickAction icon="map" label={isHindi ? 'नक्शा' : 'Map'} onPress={() => go(ROUTES.MAP)} />
+          <QuickAction icon="route" label={isHindi ? 'यात्रा योजना' : 'Yatra plans'} onPress={() => go(ROUTES.YATRA)} />
+          <QuickAction
+            icon="parikrama"
+            label={isHindi ? 'परिक्रमा' : 'Parikrama'}
+            onPress={() => go(ROUTES.PARIKRAMA_DETAIL, { id: 'govardhan-parikrama' })}
+          />
+          <QuickAction icon="ghat" label={isHindi ? 'घाट व स्थल' : 'Ghats & places'} onPress={() => go(ROUTES.PLACES)} />
+          <QuickAction icon="aarti" label={isHindi ? 'उत्सव' : 'Festivals'} onPress={() => go(ROUTES.EVENTS)} />
+          <QuickAction icon="food" label={isHindi ? 'ब्रज भोग' : 'Braj food'} onPress={() => go(ROUTES.FOOD)} />
+          <QuickAction icon="music" label={isHindi ? 'भक्ति ऑडियो' : 'Bhakti audio'} onPress={() => go(ROUTES.AUDIO_PLAYER)} />
+          <QuickAction icon="phone" tone="red" label={isHindi ? 'सहायता' : 'Help'} onPress={() => go(ROUTES.HELPDESK)} />
         </View>
 
-        {/* Temples */}
-        <View style={styles.sectionTight}>
+        {/* Temples: open now first */}
+        <View style={styles.section}>
           <SectionHeader
             title={anyOpen ? (isHindi ? 'अभी दर्शन खुले हैं' : 'Open for darshan now') : (isHindi ? 'प्रमुख मंदिर' : 'Major temples')}
-            actionLabel={isHindi ? `सभी ${templesData.length}` : `See all ${templesData.length}`}
+            actionLabel={isHindi ? 'सभी मंदिर' : 'All temples'}
             onAction={() => go(ROUTES.TEMPLES)}
           />
         </View>
@@ -542,6 +539,7 @@ export default function HomeScreen({ navigation }) {
             <OpenTempleCard
               key={temple.id}
               temple={temple}
+              now={now}
               isHindi={isHindi}
               colors={colors}
               onPress={() => go(ROUTES.TEMPLE_DETAIL, { id: temple.id, temple })}
@@ -554,38 +552,53 @@ export default function HomeScreen({ navigation }) {
             : 'Based on regular temple timings. They change on festivals — please confirm locally.'}
         </AppText>
 
-        {/* Helplines: plain list, tap to call */}
+        {/* Upcoming festivals from the app's festival calendar */}
+        {festivals.length > 0 ? (
+          <View style={styles.section}>
+            <SectionHeader
+              title={isHindi ? 'आगामी पर्व' : 'Upcoming festivals'}
+              actionLabel={isHindi ? 'सभी उत्सव' : 'All festivals'}
+              onAction={() => go(ROUTES.EVENTS)}
+            />
+            <Card padded={false}>
+              {festivals.map((festival, index) => (
+                <FestivalRow
+                  key={festival.key}
+                  festival={festival}
+                  when={festivalWhen(festival)}
+                  first={index === 0}
+                  isHindi={isHindi}
+                  colors={colors}
+                  onPress={() => go(ROUTES.EVENTS)}
+                />
+              ))}
+            </Card>
+          </View>
+        ) : null}
+
+        {/* Helplines: tap to call */}
         <View style={styles.section}>
-          <Card>
-            <View style={styles.rowBetween}>
-              <AppText variant="h4" weight="700" color={colors.navy}>
-                {isHindi ? 'हेल्पलाइन नंबर' : 'Helpline numbers'}
-              </AppText>
-              <Pressable onPress={() => go(ROUTES.HELPDESK)} hitSlop={12} accessibilityRole="button" style={styles.inlineLink}>
-                <AppText variant="caption" weight="700" color={colors.primary}>
-                  {isHindi ? 'सभी नंबर' : 'All numbers'}
-                </AppText>
-                <Icon name="chevronRight" size={18} color={colors.primary} />
-              </Pressable>
-            </View>
-            <HelplineRow
+          <SectionHeader
+            title={isHindi ? 'ज़रूरत पड़े तो' : 'If you need help'}
+            actionLabel={isHindi ? 'सभी नंबर' : 'All numbers'}
+            onAction={() => go(ROUTES.HELPDESK)}
+          />
+          <View style={styles.helpGrid}>
+            <HelplineTile
               number="112"
               label={isHindi ? 'आपातकाल' : 'Emergency'}
-              icon="emergency"
               onCall={callNumber}
               colors={colors}
               isHindi={isHindi}
             />
-            <HelplineRow
+            <HelplineTile
               number="108"
               label={isHindi ? 'एंबुलेंस' : 'Ambulance'}
-              icon="ambulance"
               onCall={callNumber}
               colors={colors}
               isHindi={isHindi}
-              last
             />
-          </Card>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -600,32 +613,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: GUTTER,
-    paddingTop: 12,
+    paddingTop: 16,
   },
-  logoCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  logo: { width: 60, height: 60 },
-  heroWrap: { paddingHorizontal: GUTTER, marginTop: 16 },
-  hero: { height: 196, borderRadius: 24 },
-  heroText: { position: 'absolute', left: 18, right: 18, bottom: 16, gap: 6 },
-  heroBtn: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 44,
-    paddingHorizontal: 16,
-    borderRadius: 22,
-    backgroundColor: '#FFF9ED',
-    marginTop: 4,
-  },
+  logo: { width: 40, height: 40, borderRadius: 12 },
+  brandName: { fontSize: 18 },
+  welcome: { paddingHorizontal: GUTTER, marginTop: 24, gap: 4 },
   searchWrap: { paddingHorizontal: GUTTER, marginTop: 14 },
   results: { marginTop: 8 },
   resultGroup: { paddingTop: 12, paddingHorizontal: 16 },
@@ -641,48 +633,48 @@ const styles = StyleSheet.create({
   },
   emptyRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   section: { paddingHorizontal: GUTTER, marginTop: 24 },
-  sectionTight: { paddingHorizontal: GUTTER, marginTop: 24 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   inlineLink: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 32 },
-  panchangBody: { padding: 16 },
-  tithiRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  tithiIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sunRow: {
+  today: { backgroundColor: HERO.bg, borderRadius: 20, padding: 18, gap: 14 },
+  todayTithi: { fontSize: 24, lineHeight: 32 },
+  sunGrid: { flexDirection: 'row', gap: 10 },
+  sunTile: {
+    flex: 1,
     flexDirection: 'row',
-    gap: 28,
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: HERO.tile,
   },
-  sunItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  festCardGap: { marginTop: 12 },
-  festPhoto: { height: 188 },
-  festDateOnPhoto: { position: 'absolute', top: 12, left: 12, backgroundColor: '#FFF9ED' },
-  festRepTag: { position: 'absolute', top: 12, right: 12 },
-  festText: { position: 'absolute', left: 16, right: 16, bottom: 14, gap: 2 },
-  festRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  festPlainBody: { padding: 16 },
-  festMark: { position: 'absolute', right: -16, bottom: -28 },
-  festMarkIcon: { opacity: 0.1 },
-  dateBlock: { width: 64, height: 68, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   hScroll: { paddingHorizontal: GUTTER, gap: 12 },
-  openCard: { width: 236 },
-  openPhoto: { height: 140 },
-  openBody: { padding: 14, gap: 6 },
+  openCard: { width: 220 },
+  openPhoto: { height: 130 },
+  openBody: { padding: 12, gap: 6 },
   note: { paddingHorizontal: GUTTER, marginTop: 10 },
-  helpRow: {
+  festRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    minHeight: 56,
+    gap: 14,
+    minHeight: 64,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
+  dateChip: { width: 52, paddingVertical: 6, borderRadius: 12, alignItems: 'center' },
+  dateDay: { fontSize: 20, lineHeight: 24 },
+  dateMonth: { letterSpacing: 0 },
+  helpGrid: { flexDirection: 'row', gap: 10 },
+  helpTile: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 56,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  helpNumber: { fontSize: 18, lineHeight: 22 },
 });

@@ -4,12 +4,13 @@
  */
 
 import React from 'react';
-import { Platform, Text } from 'react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 import { typography } from '../../theme';
+import { fontFor } from '../../theme/fonts';
 import { useTheme } from '../../context/ThemeContext';
 
 const DEVANAGARI = /[ऀ-ॿ]/;
-const HAIR_SPACE = ' ';
+const HAIR_SPACE = ' ';
 
 // Android measures Devanagari a hair narrower than it draws it, so a Hindi line that
 // just fits pushes its last word onto a second line that the measured box cuts off
@@ -61,9 +62,13 @@ export function AppText({
     ...(weight && { fontWeight: weight }),
   };
 
+  // Mukta has one family per weight: pick it from the final weight (variant, weight prop or style).
+  const flat = StyleSheet.flatten([baseStyle, dynamicStyle, style]);
+  const font = fontFor(flat.fontWeight);
+
   // Respect the phone's large-text setting, but cap it so layouts never clip.
   return (
-    <Text style={[baseStyle, dynamicStyle, style]} maxFontSizeMultiplier={1.5} {...props}>
+    <Text style={[flat, font]} maxFontSizeMultiplier={1.5} {...props}>
       {padDevanagari(children)}
     </Text>
   );

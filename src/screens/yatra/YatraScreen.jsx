@@ -1,36 +1,40 @@
 /**
  * Braj Darshan - Yatra plans
- * Layout from the redesign (design-input/figma "Light · Yatra plans"): suggested
- * multi-day plans built from the app's own day plans (src/data/yatra.json), the
- * parikrama guides, and a short "make my own plan" form that opens the planner.
+ * Layout from the Nov 2026 redesign (Yatra artboard): a navy "make my own plan"
+ * card that opens the planner (days, who is coming, pace, places), suggested
+ * multi-day plans built from the app's own day plans (src/data/yatra.json), and
+ * the parikrama guides with their approximate lengths.
  * Plans are suggestions, not bookings; the screen says so.
  */
 
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { AppText } from '../../components/common/AppText';
 import { Icon } from '../../components/common/Icon';
 import {
-  Button,
   Card,
-  Chip,
-  InfoNote,
   LanguageToggle,
-  ListRow,
   Photo,
   SectionHeader,
   TopBar,
   GUTTER,
   useBottomInset,
 } from '../../components/ui';
+import { usePressGuard } from '../../hooks/usePressGuard';
 import { getPlaceImage } from '../../utils/imageAssets';
 import { ROUTES } from '../../navigation/routes';
 import yatraData from '../../data/yatra.json';
 import parikramaData from '../../data/parikrama.json';
 import { getPlaces } from '../../services/contentService';
+
+// The navy call-to-action is a fixed dark panel in both themes (as the Home hero cards).
+const HERO_NAVY = '#17324D';
+const HERO_TEXT = '#FFFFFF';
+const HERO_SUB = '#E6E9EE';
+const HERO_ACCENT = '#F4D9A8';
 
 // Each plan is a set of the day plans in yatra.json, in travel order.
 const PLANS = [
@@ -97,50 +101,93 @@ const PARIKRAMA_NAME_EN = {
   mathura: 'Mathura Parikrama',
 };
 
-// Quick choices here pre-fill the planner screen, which builds the plan.
-const QUICK_DAYS = [1, 2, 3, 6];
-const QUICK_INCLUDE = [
-  { id: 'temples', icon: 'temple', hi: 'मंदिर', en: 'Temples', experiences: ['banke_bihari', 'janmabhoomi', 'barsana'] },
-  { id: 'ghats', icon: 'ghat', hi: 'घाट', en: 'Ghats', experiences: ['keshi_ghat', 'gokul'] },
-  { id: 'food', icon: 'food', hi: 'ब्रज भोग', en: 'Food', experiences: ['food_tour'] },
-  { id: 'parikrama', icon: 'parikrama', hi: 'परिक्रमा', en: 'Parikrama', experiences: ['govardhan', 'radha_kund'] },
-];
-
 function placeImage(name) {
   return getPlaceImage(getPlaces().find((p) => p.name === name));
+}
+
+function PlannerCta({ onPress, isHindi }) {
+  const guarded = usePressGuard(onPress);
+  const title = isHindi ? 'अपनी योजना बनाएं' : 'Make my own plan';
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.9 : 1 }]}
+    >
+      <View style={styles.ctaText}>
+        <AppText variant="h3" weight="700" color={HERO_TEXT}>
+          {title}
+        </AppText>
+        <AppText variant="caption" color={HERO_SUB}>
+          {isHindi
+            ? 'कितने दिन, कौन साथ है, क्या देखना है — बताइए, योजना हम सुझाएँगे।'
+            : 'How many days, who is coming, what to see — tell us and we’ll suggest a plan.'}
+        </AppText>
+      </View>
+      <View style={styles.ctaArrow}>
+        <Icon name="chevronRight" size={24} color={HERO_NAVY} />
+      </View>
+    </Pressable>
+  );
 }
 
 function PlanCard({ plan, onOpen, isHindi, colors }) {
   const days = plan.dayIds.length;
   const daysLabel = isHindi ? `${days} दिन` : `${days} ${days === 1 ? 'day' : 'days'}`;
+  const title = isHindi ? plan.titleHi : plan.titleEn;
   return (
-    <Card style={styles.planCard}>
-      <Photo
-        source={placeImage(plan.place)}
-        representative
-        style={styles.planPhoto}
-        accessibilityLabel={isHindi ? plan.titleHi : plan.titleEn}
-      />
-      <AppText variant="h3" weight="700" color={colors.navy} style={styles.planTitle}>
-        {daysLabel} · {isHindi ? plan.titleHi : plan.titleEn}
-      </AppText>
-      <AppText variant="body" color={colors.textSecondary}>
-        {isHindi ? plan.effortHi : plan.effortEn}
-      </AppText>
-      <View style={styles.townRow}>
-        <Icon name="location" size={18} color={colors.muted} />
-        <AppText variant="caption" color={colors.muted} style={styles.flex}>
-          {(isHindi ? plan.townsHi : plan.townsEn).join(' · ')}
-        </AppText>
+    <Card
+      onPress={onOpen}
+      accessibilityLabel={isHindi ? `${daysLabel} की योजना देखें: ${title}` : `View ${daysLabel} plan: ${title}`}
+      style={styles.planCard}
+    >
+      <View style={styles.planRow}>
+        <Photo source={placeImage(plan.place)} style={styles.planPhoto} />
+        <View style={styles.planText}>
+          <View style={[styles.dayPill, { backgroundColor: colors.primaryLight }]}>
+            <AppText variant="small" weight="700" color={colors.primary}>
+              {daysLabel}
+            </AppText>
+          </View>
+          <AppText variant="h4" weight="700" color={colors.navy}>
+            {title}
+          </AppText>
+          <AppText variant="small" color={colors.text}>
+            {(isHindi ? plan.townsHi : plan.townsEn).join(' · ')}
+          </AppText>
+          <AppText variant="small" color={colors.muted}>
+            {isHindi ? plan.effortHi : plan.effortEn}
+          </AppText>
+        </View>
       </View>
-      <Button
-        title={isHindi ? 'योजना देखें' : 'View plan'}
-        variant="secondary"
-        icon="route"
-        onPress={onOpen}
-        accessibilityLabel={isHindi ? `${daysLabel} की योजना देखें` : `View ${daysLabel} plan`}
-      />
     </Card>
+  );
+}
+
+function ParikramaRow({ title, length, onPress, first, colors }) {
+  const guarded = usePressGuard(onPress);
+  return (
+    <Pressable
+      onPress={guarded}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${length}`}
+      style={({ pressed }) => [
+        styles.pkRow,
+        !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+        pressed && { opacity: 0.7 },
+      ]}
+    >
+      <View style={[styles.pkIcon, { backgroundColor: colors.primaryLight }]}>
+        <Icon name="parikrama" size={22} color={colors.primary} />
+      </View>
+      <AppText variant="body" weight="600" color={colors.navy} style={styles.flex}>
+        {title}
+      </AppText>
+      <AppText variant="small" color={colors.muted} align="right" style={styles.pkLength}>
+        {length}
+      </AppText>
+    </Pressable>
   );
 }
 
@@ -150,28 +197,9 @@ export default function YatraScreen({ navigation }) {
   const { colors } = useTheme();
   const { isHindi } = useLanguage();
 
-  const [quickDays, setQuickDays] = useState(2);
-  const [withElders, setWithElders] = useState(true);
-  const [withChildren, setWithChildren] = useState(false);
-  const [include, setInclude] = useState(['temples']);
-
   const openPlan = (plan) => {
     const first = yatraData.find((d) => d.id === plan.dayIds[0]) || yatraData[0];
     navigation.navigate(ROUTES.YATRA_DETAIL, { id: first.id, yatra: first, planDayIds: plan.dayIds });
-  };
-
-  const toggleInclude = (id) =>
-    setInclude((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
-  const createPlan = () => {
-    const experiences = QUICK_INCLUDE.filter((q) => include.includes(q.id)).flatMap((q) => q.experiences);
-    navigation.navigate(ROUTES.SMART_PLANNER, {
-      days: quickDays,
-      elders: withElders,
-      children: withChildren,
-      experiences,
-      autoCreate: true,
-    });
   };
 
   return (
@@ -187,112 +215,54 @@ export default function YatraScreen({ navigation }) {
         contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
         showsVerticalScrollIndicator={false}
       >
-        <InfoNote>
-          {isHindi
-            ? 'ये सुझाई गई यात्राएं हैं, बुकिंग नहीं। त्योहारों पर समय बदल सकता है — कृपया स्थानीय पुष्टि करें।'
-            : 'Suggested itineraries, not bookings. Timings may change on festivals — confirm locally.'}
-        </InfoNote>
+        <PlannerCta isHindi={isHindi} onPress={() => navigation.navigate(ROUTES.SMART_PLANNER)} />
 
-        {PLANS.map((plan) => (
-          <PlanCard
-            key={plan.key}
-            plan={plan}
-            isHindi={isHindi}
-            colors={colors}
-            onOpen={() => openPlan(plan)}
-          />
-        ))}
+        {/* Suggested plans */}
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <AppText variant="h3" weight="700" color={colors.navy} style={styles.flex}>
+              {isHindi ? 'सुझाई गई यात्राएं' : 'Suggested plans'}
+            </AppText>
+            <View style={styles.repNote}>
+              <Icon name="camera" size={16} color={colors.muted} />
+              <AppText variant="small" color={colors.muted}>
+                {isHindi ? 'प्रतीकात्मक चित्र' : 'Representative photos'}
+              </AppText>
+            </View>
+          </View>
+          {PLANS.map((plan) => (
+            <PlanCard
+              key={plan.key}
+              plan={plan}
+              isHindi={isHindi}
+              colors={colors}
+              onOpen={() => openPlan(plan)}
+            />
+          ))}
+        </View>
 
         {/* Parikrama guides */}
-        <View style={styles.section}>
+        <View>
           <SectionHeader title={isHindi ? 'परिक्रमा मार्गदर्शिका' : 'Parikrama guides'} />
           <Card style={styles.listCard}>
             {parikramaData.map((p, idx) => (
-              <View key={p.id}>
-                {idx > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
-                <ListRow
-                  icon="parikrama"
-                  title={isHindi ? p.title : PARIKRAMA_NAME_EN[p.id] || p.titleEn}
-                  subtitle={(PARIKRAMA_LENGTH[p.id] || [p.distance, p.distance])[isHindi ? 0 : 1]}
-                  onPress={() => navigation.navigate(ROUTES.PARIKRAMA_DETAIL, { id: p.id, parikrama: p })}
-                />
-              </View>
+              <ParikramaRow
+                key={p.id}
+                first={idx === 0}
+                colors={colors}
+                title={isHindi ? p.title : PARIKRAMA_NAME_EN[p.id] || p.titleEn}
+                length={(PARIKRAMA_LENGTH[p.id] || [p.distance, p.distance])[isHindi ? 0 : 1]}
+                onPress={() => navigation.navigate(ROUTES.PARIKRAMA_DETAIL, { id: p.id, parikrama: p })}
+              />
             ))}
           </Card>
         </View>
 
-        {/* Make my own plan */}
-        <View style={styles.section}>
-          <Card>
-            <AppText variant="h3" weight="700" color={colors.navy}>
-              {isHindi ? 'अपनी योजना बनाएं' : 'Make my own plan'}
-            </AppText>
-            <AppText variant="body" color={colors.textSecondary} style={styles.gapSmall}>
-              {isHindi
-                ? 'बताइए आपके समूह के लिए क्या सुविधाजनक है।'
-                : 'Tell us what feels comfortable for your group.'}
-            </AppText>
-
-            <AppText variant="bodyBold" color={colors.navy} style={styles.question}>
-              {isHindi ? 'कितने दिन?' : 'How many days?'}
-            </AppText>
-            <View style={styles.chipRow}>
-              {QUICK_DAYS.map((n) => (
-                <Chip
-                  key={n}
-                  label={isHindi ? `${n} दिन` : `${n} ${n === 1 ? 'day' : 'days'}`}
-                  selected={quickDays === n}
-                  onPress={() => setQuickDays(n)}
-                />
-              ))}
-            </View>
-
-            <AppText variant="bodyBold" color={colors.navy} style={styles.question}>
-              {isHindi ? 'कौन साथ आ रहा है?' : 'Who’s coming?'}
-            </AppText>
-            <View style={styles.chipRow}>
-              <Chip
-                label={isHindi ? 'बुज़ुर्ग' : 'Elders'}
-                icon="people"
-                selected={withElders}
-                onPress={() => setWithElders((v) => !v)}
-              />
-              <Chip
-                label={isHindi ? 'बच्चे' : 'Children'}
-                icon="people"
-                selected={withChildren}
-                onPress={() => setWithChildren((v) => !v)}
-              />
-            </View>
-
-            <AppText variant="bodyBold" color={colors.navy} style={styles.question}>
-              {isHindi ? 'क्या शामिल करना चाहेंगे?' : 'What would you like to include?'}
-            </AppText>
-            <View style={styles.chipRow}>
-              {QUICK_INCLUDE.map((q) => (
-                <Chip
-                  key={q.id}
-                  label={isHindi ? q.hi : q.en}
-                  icon={q.icon}
-                  selected={include.includes(q.id)}
-                  onPress={() => toggleInclude(q.id)}
-                />
-              ))}
-            </View>
-
-            <Button
-              title={isHindi ? 'मेरी योजना बनाएं' : 'Create my plan'}
-              icon="route"
-              onPress={createPlan}
-              style={styles.createBtn}
-            />
-            <AppText variant="caption" color={colors.muted} style={styles.gapSmall}>
-              {isHindi
-                ? 'योजना ऐप की दिन-योजनाओं से बनती है। समय केवल सुझाव हैं।'
-                : 'The plan is built from the app’s day plans. Times are suggestions only.'}
-            </AppText>
-          </Card>
-        </View>
+        <AppText variant="small" color={colors.muted}>
+          {isHindi
+            ? 'ये सुझाई गई यात्राएं हैं, बुकिंग नहीं। त्योहारों पर समय बदल सकता है — कृपया स्थानीय पुष्टि करें।'
+            : 'Suggested itineraries, not bookings. Timings may change on festivals — confirm locally.'}
+        </AppText>
       </ScrollView>
     </View>
   );
@@ -301,16 +271,37 @@ export default function YatraScreen({ navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
-  planCard: { gap: 8 },
-  planPhoto: { height: 168, borderRadius: 14, marginBottom: 6 },
-  planTitle: { marginTop: 2 },
-  townRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  section: { marginTop: 8 },
-  listCard: { paddingVertical: 4 },
-  divider: { height: 1 },
-  gapSmall: { marginTop: 6 },
-  question: { marginTop: 18, marginBottom: 10 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  createBtn: { marginTop: 22 },
+  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 20 },
+
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: HERO_NAVY,
+  },
+  ctaText: { flex: 1, gap: 4 },
+  ctaArrow: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: HERO_ACCENT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  section: { gap: 12 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  repNote: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  planCard: { padding: 12 },
+  planRow: { flexDirection: 'row', gap: 14 },
+  planPhoto: { width: 84, height: 84, borderRadius: 14 },
+  planText: { flex: 1, gap: 4 },
+  dayPill: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 1, borderRadius: 999 },
+
+  listCard: { paddingVertical: 0, paddingHorizontal: 14 },
+  pkRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60, paddingVertical: 8 },
+  pkIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  pkLength: { maxWidth: '40%' },
 });

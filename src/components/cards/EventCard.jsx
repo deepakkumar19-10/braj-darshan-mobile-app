@@ -1,6 +1,7 @@
 /**
  * Braj Darshan - EventCard
- * One celebration of Braj from data/events.json, built from the UI kit.
+ * One celebration of Braj from data/events.json, built from the UI kit
+ * (Nov 2026 redesign look: category as a saffron label above the title).
  * Photos are illustrative (not of a particular year's event), so they carry the
  * "Representative photo" tag. Dates are given as the traditional lunar tithi.
  * Every line is in the reader's language (see utils/eventText); a line that has
@@ -62,17 +63,12 @@ export default function EventCard({ event, style }) {
         <Photo source={image} representative style={styles.photo} accessibilityLabel={title} />
       ) : null}
       <View style={styles.body}>
-        {categoryLabel ? (
-          // Always has a background: on Android a View without one loses its rounded corners.
-          <View style={[styles.category, { backgroundColor: colors.primaryLight }]}>
-            <Icon name="festival" size={16} color={colors.primary} />
-            <AppText variant="small" weight="700" color={colors.primary}>
+        <View>
+          {categoryLabel ? (
+            <AppText variant="small" weight="600" color={colors.primary}>
               {categoryLabel}
             </AppText>
-          </View>
-        ) : null}
-
-        <View>
+          ) : null}
           <AppText variant="h3" weight="700" color={colors.navy}>
             {title}
           </AppText>
@@ -121,17 +117,9 @@ export default function EventCard({ event, style }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  card: { marginBottom: 16 },
+  // Spacing between cards comes from the list (EventsScreen); radius matches the redesign's photo cards.
+  card: { borderRadius: 20 },
   photo: { height: 168 },
   body: { padding: 16, gap: 10 },
-  category: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
   infoLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
 });

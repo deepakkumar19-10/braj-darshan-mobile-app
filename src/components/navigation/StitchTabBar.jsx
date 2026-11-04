@@ -39,13 +39,13 @@ function TabItem({ tab, isActive, onPress, colors, label }) {
       <View style={[styles.pill, { backgroundColor: isActive ? colors.primaryLight : colors.tabBarBg }]}>
         <Icon
           name={tab.icon}
-          size={24}
+          size={22}
           color={isActive ? colors.primary : colors.tabBarInactive}
         />
       </View>
       <AppText
         variant="badge"
-        weight={isActive ? '700' : '500'}
+        weight={isActive ? '700' : '600'}
         color={isActive ? colors.primary : colors.tabBarInactive}
         numberOfLines={1}
         maxFontSizeMultiplier={1.2}
@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingTop: 8,
+    paddingHorizontal: 6,
     borderTopWidth: 1,
   },
   tabItem: {
@@ -111,9 +112,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   pill: {
-    width: 60,
+    width: 56,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

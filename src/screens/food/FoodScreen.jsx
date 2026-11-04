@@ -1,20 +1,20 @@
 /**
  * Braj Darshan - Braj food
- * Layout from the redesign (design-input/figma "Light · Braj food" and
- * "Light · Food detail"): search, town filter, an ingredients note, and one
- * photo card per dish from src/data/food.json (its own bundled photo, name over
- * a bottom gradient). Tapping a card or "Explore this food" opens the dish's
- * details inside its card, with a hand-off to Google Maps.
+ * Layout from the Nov 2026 redesign (Food artboard): search, town pills, one
+ * featured dish as a large photo card (type · town, description, where to find
+ * it, a hand-off to Google Maps), the other dishes in a two-column grid, and the
+ * ingredients note. Tapping a dish in the grid makes it the featured one.
+ * Dishes and their bundled photos come from src/data/food.json.
  *
  * Home can open this screen with a { search } param; the search box is
- * pre-filled with it and a single match opens straight away.
+ * pre-filled with it and a single match is featured straight away.
  *
  * Honesty rules: no ratings or reviews, no prices (the prices in food.json have
  * no source), no shop names or endorsements, and no "satvik" tag (the data does
  * not say so).
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, ScrollView, Linking, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
@@ -114,7 +114,7 @@ function matchesTerms(food, terms) {
   return terms.every((t) => matchesSearch(t, ...fields));
 }
 
-// When a search (e.g. from Home) finds exactly one dish, open its details.
+// When a search (e.g. from Home) finds exactly one dish, feature it.
 function singleMatchId(query) {
   const terms = searchTerms(normalizeSearch(query));
   if (!terms.length) return null;
@@ -128,130 +128,104 @@ function openOnMap(food) {
   Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`).catch(() => {});
 }
 
-function FoodDetails({ food, isHindi, colors }) {
-  const where = placeLabel(food.place, isHindi);
-  const acrossBraj = food.place === ACROSS_BRAJ;
-  return (
-    <View style={styles.details}>
-      <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-      <AppText variant="h4" weight="700" color={colors.navy}>
-        {isHindi ? 'कहाँ मिलेगा' : 'Where to find it'}
-      </AppText>
-      <AppText variant="body" color={colors.text}>
-        {isHindi
-          ? `${acrossBraj ? 'ब्रज के' : `${where} के`} बाज़ारों और मंदिरों के आस-पास की पारंपरिक दुकानों में देखें। खरीदने से पहले ताज़गी, सामग्री और रखने के तरीके के बारे में स्थानीय लोगों से पूछ लें।`
-          : `Look for traditional shops in the market streets and around temple areas ${acrossBraj ? 'across Braj' : `in ${where}`}. Ask locally about fresh batches, ingredients and storage before buying.`}
-      </AppText>
-      <AppText variant="small" color={colors.muted}>
-        {isHindi
-          ? 'किसी एक दुकान की सूची या सिफ़ारिश नहीं दी गई है।'
-          : 'No individual shop is listed or endorsed.'}
-      </AppText>
-
-      <InfoNote>
-        {isHindi
-          ? 'सामग्री, मेवे और बनाने के तरीके के बारे में पूछ लें। हर रसोई की विधि अलग होती है।'
-          : 'Ask about ingredients, nuts and how it is prepared. Recipes vary from kitchen to kitchen.'}
-      </InfoNote>
-
-      <Button
-        title={isHindi ? 'Google Maps में खोजें' : 'Find on Google Maps'}
-        icon="map"
-        onPress={() => openOnMap(food)}
-        accessibilityLabel={
-          isHindi
-            ? `${food.nameHindi} को Google Maps में खोजें`
-            : `Find ${food.name} on Google Maps`
-        }
-      />
-    </View>
-  );
+// Two cards per row; an odd last card keeps its half width.
+function pairs(list) {
+  const rows = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+  return rows;
 }
 
-function FoodItem({ food, expanded, onToggle, isHindi, colors }) {
-  const toggle = usePressGuard(onToggle, 300);
+function FeaturedFood({ food, isHindi, colors }) {
+  const openMap = usePressGuard(() => openOnMap(food));
   const title = isHindi ? food.nameHindi : food.name;
   const altTitle = isHindi ? food.name : food.nameHindi;
   const desc = isHindi ? food.desc : food.descEn;
-  const meta = `${placeLabel(food.place, isHindi)} · ${categoryLabel(food, isHindi)}`;
+  const where = placeLabel(food.place, isHindi);
+  const acrossBraj = food.place === ACROSS_BRAJ;
   const image = getFoodImage(food);
-  // White on the photo's gradient; theme colours if a dish ever has no photo.
-  const titleColor = image ? '#FFFFFF' : colors.navy;
-  const subColor = image ? '#F5EBDD' : colors.textSecondary;
 
   return (
-    <Card padded={false}>
-      <Pressable
-        onPress={toggle}
-        accessibilityRole="button"
-        accessibilityState={{ expanded }}
-        accessibilityLabel={
-          isHindi
-            ? `${title}। ${expanded ? 'विवरण बंद करें' : 'विवरण देखें'}`
-            : `${title}. ${expanded ? 'Hide details' : 'Show details'}`
-        }
-        style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
-      >
-        <Photo
-          source={image}
-          fallbackIcon="food"
-          scrim={Boolean(image)}
-          representative={Boolean(image && food.imageIsRepresentative)}
-          style={styles.cover}
-        >
-          <View style={[styles.coverText, image && food.imageIsRepresentative && styles.coverTextAboveTag]}>
-            <AppText
-              variant="h3"
-              weight="700"
-              color={titleColor}
-              numberOfLines={image ? 2 : 1}
-              maxFontSizeMultiplier={1.2}
-            >
-              {title}
-            </AppText>
-            <AppText
-              variant="caption"
-              weight="500"
-              color={subColor}
-              numberOfLines={1}
-              maxFontSizeMultiplier={1.2}
-            >
+    <Card padded={false} style={styles.featured}>
+      <Photo
+        source={image}
+        fallbackIcon="food"
+        representative={Boolean(image && food.imageIsRepresentative)}
+        style={styles.featuredPhoto}
+        accessibilityLabel={title}
+      />
+      <View style={styles.featuredBody}>
+        <AppText variant="small" weight="600" color={colors.primary}>
+          {`${categoryLabel(food, isHindi)} · ${where}`}
+        </AppText>
+        <View>
+          <AppText variant="h2" weight="700" color={colors.navy} accessibilityRole="header">
+            {title}
+          </AppText>
+          {altTitle && altTitle !== title ? (
+            <AppText variant="caption" color={colors.muted}>
               {altTitle}
             </AppText>
-          </View>
-        </Photo>
-        <View style={styles.summary}>
-          <View style={styles.metaRow}>
-            <Icon name="location" size={18} color={colors.primary} />
-            <AppText variant="caption" color={colors.textSecondary} style={styles.flex}>
-              {meta}
-            </AppText>
-          </View>
-          <AppText variant="body" color={colors.text} numberOfLines={expanded ? undefined : 2}>
-            {desc}
-          </AppText>
+          ) : null}
         </View>
-      </Pressable>
+        <AppText variant="body" color={colors.text}>
+          {desc}
+        </AppText>
 
-      <View style={styles.body}>
-        {expanded ? <FoodDetails food={food} isHindi={isHindi} colors={colors} /> : null}
+        <AppText variant="caption" color={colors.textSecondary}>
+          {isHindi
+            ? `${acrossBraj ? 'ब्रज के' : `${where} के`} बाज़ारों और मंदिरों के आस-पास की पारंपरिक दुकानों में देखें। खरीदने से पहले ताज़गी, सामग्री और रखने के तरीके के बारे में स्थानीय लोगों से पूछ लें।`
+            : `Look for traditional shops in the market streets and around temple areas ${acrossBraj ? 'across Braj' : `in ${where}`}. Ask locally about fresh batches, ingredients and storage before buying.`}
+        </AppText>
 
-        <Button
-          variant="secondary"
-          icon={expanded ? 'close' : 'chevronRight'}
-          title={
-            expanded
-              ? isHindi ? 'कम दिखाएँ' : 'Show less'
-              : isHindi ? 'इस व्यंजन के बारे में' : 'Explore this food'
-          }
-          onPress={onToggle}
+        <Pressable
+          onPress={openMap}
+          accessibilityRole="link"
           accessibilityLabel={
-            expanded
-              ? isHindi ? `${title} का विवरण बंद करें` : `Close details for ${title}`
-              : isHindi ? `${title} के बारे में और जानें` : `Explore ${title}`
+            isHindi ? `${food.nameHindi} कहाँ मिलेगा — Google Maps में खोजें` : `Where to find ${food.name} — search Google Maps`
           }
-        />
+          style={({ pressed }) => [
+            styles.mapLink,
+            { backgroundColor: pressed ? colors.primaryFixed : colors.primaryLight },
+          ]}
+        >
+          <Icon name="map" size={20} color={colors.primary} />
+          <AppText variant="bodyBold" color={colors.primary} style={styles.flexShrink}>
+            {isHindi ? 'कहाँ मिलेगा — Google Maps में खोजें' : 'Where to find it — search Google Maps'}
+          </AppText>
+        </Pressable>
+      </View>
+    </Card>
+  );
+}
+
+function FoodTile({ food, onSelect, isHindi, colors }) {
+  const title = isHindi ? food.nameHindi : food.name;
+  const town = placeLabel(food.place, isHindi);
+  const kind = categoryLabel(food, isHindi);
+  const image = getFoodImage(food);
+  return (
+    <Card
+      padded={false}
+      onPress={onSelect}
+      accessibilityLabel={isHindi ? `${title}, ${kind}, ${town}। विवरण देखें` : `${title}, ${kind}, ${town}. Show details`}
+      style={styles.tile}
+    >
+      <Photo
+        source={image}
+        fallbackIcon="food"
+        representative={Boolean(image && food.imageIsRepresentative)}
+        style={styles.tilePhoto}
+      />
+      <View style={styles.tileBody}>
+        <AppText variant="small" weight="600" color={colors.primary} maxFontSizeMultiplier={1.3}>
+          {kind}
+        </AppText>
+        <AppText variant="body" weight="700" color={colors.navy} maxFontSizeMultiplier={1.3}>
+          {title}
+        </AppText>
+        <AppText variant="small" color={colors.muted} maxFontSizeMultiplier={1.3}>
+          {town}
+        </AppText>
       </View>
     </Card>
   );
@@ -262,12 +236,15 @@ export default function FoodScreen({ navigation, route }) {
   const bottomInset = useBottomInset();
   const { colors } = useTheme();
   const { isHindi } = useLanguage();
+  const scrollRef = useRef(null);
+  const contentY = useRef(0);
+  const featuredY = useRef(0);
 
   const paramSearch = typeof route?.params?.search === 'string' ? route.params.search : undefined;
 
   const [query, setQuery] = useState(paramSearch || '');
   const [town, setTown] = useState('all');
-  const [expandedId, setExpandedId] = useState(() => (paramSearch ? singleMatchId(paramSearch) : null));
+  const [selectedId, setSelectedId] = useState(() => (paramSearch ? singleMatchId(paramSearch) : null));
 
   // A new search from Home reaches an already-open Food screen too. The town
   // filter goes back to "All" so the dish is not hidden behind another town.
@@ -275,7 +252,7 @@ export default function FoodScreen({ navigation, route }) {
     if (paramSearch === undefined) return;
     setQuery(paramSearch);
     setTown('all');
-    setExpandedId(singleMatchId(paramSearch));
+    setSelectedId(singleMatchId(paramSearch));
   }, [paramSearch]);
 
   // Only offer towns that actually have a dish in the data.
@@ -294,11 +271,20 @@ export default function FoodScreen({ navigation, route }) {
     return { foods: hits.filter((f) => inTown(f, town)), allTownsCount: hits.length };
   }, [terms, town]);
 
-  const toggleFood = (id) => setExpandedId((current) => (current === id ? null : id));
+  // The featured dish: the one picked, if it is still in the list; otherwise the first.
+  const featured = foods.find((f) => f.id === selectedId) || foods[0] || null;
+  const others = featured ? foods.filter((f) => f.id !== featured.id) : [];
+
+  const selectFood = (id) => {
+    setSelectedId(id);
+    // Bring the featured card (where the picked dish now shows) into view.
+    scrollRef.current?.scrollTo({ y: Math.max(0, contentY.current + featuredY.current - 12), animated: true });
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ paddingBottom: bottomInset }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -311,55 +297,66 @@ export default function FoodScreen({ navigation, route }) {
           right={<LanguageToggle />}
         />
 
-        <SearchField
-          value={query}
-          onChangeText={setQuery}
-          placeholder={isHindi ? 'व्यंजन या नगर खोजें' : 'Search a dish or town'}
-          style={styles.search}
-        />
-
-        <ScrollView
-          horizontal
-          keyboardShouldPersistTaps="handled"
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
+        <View
+          style={styles.content}
+          onLayout={(e) => {
+            contentY.current = e.nativeEvent.layout.y;
+          }}
         >
-          {towns.map((t) => (
-            <Chip
-              key={t.id}
-              label={isHindi ? t.hi : t.en}
-              selected={town === t.id}
-              onPress={() => {
-                setTown(t.id);
-                setExpandedId(null);
-              }}
-            />
-          ))}
-        </ScrollView>
+          <SearchField
+            value={query}
+            onChangeText={setQuery}
+            placeholder={isHindi ? 'व्यंजन या नगर खोजें' : 'Search a dish or town'}
+          />
 
-        <View style={styles.content}>
-          <InfoNote>
-            {isHindi
-              ? 'सामग्री और बनाने का तरीका पूछ लें। दूध की मिठाइयाँ सात्विक आहार में आ सकती हैं, पर हर रसोई का तरीका अलग होता है।'
-              : 'Ask about ingredients and preparation. Milk sweets may suit a satvik diet; recipes and kitchen practices vary.'}
-          </InfoNote>
+          <View style={styles.chips}>
+            {towns.map((t) => (
+              <Chip
+                key={t.id}
+                label={isHindi ? t.hi : t.en}
+                selected={town === t.id}
+                onPress={() => {
+                  setTown(t.id);
+                  setSelectedId(null);
+                }}
+              />
+            ))}
+          </View>
 
           {isSearching && foods.length > 0 ? (
-            <AppText variant="small" color={colors.muted}>
+            <AppText variant="small" color={colors.muted} accessibilityLiveRegion="polite">
               {isHindi ? `${foods.length} परिणाम` : `${foods.length} ${foods.length === 1 ? 'result' : 'results'}`}
             </AppText>
           ) : null}
 
-          {foods.map((food) => (
-            <FoodItem
-              key={food.id}
-              food={food}
-              expanded={expandedId === food.id}
-              onToggle={() => toggleFood(food.id)}
-              isHindi={isHindi}
-              colors={colors}
-            />
-          ))}
+          {featured ? (
+            <View
+              onLayout={(e) => {
+                featuredY.current = e.nativeEvent.layout.y;
+              }}
+            >
+              <FeaturedFood key={featured.id} food={featured} isHindi={isHindi} colors={colors} />
+            </View>
+          ) : null}
+
+          {others.length ? (
+            <View style={styles.grid}>
+              {pairs(others).map((row) => (
+                <View key={row[0].id} style={styles.gridRow}>
+                  {row.map((food) => (
+                    <FoodTile
+                      key={food.id}
+                      food={food}
+                      onSelect={() => selectFood(food.id)}
+                      isHindi={isHindi}
+                      colors={colors}
+                    />
+                  ))}
+                  {row.length === 1 ? <View style={styles.tileSpacer} /> : null}
+                </View>
+              ))}
+            </View>
+          ) : null}
 
           {foods.length === 0 && isSearching ? (
             <Card>
@@ -397,6 +394,12 @@ export default function FoodScreen({ navigation, route }) {
               {isHindi ? 'इस नगर के लिए अभी कोई व्यंजन नहीं जोड़ा गया है।' : 'No dishes added for this town yet.'}
             </InfoNote>
           ) : null}
+
+          <InfoNote>
+            {isHindi
+              ? 'सामग्री, मेवे और बनाने का तरीका पूछ लें। दूध की मिठाइयाँ सात्विक आहार में आ सकती हैं, पर हर रसोई का तरीका अलग होता है। किसी एक दुकान की सूची या सिफ़ारिश नहीं दी गई है।'
+              : 'Ask about ingredients, nuts and preparation. Milk sweets may suit a satvik diet; recipes and kitchen practices vary. No individual shop is listed or endorsed.'}
+          </InfoNote>
         </View>
       </ScrollView>
     </View>
@@ -406,18 +409,29 @@ export default function FoodScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  search: { marginHorizontal: GUTTER, marginBottom: 12 },
-  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: GUTTER, paddingBottom: 4 },
-  content: { paddingHorizontal: GUTTER, paddingTop: 16, gap: 16 },
-  cover: { height: 184 },
-  coverText: { position: 'absolute', left: 16, right: 16, bottom: 14, gap: 2 },
-  // Leaves room for the "Representative photo" tag Photo draws at the bottom left.
-  coverTextAboveTag: { bottom: 44 },
-  summary: { paddingHorizontal: 16, paddingTop: 14, gap: 8 },
-  body: { padding: 16, paddingTop: 12, gap: 12 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  details: { gap: 10 },
-  divider: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
+  flexShrink: { flexShrink: 1 },
+  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  featured: { borderRadius: 22 },
+  featuredPhoto: { height: 180 },
+  featuredBody: { padding: 16, gap: 8 },
+  mapLink: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 4,
+    borderRadius: 14,
+  },
+  grid: { gap: 12 },
+  gridRow: { flexDirection: 'row', gap: 12 },
+  tile: { flex: 1 },
+  tileSpacer: { flex: 1 },
+  tilePhoto: { height: 112 },
+  tileBody: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, gap: 2 },
   emptyHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   emptyText: { marginTop: 8 },
   emptyActions: { marginTop: 14, gap: 4, alignItems: 'flex-start' },

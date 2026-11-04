@@ -3,9 +3,10 @@
  * Sacred towns and places from src/data/places.json and the main Yamuna ghats
  * and Govardhan kunds from src/data/ghats.js (shaped alike in utils/placeItems).
  *
- * Cards: each place or ghat shows its own photo with the name over a bottom
- * gradient; an item without a photo gets an icon tile in the same layout,
- * never a borrowed picture. Tapping a card opens its PlaceDetail screen.
+ * Layout from the Nov 2026 redesign (Places artboard): search, pill filters, the
+ * Yamuna safety note, then a two-column grid of photo cards (kind, name, town).
+ * An item without a photo gets an icon tile in the same frame, never a borrowed
+ * picture. Tapping a card opens its PlaceDetail screen (description, directions).
  *
  * Search matches Hindi and English names, towns and descriptions and works
  * together with the All / Sacred places / Ghats chips. Home can open this
@@ -13,7 +14,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -27,7 +28,6 @@ import {
   Photo,
   Button,
   InfoNote,
-  SectionHeader,
   ListRow,
   SearchField,
   normalizeSearch,
@@ -35,16 +35,15 @@ import {
   GUTTER,
   useBottomInset,
 } from '../../components/ui';
-import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
 import { searchTerms } from '../../utils/searchText';
-import { getPlaceItems, GHAT_ITEMS, openPlaceDirections } from '../../utils/placeItems';
+import { getPlaceItems, GHAT_ITEMS } from '../../utils/placeItems';
 import { usePlaces } from '../../services/contentService';
 
 const FILTERS = [
-  { id: 'all', icon: 'location', hi: 'सभी', en: 'All' },
-  { id: 'places', icon: 'temple', hi: 'पावन स्थल', en: 'Sacred places' },
-  { id: 'ghats', icon: 'ghat', hi: 'घाट व कुंड', en: 'Ghats & kunds' },
+  { id: 'all', hi: 'सभी', en: 'All' },
+  { id: 'places', hi: 'पावन स्थल', en: 'Sacred places' },
+  { id: 'ghats', hi: 'घाट व कुंड', en: 'Ghats & kunds' },
 ];
 
 function isFilter(value) {
@@ -55,81 +54,49 @@ function matchesTerms(item, terms) {
   return terms.every((t) => matchesSearch(t, ...item.searchFields));
 }
 
-function PlaceCard({ item, onOpen, isHindi, colors }) {
-  const open = usePressGuard(onOpen);
+// Two cards per row; an odd last card keeps its half width.
+function pairs(list) {
+  const rows = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+  return rows;
+}
+
+function PlaceTile({ item, onOpen, isHindi, colors }) {
   const title = isHindi ? item.nameHi : item.nameEn;
-  const altTitle = isHindi ? item.nameEn : item.nameHi;
   const town = isHindi ? item.townHi : item.townEn;
-  const desc = isHindi ? item.descHi : item.descEn;
-  const subLine = town && town !== title ? `${town} · ${altTitle}` : altTitle;
-  const hasPhoto = Boolean(item.image);
-  // White on the photo's gradient; theme colours on the icon tile (no gradient there).
-  const titleColor = hasPhoto ? '#FFFFFF' : colors.navy;
-  const subColor = hasPhoto ? '#F5EBDD' : colors.textSecondary;
+  const isGhat = item.kind === 'ghat';
+  const kind = isGhat ? (isHindi ? 'घाट व कुंड' : 'Ghat & kund') : isHindi ? 'पावन स्थल' : 'Sacred place';
 
   return (
-    <Card padded={false}>
-      <Pressable
-        onPress={open}
-        accessibilityRole="button"
-        accessibilityLabel={isHindi ? `${title}, ${town}। विवरण देखें` : `${title}, ${town}. Open details`}
-        style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
-      >
-        <Photo
-          source={item.image}
-          fallbackIcon={item.icon}
-          scrim={hasPhoto}
-          representative={item.representative}
-          style={styles.cover}
-        >
-          <View style={[styles.coverText, item.representative && styles.coverTextAboveTag]}>
-            <AppText
-              variant="h3"
-              weight="700"
-              color={titleColor}
-              numberOfLines={hasPhoto ? 2 : 1}
-              maxFontSizeMultiplier={1.2}
-            >
-              {title}
-            </AppText>
-            <View style={styles.coverMeta}>
-              <Icon name="location" size={16} color={subColor} />
-              <AppText
-                variant="caption"
-                weight="500"
-                color={subColor}
-                numberOfLines={1}
-                maxFontSizeMultiplier={1.2}
-                style={styles.flex}
-              >
-                {subLine}
-              </AppText>
-            </View>
-          </View>
-        </Photo>
-        <View style={styles.summary}>
-          <AppText variant="body" color={colors.text} numberOfLines={2}>
-            {desc}
+    <Card
+      padded={false}
+      onPress={onOpen}
+      accessibilityLabel={isHindi ? `${title}, ${town}। विवरण देखें` : `${title}, ${town}. Open details`}
+      style={styles.tile}
+    >
+      <Photo
+        source={item.image}
+        fallbackIcon={item.icon}
+        representative={item.representative}
+        style={styles.tilePhoto}
+      />
+      <View style={styles.tileBody}>
+        <AppText variant="small" weight="600" color={isGhat ? colors.purnima : colors.primary} maxFontSizeMultiplier={1.3}>
+          {kind}
+        </AppText>
+        <AppText variant="body" weight="700" color={colors.navy} maxFontSizeMultiplier={1.3}>
+          {title}
+        </AppText>
+        {/* A town's own card has no separate town, so its short description takes that line. */}
+        {town && town !== title ? (
+          <AppText variant="small" color={colors.muted} maxFontSizeMultiplier={1.3}>
+            {town}
           </AppText>
-        </View>
-      </Pressable>
-
-      <View style={styles.actions}>
-        <Button
-          variant="secondary"
-          icon="directions"
-          title={isHindi ? 'रास्ता देखें' : 'Directions'}
-          onPress={() => openPlaceDirections(item)}
-          accessibilityLabel={isHindi ? `${title} का रास्ता देखें` : `Directions to ${title}`}
-          style={styles.flex}
-        />
-        <Button
-          variant="text"
-          icon="chevronRight"
-          title={isHindi ? 'विवरण' : 'Details'}
-          onPress={onOpen}
-          accessibilityLabel={isHindi ? `${title} का विवरण देखें` : `Show details for ${title}`}
-        />
+        ) : (
+          <AppText variant="small" color={colors.muted} numberOfLines={2} maxFontSizeMultiplier={1.3}>
+            {isHindi ? item.descHi : item.descEn}
+          </AppText>
+        )}
       </View>
     </Card>
   );
@@ -169,7 +136,9 @@ export default function PlacesScreen({ navigation, route }) {
     };
   }, [terms, filter, placeData]);
 
-  const shownCount = places.length + ghats.length;
+  // Ghats first, right under the Yamuna note that is about them; then the sacred places.
+  const shown = useMemo(() => [...ghats, ...places], [ghats, places]);
+  const shownCount = shown.length;
   const openItem = (item) => navigation.navigate(ROUTES.PLACE_DETAIL, { key: item.key });
   const clearSearch = () => setQuery('');
 
@@ -188,74 +157,53 @@ export default function PlacesScreen({ navigation, route }) {
           right={<LanguageToggle />}
         />
 
-        <SearchField
-          value={query}
-          onChangeText={setQuery}
-          placeholder={isHindi ? 'स्थल, घाट या नगर खोजें' : 'Search places, ghats or towns'}
-          style={styles.search}
-        />
-
-        <ScrollView
-          horizontal
-          keyboardShouldPersistTaps="handled"
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-        >
-          {FILTERS.map((f) => (
-            <Chip
-              key={f.id}
-              label={isHindi ? f.hi : f.en}
-              icon={f.icon}
-              selected={filter === f.id}
-              onPress={() => setFilter(f.id)}
-            />
-          ))}
-        </ScrollView>
-
         <View style={styles.content}>
+          <SearchField
+            value={query}
+            onChangeText={setQuery}
+            placeholder={isHindi ? 'स्थल, घाट या नगर खोजें' : 'Search places, ghats or towns'}
+          />
+
+          <View style={styles.chips}>
+            {FILTERS.map((f) => (
+              <Chip
+                key={f.id}
+                label={isHindi ? f.hi : f.en}
+                selected={filter === f.id}
+                onPress={() => setFilter(f.id)}
+              />
+            ))}
+          </View>
+
+          {ghats.length ? (
+            <InfoNote tone="water" icon="ghat">
+              {isHindi
+                ? 'यमुना की धारा और गहराई बदलती रहती है। वहीं स्नान करें जहाँ स्थानीय लोग स्नान करते हैं, सीढ़ियों के पास रहें और बच्चों को साथ रखें। जल में साबुन या प्लास्टिक न डालें।'
+                : 'The Yamuna’s current and depth can change. Bathe only where local people bathe, stay near the steps and keep children close. Keep soap and plastic out of the water.'}
+            </InfoNote>
+          ) : null}
+
           {isSearching && shownCount > 0 ? (
-            <AppText variant="small" color={colors.muted}>
+            <AppText variant="small" color={colors.muted} accessibilityLiveRegion="polite">
               {isHindi ? `${shownCount} परिणाम` : `${shownCount} ${shownCount === 1 ? 'result' : 'results'}`}
             </AppText>
           ) : null}
 
-          {places.length ? (
-            <View style={styles.section}>
-              <SectionHeader
-                title={isHindi ? `पावन स्थल (${places.length})` : `Sacred places (${places.length})`}
-                style={styles.sectionHeader}
-              />
-              {places.map((item) => (
-                <PlaceCard
-                  key={item.key}
-                  item={item}
-                  onOpen={() => openItem(item)}
-                  isHindi={isHindi}
-                  colors={colors}
-                />
-              ))}
-            </View>
-          ) : null}
-
-          {ghats.length ? (
-            <View style={styles.section}>
-              <SectionHeader
-                title={isHindi ? `यमुना घाट व कुंड (${ghats.length})` : `Yamuna ghats & kunds (${ghats.length})`}
-                style={styles.sectionHeader}
-              />
-              <InfoNote icon="safety">
-                {isHindi
-                  ? 'यमुना की धारा और गहराई बदलती रहती है। वहीं स्नान करें जहाँ स्थानीय लोग स्नान करते हैं, सीढ़ियों के पास रहें और बच्चों को साथ रखें। जल में साबुन या प्लास्टिक न डालें।'
-                  : 'The Yamuna’s current and depth can change. Bathe only where local people bathe, stay near the steps and keep children close. Keep soap and plastic out of the water.'}
-              </InfoNote>
-              {ghats.map((item) => (
-                <PlaceCard
-                  key={item.key}
-                  item={item}
-                  onOpen={() => openItem(item)}
-                  isHindi={isHindi}
-                  colors={colors}
-                />
+          {shownCount ? (
+            <View style={styles.grid}>
+              {pairs(shown).map((row) => (
+                <View key={row[0].key} style={styles.gridRow}>
+                  {row.map((item) => (
+                    <PlaceTile
+                      key={item.key}
+                      item={item}
+                      onOpen={() => openItem(item)}
+                      isHindi={isHindi}
+                      colors={colors}
+                    />
+                  ))}
+                  {row.length === 1 ? <View style={styles.tileSpacer} /> : null}
+                </View>
               ))}
             </View>
           ) : null}
@@ -291,9 +239,9 @@ export default function PlacesScreen({ navigation, route }) {
             </Card>
           ) : null}
 
-          <Card>
+          <Card style={styles.mapCard}>
             <ListRow
-              icon="map"
+              icon="location"
               title={isHindi ? 'ब्रज के नक्शे पर मंदिर देखें' : 'See temples on the Braj map'}
               subtitle={isHindi ? 'ऑफ़लाइन चित्रात्मक नक्शा' : 'Offline illustrative map'}
               onPress={() => navigation.navigate(ROUTES.MAP)}
@@ -308,18 +256,15 @@ export default function PlacesScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  search: { marginHorizontal: GUTTER, marginBottom: 12 },
-  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: GUTTER, paddingBottom: 4 },
-  content: { paddingHorizontal: GUTTER, paddingTop: 16, gap: 24 },
-  section: { gap: 16 },
-  sectionHeader: { marginBottom: 0 },
-  cover: { height: 184 },
-  coverText: { position: 'absolute', left: 16, right: 16, bottom: 14, gap: 2 },
-  // Leaves room for the "Representative photo" tag Photo draws at the bottom left.
-  coverTextAboveTag: { bottom: 44 },
-  coverMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  summary: { paddingHorizontal: 16, paddingTop: 14 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16, paddingTop: 12 },
+  content: { paddingHorizontal: GUTTER, paddingTop: 4, gap: 16 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  grid: { gap: 12 },
+  gridRow: { flexDirection: 'row', gap: 12 },
+  tile: { flex: 1 },
+  tileSpacer: { flex: 1 },
+  tilePhoto: { height: 120 },
+  tileBody: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, gap: 2 },
+  mapCard: { paddingVertical: 4 },
   emptyHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   emptyText: { marginTop: 8 },
   emptyActions: { marginTop: 14, gap: 4, alignItems: 'flex-start' },
