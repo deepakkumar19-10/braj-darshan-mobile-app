@@ -34,8 +34,10 @@ import { usePressGuard } from '../../hooks/usePressGuard';
 import { ROUTES } from '../../navigation/routes';
 import { PRIVACY_URL } from '../more/MoreScreen';
 import { PHOTO_CREDITS } from '../../utils/photoCredits';
+import { getAppVersion } from '../../utils/appVersion';
 
-const APP_VERSION = '1.0';
+// From the build (app.json through expo-constants), e.g. "1.0.0 (2)".
+const APP_VERSION = getAppVersion();
 
 const LANGUAGE_OPTIONS = [
   { code: 'hi', label: 'हिन्दी' },
@@ -444,8 +446,8 @@ export default function SettingsScreen({ navigation, route }) {
             </Card>
             <AppText variant="small" color={colors.muted} align="center" style={styles.version}>
               {isHindi
-                ? `श्री ब्रज दर्शन · संस्करण ${APP_VERSION}`
-                : `Shri Braj Darshan · Version ${APP_VERSION}`}
+                ? `श्री ब्रज दर्शन${APP_VERSION ? ` · संस्करण ${APP_VERSION}` : ''}`
+                : `Shri Braj Darshan${APP_VERSION ? ` · Version ${APP_VERSION}` : ''}`}
             </AppText>
           </View>
         </View>

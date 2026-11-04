@@ -17,8 +17,10 @@ import { Icon } from '../common/Icon';
 import { IconButton, LanguageToggle, ListRow } from '../ui';
 import { ROUTES } from '../../navigation/routes';
 import { MORE_GROUPS, openSection, sectionsInGroup } from '../../screens/more/MoreScreen';
+import { getAppVersion } from '../../utils/appVersion';
 
-const APP_VERSION = '1.0';
+// From the build (app.json through expo-constants), e.g. "1.0.0 (2)".
+const APP_VERSION = getAppVersion();
 
 const MAIN_SECTIONS = [
   { id: 'home', icon: 'home', route: ROUTES.HOME, hi: 'होम', en: 'Home' },
@@ -173,8 +175,8 @@ export default function CustomDrawer({ navigation }) {
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <AppText variant="small" color={colors.muted} align="center">
             {isHindi
-              ? `कोई खाता नहीं चाहिए · संस्करण ${APP_VERSION}`
-              : `No account needed · Version ${APP_VERSION}`}
+              ? `कोई खाता नहीं चाहिए${APP_VERSION ? ` · संस्करण ${APP_VERSION}` : ''}`
+              : `No account needed${APP_VERSION ? ` · Version ${APP_VERSION}` : ''}`}
           </AppText>
         </View>
       </Animated.View>

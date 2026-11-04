@@ -25,8 +25,22 @@ cd android
 gradlew.bat assembleRelease
 ```
 
-The APK is `android/app/build/outputs/apk/release/app-release.apk`. It is signed with the
-standard debug key for now (a release key is a later step), so it installs over earlier test builds.
+The APK is `android/app/build/outputs/apk/release/app-release.apk`. A local build is signed with
+the standard debug key, so it is for testing only. It holds ARM libraries only (`arm64-v8a`,
+`armeabi-v7a`), set by `expo-build-properties` in `app.json`.
+
+Release APKs are built with EAS, which keeps the signing key in the Expo account (`eas.json`):
+
+```sh
+npx eas-cli@latest build -p android --profile preview      # test APK
+npx eas-cli@latest build -p android --profile production   # release APK
+```
+
+## Version
+
+`app.json` is the only place to set it: `expo.version` (e.g. `1.0.0`) and
+`expo.android.versionCode` (raise it by 1 for every APK you share). Keep `package.json`'s
+`version` the same; a test checks this. The app shows the version from the build in Settings → About.
 
 ## Checks
 

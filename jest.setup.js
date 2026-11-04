@@ -13,6 +13,8 @@ jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn(), isSpeakingA
 // Fonts and the splash screen are native; tests run with the font "loaded".
 jest.mock('expo-font', () => ({ useFonts: () => [true, null], loadAsync: jest.fn(async () => {}), isLoaded: () => true }));
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(async () => {}), hideAsync: jest.fn(async () => {}) }));
+// expo-constants is native: a build embeds app.json's config in it, so tests read app.json itself.
+jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: require('./app.json').expo } }));
 jest.mock('@expo-google-fonts/mukta', () => ({
   Mukta_400Regular: 1, Mukta_500Medium: 2, Mukta_600SemiBold: 3, Mukta_700Bold: 4, Mukta_800ExtraBold: 5,
 }));
