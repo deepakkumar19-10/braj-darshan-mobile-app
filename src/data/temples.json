@@ -299,7 +299,7 @@
     "dressCode": "पारंपरिक परिधान",
     "dressCodeEn": "Traditional Indian attire",
     "photographyAllowed": true,
-    "audioTrackId": "radhe_radhe_rasbarsane",
+    "audioTrackId": "radha_rani_ki_aarti",
     "nearbyTempleIds": [
       5
     ],
@@ -371,7 +371,7 @@
     "dressCode": "पारंपरिक / आरामदायक परिधान",
     "dressCodeEn": "Traditional / Comfortable walking clothes",
     "photographyAllowed": true,
-    "audioTrackId": "yamunashtakam",
+    "audioTrackId": "govardhan_aarti",
     "nearbyTempleIds": [
       4,
       1
@@ -444,7 +444,7 @@
     "dressCode": "पारंपरिक भारतीय परिधान",
     "dressCodeEn": "Traditional Indian attire",
     "photographyAllowed": false,
-    "audioTrackId": "yamunashtakam",
+    "audioTrackId": "yamunashtak_gujarati_lata",
     "nearbyTempleIds": [
       2
     ],
