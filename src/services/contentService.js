@@ -235,6 +235,29 @@ export function startContentRefresh() {
   return () => subscription.remove();
 }
 
+/**
+ * "Clear offline data" in Settings: deletes every downloaded copy and the 12-hour check
+ * time (all `@braj_content_v1_*` keys) and switches the screens back to the bundled data
+ * at once. The next start or return to the foreground downloads fresh copies when the
+ * website can be reached. Never throws. Resolves to { success, removed }.
+ */
+export async function clearDownloadedContent() {
+  try {
+    // Let a cache load or refresh that is already running finish first, so it cannot
+    // put the old copy back after this.
+    await Promise.all([cacheLoad, inFlight]);
+    current = { temples: bundledTemples, places: bundledPlaces };
+    versions = {};
+    emit();
+    const keys = await AsyncStorage.getAllKeys();
+    const ours = keys.filter((key) => key.startsWith(STORAGE_PREFIX));
+    if (ours.length) await AsyncStorage.multiRemove(ours);
+    return { success: true, removed: ours.length };
+  } catch (e) {
+    return { success: false, removed: 0 };
+  }
+}
+
 /** Test helper: back to the bundled data with nothing loaded. */
 export function resetContentForTests() {
   current = { temples: bundledTemples, places: bundledPlaces };

@@ -35,6 +35,7 @@ import { ROUTES } from '../../navigation/routes';
 import { PRIVACY_URL } from '../more/MoreScreen';
 import { PHOTO_CREDITS } from '../../utils/photoCredits';
 import { getAppVersion } from '../../utils/appVersion';
+import { clearDownloadedContent } from '../../services/contentService';
 
 // From the build (app.json through expo-constants), e.g. "1.0.0 (2)".
 const APP_VERSION = getAppVersion();
@@ -131,8 +132,10 @@ export default function SettingsScreen({ navigation, route }) {
 
   const clearOfflineData = async () => {
     setClearState('working');
-    const result = await storageService.clearCache();
-    setClearState(result && result.success ? 'done' : 'error');
+    // Old cache keys, plus the temple/place updates downloaded from the website
+    // (@braj_content_v1_*), so the app goes back to its built-in data at once.
+    const [cache, content] = await Promise.all([storageService.clearCache(), clearDownloadedContent()]);
+    setClearState(cache && cache.success && content && content.success ? 'done' : 'error');
   };
 
   const openPrivacy = () => {

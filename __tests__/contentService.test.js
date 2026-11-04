@@ -4,11 +4,13 @@ import ReactTestRenderer from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import bundledTemples from '../src/data/temples.json';
 import bundledPlaces from '../src/data/places.json';
+import { storageService } from '../src/services/storageService';
 import {
   API_BASE,
   FETCH_TIMEOUT_MS,
   LAST_CHECK_KEY,
   REFRESH_INTERVAL_MS,
+  clearDownloadedContent,
   getContentVersions,
   getPlaces,
   getTemples,
@@ -225,5 +227,66 @@ describe('cached data', () => {
 
     expect(tree.root.findByType(Text).props.children).toBe(newTemples.length);
     await ReactTestRenderer.act(() => tree.unmount());
+  });
+});
+
+describe('clear offline data (Settings)', () => {
+  test('removes the downloaded copies and goes back to the bundled data at once', async () => {
+    await AsyncStorage.setItem('@braj_favorites_v1', '[1]');
+    await AsyncStorage.setItem('@braj_language_v1', 'en');
+    mockValidResponses();
+    await refreshContent();
+    expect(getTemples()).toEqual(newTemples);
+    expect(await AsyncStorage.getItem(storageKey('temples'))).not.toBeNull();
+    expect(await AsyncStorage.getItem(LAST_CHECK_KEY)).not.toBeNull();
+    const listener = jest.fn();
+    const { subscribe } = require('../src/services/contentService');
+    const unsubscribe = subscribe(listener);
+
+    const result = await clearDownloadedContent();
+
+    expect(result).toEqual({ success: true, removed: 3 }); // temples, places, last_check
+    expect(getTemples()).toBe(bundledTemples);
+    expect(getPlaces()).toBe(bundledPlaces);
+    expect(getContentVersions()).toEqual({});
+    expect(listener).toHaveBeenCalled();
+    const left = await AsyncStorage.getAllKeys();
+    expect(left.filter((key) => key.startsWith('@braj_content_v1_'))).toEqual([]);
+    // Saved temples and settings are kept.
+    expect(await AsyncStorage.getItem('@braj_favorites_v1')).toBe('[1]');
+    expect(await AsyncStorage.getItem('@braj_language_v1')).toBe('en');
+    unsubscribe();
+  });
+
+  test('after a restart the app uses the bundled data, and the next refresh asks the website again', async () => {
+    mockValidResponses();
+    await refreshContent();
+    await clearDownloadedContent();
+
+    resetContentForTests(); // app restart
+    await loadCachedContent();
+    expect(getTemples()).toBe(bundledTemples);
+
+    global.fetch = jest.fn(() => Promise.reject(new TypeError('Network request failed')));
+    const next = await refreshContent();
+    expect(next.skipped).toBe(false); // the 12-hour wait was cleared too
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('works when nothing was downloaded', async () => {
+    expect(await clearDownloadedContent()).toEqual({ success: true, removed: 0 });
+    expect(getTemples()).toBe(bundledTemples);
+  });
+
+  test('the Settings button clears both the old cache keys and the downloaded content', async () => {
+    mockValidResponses();
+    await refreshContent();
+    await AsyncStorage.setItem('@braj_offline_cache_v1_x', '{}');
+
+    const [cache, content] = await Promise.all([storageService.clearCache(), clearDownloadedContent()]);
+
+    expect(cache).toEqual({ success: true, removed: 1 });
+    expect(content.success).toBe(true);
+    expect(await AsyncStorage.getAllKeys()).toEqual([]);
   });
 });
