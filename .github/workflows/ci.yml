@@ -1,0 +1,36 @@
+# Checks every push and pull request. It builds nothing for release and uses no signing key;
+# release APKs are built with EAS (see README / DIVYABRAJ_EXPO.md).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App (lint, types, unit tests, Expo config)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Unit tests
+        run: npm test -- --ci
+      - name: Expo config check
+        run: npx expo-doctor

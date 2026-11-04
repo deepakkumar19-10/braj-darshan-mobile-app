@@ -51,36 +51,6 @@
       "confidence": "high"
     },
     {
-      "id": "yamunashtakam",
-      "category": "geeta_ramayan",
-      "titleHi": "श्री यमुनाष्टकम्",
-      "titleEn": "Shri Yamunashtakam",
-      "artistHi": "अनुराधा पौडवाल",
-      "artistEn": "Anuradha Paudwal",
-      "deityHi": "श्री यमुना महारानी",
-      "youtubeId": "vLAMT4hgz9I",
-      "ytTitle": "Yamunashtakam",
-      "channel": "Anuradha Paudwal - Topic",
-      "channelUrl": "https://www.youtube.com/channel/UCDXM9wN1M6h7A9QGlaPbHEw",
-      "ownerType": "label",
-      "confidence": "medium"
-    },
-    {
-      "id": "radhe_radhe_rasbarsane",
-      "category": "aarti_bhajan",
-      "titleHi": "राधे राधे बरसाने वाली राधे",
-      "titleEn": "Radhe Radhe Barsane Wali Radhe",
-      "artistHi": null,
-      "artistEn": null,
-      "deityHi": "श्री राधा रानी",
-      "youtubeId": "gjpdxOs8Vu0",
-      "ytTitle": "Radhe Radhe Barsane Wali Radhe",
-      "channel": "Bihari Ji - Topic",
-      "channelUrl": "https://www.youtube.com/channel/UCf7HpL1kj6J3ghtxu9XNXnw",
-      "ownerType": "label",
-      "confidence": "medium"
-    },
-    {
       "id": "gita_ch2_karmayoga",
       "category": "geeta_ramayan",
       "titleHi": "भगवद गीता — अध्याय २",
@@ -139,21 +109,6 @@
       "channelUrl": "https://www.youtube.com/@MusictodayTV",
       "ownerType": "label",
       "confidence": "high"
-    },
-    {
-      "id": "maharas_bansuri_flute",
-      "category": "pravachan_dhyan",
-      "titleHi": "कृष्ण बाँसुरी (फ़िल्म ‘कृष्ण और कंस’)",
-      "titleEn": "Krishna flute (film ‘Krishna Aur Kans’)",
-      "artistHi": "राकेश चौरसिया",
-      "artistEn": "Rakesh Chaurasia",
-      "deityHi": "श्री कृष्ण",
-      "youtubeId": "PW9bcDZ4hr0",
-      "ytTitle": "Enchanting Flute from Hindi Movie ''Krishna Aur Kans'' I RAKESH CHAURASIA I Full Audio Song",
-      "channel": "T-Series Bhakti Sagar",
-      "channelUrl": "https://www.youtube.com/@TSeriesBhaktiSagar",
-      "ownerType": "label",
-      "confidence": "medium"
     },
     {
       "id": "sant_pravachan_radha_tatva",
@@ -351,21 +306,6 @@
       "confidence": "high"
     },
     {
-      "id": "yamuna_aarti_jay_jay_maharani",
-      "category": "aarti_bhajan",
-      "titleHi": "जय जय महारानी यमुना",
-      "titleEn": "Aarti – Jay Jay Maharani Yamuna",
-      "artistHi": null,
-      "artistEn": "Ashif Zeriya, Amee Joshi",
-      "deityHi": "श्री यमुना महारानी",
-      "youtubeId": "kA_HYr80dM0",
-      "ytTitle": "Aarti - Jay Jay Maharani Yamuna",
-      "channel": "Studio Sangeeta",
-      "channelUrl": "https://www.youtube.com/@StudioSangeeta",
-      "ownerType": "label",
-      "confidence": "medium"
-    },
-    {
       "id": "achyutam_keshavam",
       "category": "aarti_bhajan",
       "titleHi": "अच्युतम् केशवम् – कौन कहते हैं भगवान आते नहीं",
@@ -424,21 +364,6 @@
       "channelUrl": "https://www.youtube.com/@SaregamaBhakti",
       "ownerType": "label",
       "confidence": "high"
-    },
-    {
-      "id": "govind_bolo_hari_gopal_bolo",
-      "category": "aarti_bhajan",
-      "titleHi": "गोविंद बोलो हरि गोपाल बोलो",
-      "titleEn": "Govind Bolo Hari Gopal Bolo (Dhun)",
-      "artistHi": null,
-      "artistEn": "Kumar Vishu",
-      "deityHi": "श्री कृष्ण",
-      "youtubeId": "sWJYDHbTNqM",
-      "ytTitle": "Govind Bolo Hari Gopal Bolo Dhun By Kumar Vishu - Govind Bolo Hari Gopal Bolo",
-      "channel": "T-Series Bhakti Sagar",
-      "channelUrl": "https://www.youtube.com/@TSeriesBhaktiSagar",
-      "ownerType": "label",
-      "confidence": "medium"
     },
     {
       "id": "nand_ghar_anand_bhayo",
@@ -576,21 +501,6 @@
       "confidence": "high"
     },
     {
-      "id": "choti_choti_gaiya",
-      "category": "aarti_bhajan",
-      "titleHi": "छोटी छोटी गैया छोटे छोटे ग्वाल",
-      "titleEn": "Choti Choti Gaiya Chote Chote Gwal",
-      "artistHi": null,
-      "artistEn": "Ami Joshi, Asif Jeriya",
-      "deityHi": "श्री कृष्ण",
-      "youtubeId": "56eNuoOVNQM",
-      "ytTitle": "Choti Choti Gaiya Chote Chote Gwal | Choti Choti Gaiya Chote Chote Gwal - 2 - Lord Krishna Bhajans",
-      "channel": "Studio Sangeeta",
-      "channelUrl": "https://www.youtube.com/@StudioSangeeta",
-      "ownerType": "label",
-      "confidence": "medium"
-    },
-    {
       "id": "teri_banki_adaa",
       "category": "aarti_bhajan",
       "titleHi": "तेरी बांकी अदा ने ओ सांवरे",
@@ -604,21 +514,6 @@
       "channelUrl": "https://www.youtube.com/@VrajRasProductions",
       "ownerType": "artist",
       "confidence": "high"
-    },
-    {
-      "id": "kishori_kuch_aisa_intezaam",
-      "category": "aarti_bhajan",
-      "titleHi": "किशोरी कुछ ऐसा इंतज़ाम हो जाए",
-      "titleEn": "Kishori Kuch Aisa Intezaam Ho Jaye",
-      "artistHi": null,
-      "artistEn": null,
-      "deityHi": "श्री राधा रानी",
-      "youtubeId": "hgKodNuhuDY",
-      "ytTitle": "किशोरी कुछ ऐसा इंतज़ाम हो जाए || ORIGINAL MERI KISHORI RADHE || VIPUL MUSIC",
-      "channel": "VIPUL MUSIC COMPANY",
-      "channelUrl": "https://www.youtube.com/@VIPULMUSICCOMPANY",
-      "ownerType": "label",
-      "confidence": "medium"
     },
     {
       "id": "meethe_ras_se_bharyo",
@@ -664,21 +559,6 @@
       "channelUrl": "https://www.youtube.com/@bansuripoonamdidi",
       "ownerType": "artist",
       "confidence": "high"
-    },
-    {
-      "id": "main_jahan_bhi_rahu_barsana_mile",
-      "category": "aarti_bhajan",
-      "titleHi": "मैं जंहा भी रहु बरसाना मिले",
-      "titleEn": "Main Jahan Bhi Rahu Barsana Mile",
-      "artistHi": null,
-      "artistEn": "Sadhvi Purnima Ji",
-      "deityHi": "श्री राधा रानी",
-      "youtubeId": "CcpFcpmr9iw",
-      "ytTitle": "Special krishna bhajan - मैं जंहा भी रहु बरसाना मिले - Sadhvi purnima ji",
-      "channel": "Barsane Ki Bansuri",
-      "channelUrl": "https://www.youtube.com/@barsanekeebansuri",
-      "ownerType": "label",
-      "confidence": "medium"
     },
     {
       "id": "shyama_pyari_kunj_bihari",
@@ -1086,21 +966,6 @@
       "confidence": "high"
     },
     {
-      "id": "krishnashtakam_bhaje_vrajaika_madhvi_madhukar",
-      "category": "geeta_ramayan",
-      "titleHi": "श्री कृष्णाष्टकम् - भजे व्रजैक मण्डनम्",
-      "titleEn": "Shri Krishnashtakam (Bhaje Vrajaika Mandanam)",
-      "artistHi": null,
-      "artistEn": "Madhvi Madhukar Jha",
-      "deityHi": "श्री कृष्ण",
-      "youtubeId": "ruAjzg4odq0",
-      "ytTitle": "Shri Krishnastakam| Bhaje Vrajaika Mandanam | Vishnu Stuti|Krishna Bhajan| Madhvi Madhukar Jha",
-      "channel": "Madhvi Madhukar",
-      "channelUrl": "https://www.youtube.com/@MadhviMadhukar",
-      "ownerType": "artist",
-      "confidence": "medium"
-    },
-    {
       "id": "gopi_geet_chitralekhaji",
       "category": "geeta_ramayan",
       "titleHi": "गोपी गीत",
@@ -1146,51 +1011,6 @@
       "confidence": "high"
     },
     {
-      "id": "yugalashtakam_madhvi_madhukar",
-      "category": "geeta_ramayan",
-      "titleHi": "युगलाष्टकम्",
-      "titleEn": "Yugalashtakam",
-      "artistHi": null,
-      "artistEn": "Madhvi Madhukar Jha",
-      "deityHi": "श्री राधा-कृष्ण",
-      "youtubeId": "35Ldg1OyT1k",
-      "ytTitle": "Yuglashtakam | Radha Krishna Bhajan | Madhuram Band l Madhvi Madhukar Jha",
-      "channel": "Madhvi Madhukar",
-      "channelUrl": "https://www.youtube.com/@MadhviMadhukar",
-      "ownerType": "artist",
-      "confidence": "medium"
-    },
-    {
-      "id": "radha_ashtottar_shatnam_madhvi_madhukar",
-      "category": "geeta_ramayan",
-      "titleHi": "श्री राधा अष्टोत्तर शतनाम स्तोत्रम्",
-      "titleEn": "Shri Radha Ashtottar Shatnam Stotram",
-      "artistHi": null,
-      "artistEn": "Madhvi Madhukar Jha",
-      "deityHi": "श्री राधा",
-      "youtubeId": "URRm0LyU7tc",
-      "ytTitle": "श्री राधा अष्टोत्तरशतनाम स्तोत्रम l Radha Ashttotar Shatnam I Madhvi Madhukar Jha",
-      "channel": "Madhvi Madhukar",
-      "channelUrl": "https://www.youtube.com/@MadhviMadhukar",
-      "ownerType": "artist",
-      "confidence": "medium"
-    },
-    {
-      "id": "radha_kripa_kataksh_madhavas",
-      "category": "geeta_ramayan",
-      "titleHi": "श्री राधा कृपा कटाक्ष स्तोत्र",
-      "titleEn": "Shri Radha Kripa Kataksh Stotra (with lyrics)",
-      "artistHi": null,
-      "artistEn": "Nandrani Gopi Devi Dasi (Neha Sobti), Nav Kishore Nimai Das (Nirdosh Sobti)",
-      "deityHi": "श्री राधा",
-      "youtubeId": "UvlkXTYdzAY",
-      "ytTitle": "Shri Radha Kripa Kataksh Stotra with Lyrics in Hindi & English - श्री राधा कृपा कटाक्ष स्तोत्र",
-      "channel": "Madhavas Rock Band",
-      "channelUrl": "https://www.youtube.com/@madhavasrockband",
-      "ownerType": "artist",
-      "confidence": "medium"
-    },
-    {
       "id": "vishnu_sahasranamam_ms_subbulakshmi",
       "category": "geeta_ramayan",
       "titleHi": "विष्णु सहस्रनाम",
@@ -1221,21 +1041,6 @@
       "confidence": "high"
     },
     {
-      "id": "achyutashtakam_madhvi_madhukar",
-      "category": "geeta_ramayan",
-      "titleHi": "अच्युताष्टकम्",
-      "titleEn": "Achyutashtakam (Achyutam Keshavam)",
-      "artistHi": null,
-      "artistEn": "Madhvi Madhukar Jha",
-      "deityHi": "श्री कृष्ण",
-      "youtubeId": "gy07mltqNRc",
-      "ytTitle": "Achyutashtakam |अच्युताष्टकम् l Achyutam Keshavam | Madhvi Madhukar Jha",
-      "channel": "Madhvi Madhukar",
-      "channelUrl": "https://www.youtube.com/@MadhviMadhukar",
-      "ownerType": "artist",
-      "confidence": "medium"
-    },
-    {
       "id": "brahma_samhita_iskcon_bangalore",
       "category": "geeta_ramayan",
       "titleHi": "श्री ब्रह्म संहिता (गोविन्दम् आदि पुरुषम्)",
@@ -1264,36 +1069,6 @@
       "channelUrl": "https://www.youtube.com/@TSeriesBhaktiSagar",
       "ownerType": "label",
       "confidence": "high"
-    },
-    {
-      "id": "krishna_chalisa_kumar_vishu",
-      "category": "geeta_ramayan",
-      "titleHi": "श्री कृष्ण चालीसा",
-      "titleEn": "Krishna Chalisa",
-      "artistHi": null,
-      "artistEn": "Kumar Vishu",
-      "deityHi": "श्री कृष्ण",
-      "youtubeId": "wYCuWoA5vIA",
-      "ytTitle": "Krishna Chalisa | Kumar Vishu | Shree Krishna Bhajan | Kanha Ji Ke Bhajan | Bhakti Song",
-      "channel": "Shemaroo Bhakti",
-      "channelUrl": "https://www.youtube.com/@ShemarooBhakti",
-      "ownerType": "label",
-      "confidence": "medium"
-    },
-    {
-      "id": "radha_chalisa_kumar_vishu",
-      "category": "geeta_ramayan",
-      "titleHi": "श्री राधा चालीसा",
-      "titleEn": "Shri Radha Chalisa",
-      "artistHi": null,
-      "artistEn": "Kumar Vishu",
-      "deityHi": "श्री राधा",
-      "youtubeId": "nLydYdxcQag",
-      "ytTitle": "श्री राधा चालीसा Shri Radha Chalisa | Kumar Vishu | Radha Rani Ke Bhajan, Bhakti Song, Radha Chalisa",
-      "channel": "Nova Spiritual India",
-      "channelUrl": "https://www.youtube.com/@SpiritualIndia",
-      "ownerType": "label",
-      "confidence": "medium"
     },
     {
       "id": "giriraj_chalisa_brijwani",
@@ -1581,21 +1356,6 @@
       "confidence": "high"
     },
     {
-      "id": "prabhupada_iskcon_vrindavan_opening_lecture",
-      "category": "pravachan_dhyan",
-      "titleHi": "इस्कॉन वृंदावन उद्घाटन समारोह — श्रील प्रभुपाद का प्रवचन",
-      "titleEn": "ISKCON Vrindavan opening ceremony — Srila Prabhupada's lecture",
-      "artistHi": null,
-      "artistEn": "Srila Prabhupada",
-      "deityHi": null,
-      "youtubeId": "5Uq7xGCM7no",
-      "ytTitle": "ISKCON Vrindavan Opening Ceremony | Srila Prabhupada's Lecture | Rare Yaduvar Prabhu Video",
-      "channel": "ISKCON Vrindavan",
-      "channelUrl": "https://www.youtube.com/@ISKCONVrndavan",
-      "ownerType": "iskcon",
-      "confidence": "medium"
-    },
-    {
       "id": "mukundananda_vrindavan_holi_leela",
       "category": "pravachan_dhyan",
       "titleHi": "राधा कृष्ण की एक दुर्लभ वृंदावन लीला — गुरु कृपा की शक्ति",
@@ -1686,21 +1446,6 @@
       "confidence": "high"
     },
     {
-      "id": "chaurasia_krishna_bansuri_ki_dhun",
-      "category": "pravachan_dhyan",
-      "titleHi": "कृष्ण बाँसुरी की धुन (ऑडियो ज्यूकबॉक्स) — पं. हरिप्रसाद चौरसिया",
-      "titleEn": "Krishna Bansuri ki Dhun (audio jukebox) — Pt. Hariprasad Chaurasia",
-      "artistHi": null,
-      "artistEn": "Pt. Hariprasad Chaurasia",
-      "deityHi": null,
-      "youtubeId": "O8YaWXujxzI",
-      "ytTitle": "Krishna Bansuri Ki Dhun | Audio Jukebox | Pandit Hariprsad Chaurasia - Flute Music",
-      "channel": "Sony Music India Classical",
-      "channelUrl": "https://www.youtube.com/@SonyMusicIndiaClassical",
-      "ownerType": "label",
-      "confidence": "medium"
-    },
-    {
       "id": "chaurasia_eternal_lovers_radha_krishna",
       "category": "pravachan_dhyan",
       "titleHi": "शाश्वत प्रेमी — राधा कृष्ण (बाँसुरी) — पं. हरिप्रसाद चौरसिया",
@@ -1729,21 +1474,6 @@
       "channelUrl": "https://www.youtube.com/@SonaRupa",
       "ownerType": "label",
       "confidence": "high"
-    },
-    {
-      "id": "rakesh_chaurasia_shriji_radha_keli_kunj",
-      "category": "pravachan_dhyan",
-      "titleHi": "राकेश चौरसिया और सत्यजीत तलवलकर की श्रीजी के आगे कला प्रस्तुति (राधा केलि कुंज)",
-      "titleEn": "Rakesh Chaurasia and Satyajit Talwalkar perform before Shriji — Bhajan Marg",
-      "artistHi": null,
-      "artistEn": "Rakesh Chaurasia, Satyajit Talwalkar",
-      "deityHi": null,
-      "youtubeId": "-o5b5yqTVz0",
-      "ytTitle": "Rakesh Chaurasia और Satyajit Talwalkar ने जब श्रीजी के आगे की अपनी कला प्रस्तुति ! Bhajan Marg",
-      "channel": "Bhajan Marg",
-      "channelUrl": "https://www.youtube.com/@BhajanMarg",
-      "ownerType": "ashram",
-      "confidence": "medium"
     },
     {
       "id": "mayapur_kirtan_mela_2024_sivaram_swami",
@@ -1909,21 +1639,6 @@
       "channelUrl": "https://www.youtube.com/@KrishnaDasMusic",
       "ownerType": "artist",
       "confidence": "high"
-    },
-    {
-      "id": "agnideva_maha_mantra",
-      "category": "kirtan",
-      "titleHi": "महामंत्र (संस्करण 1) — अग्निदेव दास",
-      "titleEn": "Maha Mantra (Version 1) — Agnideva Das",
-      "artistHi": null,
-      "artistEn": "Agnideva Das",
-      "deityHi": null,
-      "youtubeId": "8JUL9e8DDJ8",
-      "ytTitle": "Maha Mantra (Version 1)",
-      "channel": "Agnideva Das - Topic",
-      "channelUrl": "https://www.youtube.com/channel/UCBi8gcmWwZd2JrtkgCkgX0Q",
-      "ownerType": "label",
-      "confidence": "medium"
     }
   ],
   "playlists": [
@@ -1990,28 +1705,6 @@
       "liveUrl": "https://www.youtube.com/channel/UCypj9Vvizo4cCERfDFIG3zw/live",
       "whatStreamsEn": "Daily Mangal Arati, Darshan Arati, Bhoga Arati and Sandhya Arati from Sri Dham Mayapur, plus Damodarashtakam in Kartik (its About also lists Kirtan Mela, classes and festivals).",
       "confidence": "high"
-    },
-    {
-      "id": "banke_bihari_live_darshan",
-      "nameHi": "ठाकुरजी श्री बाँकेबिहारी जी मंदिर, वृंदावन — लाइव दर्शन",
-      "nameEn": "Thakurji Shri Banke Bihari Ji Mandir, Vrindavan — live darshan",
-      "channel": "Thakurji Shri Banke Bihari ji",
-      "channelId": "UCwh96MUAk0m81vEXaHVm6Ng",
-      "channelUrl": "https://www.youtube.com/@Thakurji.ShriBankeBihariji",
-      "liveUrl": "https://www.youtube.com/channel/UCwh96MUAk0m81vEXaHVm6Ng/live",
-      "whatStreamsEn": "Several live darshan streams a day titled 'LIVE - ठाकुरजी श्री बॉंकेबिहारी जी मंदिर <date> - वृंदावन' (one description: 'LIVE EVENING DARSHAN FROM VRINDAVAN'). A Vrindavan Today report says the three main aartis (Shringar, Rajbhog, Shayan) are covered.",
-      "confidence": "medium"
-    },
-    {
-      "id": "premanand_guru_kripa_kevalam_live",
-      "nameHi": "गुरु कृपा केवलम् — श्री हित प्रेमानंद जी महाराज का लाइव प्रवचन",
-      "nameEn": "Guru Kripa Kevalam — live pravachan stream of Shri Hit Premanand Ji Maharaj",
-      "channel": "Guru Kripa Kevalam",
-      "channelId": "UCW9f2fkWtCMe5lZDyiuGzEA",
-      "channelUrl": "https://www.youtube.com/@Gurukripakevalam",
-      "liveUrl": "https://www.youtube.com/channel/UCW9f2fkWtCMe5lZDyiuGzEA/live",
-      "whatStreamsEn": "Daily, often twice-daily, long streams titled 'पूज्य महाराज जी का प्रेरणादायक प्रवचन <date>' (satsang, kirtan and pad gayan of Premanand Ji).",
-      "confidence": "medium"
     },
     {
       "id": "kripalu_ji_official_live_pravachan",
