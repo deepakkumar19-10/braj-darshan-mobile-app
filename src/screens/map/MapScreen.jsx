@@ -223,24 +223,28 @@ function TempleRow({ temple, onOpen, showCity, isHindi, colors, isDark, now }) {
           ) : null}
           <StatusBadge status={status} size="sm" />
         </View>
-        <Pressable
-          onPress={open}
-          accessibilityRole="button"
-          accessibilityLabel={isHindi ? `विवरण — ${name}` : `Details — ${name}`}
-          style={({ pressed }) => [styles.detailsBtn, { backgroundColor: colors.primaryLight }, pressed && styles.pressed]}
-        >
-          <AppText variant="caption" weight="600" color={colors.primary}>
-            {isHindi ? 'विवरण' : 'Details'}
-          </AppText>
-        </Pressable>
-        <Pressable
-          onPress={go}
-          accessibilityRole="button"
-          accessibilityLabel={isHindi ? `रास्ता देखें — ${name}` : `Directions — ${name}`}
-          style={({ pressed }) => [styles.goBtn, { backgroundColor: pressed ? colors.primaryDark : colors.primary }]}
-        >
-          <Icon name="directions" size={22} color={isDark ? '#1E1B18' : '#FFFFFF'} />
-        </Pressable>
+        {/* The two buttons stack, so the name and status keep enough width on a phone
+            (side by side they squeezed "खुला · 9:00 PM तक" onto two lines). */}
+        <View style={styles.rowActions}>
+          <Pressable
+            onPress={open}
+            accessibilityRole="button"
+            accessibilityLabel={isHindi ? `विवरण — ${name}` : `Details — ${name}`}
+            style={({ pressed }) => [styles.detailsBtn, { backgroundColor: colors.primaryLight }, pressed && styles.pressed]}
+          >
+            <AppText variant="caption" weight="600" color={colors.primary}>
+              {isHindi ? 'विवरण' : 'Details'}
+            </AppText>
+          </Pressable>
+          <Pressable
+            onPress={go}
+            accessibilityRole="button"
+            accessibilityLabel={isHindi ? `रास्ता देखें — ${name}` : `Directions — ${name}`}
+            style={({ pressed }) => [styles.goBtn, { backgroundColor: pressed ? colors.primaryDark : colors.primary }]}
+          >
+            <Icon name="directions" size={22} color={isDark ? '#1E1B18' : '#FFFFFF'} />
+          </Pressable>
+        </View>
       </View>
     </Card>
   );
@@ -557,7 +561,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  goBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  rowActions: { width: 84, gap: 6 },
+  goBtn: { height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   singleCard: { borderRadius: 20 },
   sheetPhoto: { height: 160 },
   sheetBody: { padding: 16, gap: 8 },

@@ -46,9 +46,25 @@ const TAB_ROUTES = [
 ];
 
 const TAB_SCREEN_OPTIONS = { animation: 'fade', gestureEnabled: false };
-// One instance per tab: navigating to a tab that is already in the stack brings that
-// screen to the top (keeping its search and filters) instead of stacking a copy.
+// One instance per tab: navigating to a tab never stacks a second copy of it.
 const SINGLE_INSTANCE = () => 'tab';
+
+// Going to a tab that is already in the stack POPS back to it (closing the screens above it),
+// for the tab bar, deep links and in-screen links alike. Without this, React Navigation moves
+// the mounted tab screen to the top, and Android's native stack (react-native-screens) can keep
+// showing the old top screen: on 4 Nov 2026 a deep link left the tab bar on "पंचांग" while the
+// Keshi Ghat page stayed on screen. Popping never reorders mounted screens.
+const TAB_ROUTE_NAMES = [ROUTES.HOME, ROUTES.TEMPLES, ROUTES.MAP, ROUTES.PANCHANG, ROUTES.MORE];
+export function popBackToTabs(original) {
+  return {
+    getStateForAction(state, action, options) {
+      if (action.type === 'NAVIGATE' && action.payload && TAB_ROUTE_NAMES.includes(action.payload.name) && !action.payload.pop) {
+        return original.getStateForAction(state, { ...action, payload: { ...action.payload, pop: true } }, options);
+      }
+      return original.getStateForAction(state, action, options);
+    },
+  };
+}
 
 // Lets App tell the navigator when the container is ready, so a restored
 // (non-Home) screen shows or hides the tab bar correctly on cold start.
@@ -85,6 +101,7 @@ export function RootNavigator() {
     <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
       <Stack.Navigator
         initialRouteName={ROUTES.HOME}
+        UNSTABLE_router={popBackToTabs}
         screenOptions={{
           headerShown: false,
           // iOS push: new screens slide in from the right and can be swiped back.
