@@ -8,7 +8,7 @@ const DEFAULT_GUEST_USER = {
   id: 'guest_user',
   name: 'अतिथि तीर्थयात्री',
   nameEn: 'Guest Pilgrim',
-  email: 'guest@brajdarshan.org',
+  email: '', // a guest has no email; nothing in the app shows this field
   isGuest: true,
   memberSince: '2026',
   avatar: '🪷',
