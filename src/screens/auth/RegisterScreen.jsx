@@ -117,7 +117,7 @@ export default function RegisterScreen({ navigation }) {
             {isHindi ? 'नया तीर्थयात्री खाता' : 'Devotee Registration'}
           </AppText>
           <AppText variant="body" color={colors.muted}>
-            {isHindi ? 'श्री ब्रज दर्शन में आपका स्वागत है' : 'Welcome to Shri Braj Darshan'}
+            {isHindi ? 'दिव्यब्रज में आपका स्वागत है' : 'Welcome to Shri Braj Darshan'}
           </AppText>
         </View>
 

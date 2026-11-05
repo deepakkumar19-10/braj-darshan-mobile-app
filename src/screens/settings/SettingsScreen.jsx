@@ -367,8 +367,8 @@ export default function SettingsScreen({ navigation, route }) {
                   title={isHindi ? 'परिचय' : 'About'}
                   subtitle={
                     isHindi
-                      ? 'श्री ब्रज दर्शन · DIVYABRAJ द्वारा'
-                      : 'Shri Braj Darshan, by DIVYABRAJ'
+                      ? 'दिव्यब्रज · ब्रज दर्शन'
+                      : 'DivyaBraj · Braj Darshan'
                   }
                   onPress={() => setAboutOpen((open) => !open)}
                   right={
@@ -449,8 +449,8 @@ export default function SettingsScreen({ navigation, route }) {
             </Card>
             <AppText variant="small" color={colors.muted} align="center" style={styles.version}>
               {isHindi
-                ? `श्री ब्रज दर्शन${APP_VERSION ? ` · संस्करण ${APP_VERSION}` : ''}`
-                : `Shri Braj Darshan${APP_VERSION ? ` · Version ${APP_VERSION}` : ''}`}
+                ? `दिव्यब्रज${APP_VERSION ? ` · संस्करण ${APP_VERSION}` : ''}`
+                : `DivyaBraj${APP_VERSION ? ` · Version ${APP_VERSION}` : ''}`}
             </AppText>
           </View>
         </View>

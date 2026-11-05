@@ -275,7 +275,7 @@ export default function YatraDetailScreen({ route, navigation }) {
       ? 'समय केवल सुझाव हैं — त्योहारों पर बदल सकते हैं, स्थानीय पुष्टि करें।'
       : 'Times are suggestions — they change on festivals, so confirm locally.';
     try {
-      await Share.share({ message: `${title}\n\n${lines.join('\n')}\n\n${note}\n— Braj Darshan` });
+      await Share.share({ message: `${title}\n\n${lines.join('\n')}\n\n${note}\n— DivyaBraj` });
     } catch {
       // Share sheet dismissed or unavailable.
     }

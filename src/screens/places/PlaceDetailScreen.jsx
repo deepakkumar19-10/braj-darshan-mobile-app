@@ -134,7 +134,7 @@ export default function PlaceDetailScreen({ navigation, route }) {
   }
 
   const share = () => {
-    Share.share({ message: `${item.nameHi} (${item.nameEn}), ${item.townEn} — Braj Darshan` }).catch(() => {});
+    Share.share({ message: `${item.nameHi} (${item.nameEn}), ${item.townEn} — DivyaBraj` }).catch(() => {});
   };
 
   const directionsLabel = isHindi ? 'रास्ता देखें (Google Maps)' : 'Directions (Google Maps)';

@@ -355,7 +355,7 @@ export default function SmartPlannerScreen({ route, navigation }) {
       ? 'समय केवल सुझाव हैं — स्थानीय पुष्टि करें।'
       : 'Times are suggestions — confirm locally.';
     try {
-      await Share.share({ message: `${header}${dates}\n\n${lines.join('\n')}\n\n${note}\n— Braj Darshan` });
+      await Share.share({ message: `${header}${dates}\n\n${lines.join('\n')}\n\n${note}\n— DivyaBraj` });
     } catch {
       // Share sheet dismissed or unavailable.
     }

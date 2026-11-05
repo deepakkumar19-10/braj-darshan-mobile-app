@@ -121,7 +121,7 @@ export default function LoginScreen({ navigation }) {
             accessibilityLabel="DivyaBraj"
           />
           <AppText variant="h1" weight="700" color={colors.navy} align="center" accessibilityRole="header">
-            {isHindi ? 'श्री ब्रज दर्शन' : 'Braj Darshan'}
+            {isHindi ? 'दिव्यब्रज' : 'DivyaBraj'}
           </AppText>
           <AppText variant="body" color={colors.muted} align="center">
             {t('auth.loginSubtitle', 'अपनी पावन यात्रा जारी रखने के लिए साइन इन करें')}

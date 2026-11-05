@@ -129,7 +129,7 @@ export default function CustomDrawer({ navigation }) {
           </View>
           <View style={styles.flex}>
             <AppText variant="h3" weight="700" color={colors.navy} numberOfLines={2}>
-              श्री ब्रज दर्शन
+              दिव्यब्रज
             </AppText>
             <AppText variant="small" weight="600" color={colors.muted}>
               DIVYABRAJ

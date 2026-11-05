@@ -455,7 +455,7 @@ export default function HomeScreen({ navigation }) {
           />
           <View style={styles.flex}>
             <AppText variant="h4" weight="700" color={colors.navy} numberOfLines={1} style={styles.brandName}>
-              {isHindi ? 'श्री ब्रज दर्शन' : 'Braj Darshan'}
+              {isHindi ? 'दिव्यब्रज' : 'DivyaBraj'}
             </AppText>
             <AppText variant="small" color={colors.muted} numberOfLines={2}>
               {isHindi ? 'राधे राधे · ब्रज में आपका साथी' : 'Radhe Radhe · your companion in Braj'}

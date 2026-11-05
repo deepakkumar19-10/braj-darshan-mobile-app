@@ -86,7 +86,7 @@ export default function ProfileScreen({ navigation }) {
                 <ListRow
                   icon="info"
                   title={isHindi ? 'परिचय' : 'About'}
-                  subtitle={isHindi ? 'श्री ब्रज दर्शन · DIVYABRAJ द्वारा' : 'Shri Braj Darshan, by DIVYABRAJ'}
+                  subtitle={isHindi ? 'दिव्यब्रज · ब्रज दर्शन' : 'DivyaBraj · Braj Darshan'}
                   onPress={() => navigation.navigate(ROUTES.SETTINGS, { section: 'about' })}
                 />
               </View>
