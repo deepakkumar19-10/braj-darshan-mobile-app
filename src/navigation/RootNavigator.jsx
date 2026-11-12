@@ -24,6 +24,8 @@ import YatraDetailScreen from '../screens/yatra/YatraDetailScreen';
 import ParikramaDetailScreen from '../screens/yatra/ParikramaDetailScreen';
 import SmartPlannerScreen from '../screens/yatra/SmartPlannerScreen';
 import PlacesScreen from '../screens/places/PlacesScreen';
+import BrajPlacesScreen from '../screens/places/BrajPlacesScreen';
+import BrajPlaceScreen from '../screens/places/BrajPlaceScreen';
 import PlaceDetailScreen from '../screens/places/PlaceDetailScreen';
 import AudioPlayerScreen from '../screens/audio/AudioPlayerScreen';
 import HelpdeskScreen from '../screens/helpdesk/HelpdeskScreen';
@@ -153,6 +155,16 @@ export function RootNavigator() {
         <Stack.Screen
           name={ROUTES.PLACE_DETAIL}
           component={PlaceDetailScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name={ROUTES.BRAJ_PLACES}
+          component={BrajPlacesScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name={ROUTES.BRAJ_PLACE}
+          component={BrajPlaceScreen}
           options={{ animation: 'slide_from_right' }}
         />
         <Stack.Screen

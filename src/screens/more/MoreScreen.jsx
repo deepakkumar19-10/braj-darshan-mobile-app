@@ -42,6 +42,16 @@ export const MORE_SECTIONS = [
     subEn: 'Plan your days in Braj',
   },
   {
+    id: 'braj-places',
+    group: 'explore',
+    icon: 'temple',
+    route: ROUTES.BRAJ_PLACES,
+    hi: 'ब्रज के स्थल',
+    en: 'Places of Braj',
+    subHi: 'हर धाम के मंदिर, कुंड, वन — फ़ोटो सहित',
+    subEn: 'Temples, kunds and vans of every town',
+  },
+  {
     id: 'places',
     group: 'explore',
     icon: 'ghat',

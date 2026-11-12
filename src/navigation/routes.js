@@ -32,6 +32,8 @@ export const ROUTES = {
   SMART_PLANNER: 'SmartPlanner',
   PLACES: 'Places',
   PLACE_DETAIL: 'PlaceDetail',
+  BRAJ_PLACES: 'BrajPlaces', // all places of Braj by town (website data)
+  BRAJ_PLACE: 'BrajPlace',
   AUDIO_PLAYER: 'AudioPlayer',
   HELPDESK: 'Helpdesk',
 

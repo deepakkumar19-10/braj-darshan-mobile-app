@@ -21,6 +21,8 @@ export const linking = {
       [ROUTES.MAP]: 'map',
       [ROUTES.PLACES]: 'places',
       [ROUTES.PLACE_DETAIL]: 'place/:key',
+      [ROUTES.BRAJ_PLACES]: 'braj-places',
+      [ROUTES.BRAJ_PLACE]: 'braj-place/:id',
       [ROUTES.PANCHANG]: 'panchang',
       [ROUTES.EVENTS]: 'festivals',
       [ROUTES.YATRA]: 'yatra',
